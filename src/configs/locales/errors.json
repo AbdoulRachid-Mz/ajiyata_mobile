@@ -1,0 +1,109 @@
+{
+  "unknown": "Une erreur est survenue lors de l'opération, contactez-nous si cela persiste.",
+  "firebase": {
+    "permission-denied": "Permissions manquantes ou insuffisantes.",
+    "resource-exhausted": "Limite de quota atteinte, veuillez réessayer plus tard.",
+    "unavailable": "Le service est temporairement indisponible. Veuillez vérifier votre connexion."
+  },
+  "createUserWithEmailAndPassword": {
+    "auth/email-already-in-use": "Cette adresse e-mail est déjà utilisée.",
+    "auth/invalid-email": "L'adresse e-mail n'est pas valide.",
+    "auth/operation-not-allowed": "La création de compte par e-mail est désactivée.",
+    "auth/weak-password": "Le mot de passe est trop faible. Veuillez choisir un mot de passe plus sécurisé.",
+    "auth/internal-error": "Une erreur interne est survenue lors de la création du compte. Veuillez réessayer.",
+    "auth/network-request-failed": "Impossible de contacter le serveur. Pas de connexion internet."
+  },
+  "signInWithEmailAndPassword": {
+    "auth/user-disabled": "Ce compte a été désactivé.",
+    "auth/invalid-email": "L'adresse e-mail n'est pas valide.",
+    "auth/user-not-found": "Aucun utilisateur trouvé avec cette adresse e-mail.",
+    "auth/wrong-password": "Le mot de passe est incorrect.",
+    "auth/invalid-password": "Le mot de passe est incorrect.",
+    "auth/network-request-failed": "Pas de connexion internet.",
+    "auth/too-many-requests": "Trop de tentatives échouées. Votre compte a été temporairement bloqué. Veuillez réessayer plus tard.",
+    "auth/invalid-credential": "L'email ou le mot de passe est incorrect."
+  },
+  "signInWithPopup": {
+    "auth/popup-closed-by-user": "La fenêtre de connexion a été fermée avant la fin de l'opération.",
+    "auth/cancelled-popup-request": "L'opération a été annulée car une seule fenêtre de connexion doit être ouverte à la fois.",
+    "auth/account-exists-with-different-credential": "Un compte existe déjà avec la même adresse e-mail mais avec un mode de connexion différent."
+  },
+  "sendPasswordResetEmail": {
+    "auth/invalid-email": "L'adresse e-mail n'est pas valide.",
+    "auth/user-not-found": "Aucun utilisateur trouvé avec cette adresse e-mail.",
+    "auth/network-request-failed": "Pas de connexion internet."
+  },
+  "confirmPasswordReset": {
+    "auth/expired-action-code": "Le code de réinitialisation a expiré. Veuillez refaire une demande.",
+    "auth/invalid-action-code": "Le code de réinitialisation est invalide ou a déjà été utilisé.",
+    "auth/user-disabled": "Ce compte a été désactivé.",
+    "auth/user-not-found": "L'utilisateur lié à ce code n'existe plus.",
+    "auth/weak-password": "Le nouveau mot de passe choisi est trop faible."
+  },
+  "signOut": {
+    "auth/no-current-user": "Aucun utilisateur n'est actuellement connecté."
+  },
+  "updateProfile": {
+    "auth/requires-recent-login": "Veuillez vous reconnecter avant de modifier les informations de votre profil.",
+    "auth/invalid-user-token": "Le jeton utilisateur n'est plus valide. Veuillez vous reconnecter.",
+    "auth/user-token-expired": "Votre session a expiré, veuillez vous reconnecter."
+  },
+  "updateEmail": {
+    "auth/email-already-in-use": "Cette adresse e-mail est déjà utilisée par un autre compte.",
+    "auth/invalid-email": "L'adresse e-mail n'est pas valide.",
+    "auth/requires-recent-login": "Cette action nécessite une reconnexion récente. Veuillez vous déconnecter puis vous reconnecter."
+  },
+  "updatePassword": {
+    "auth/weak-password": "Le mot de passe est trop faible.",
+    "auth/requires-recent-login": "Cette action nécessite une reconnexion récente. Veuillez vous déconnecter puis vous reconnecter.",
+    "auth/operation-not-allowed": "La modification du mot de passe est désactivée."
+  },
+  "deleteUser": {
+    "auth/requires-recent-login": "Pour supprimer votre compte, vous devez vous être connecté récemment. Veuillez vous reconnecter puis réessayer."
+  },
+  "sendEmailVerification": {
+    "auth/invalid-recipient-email": "L'adresse e-mail du destinataire est invalide.",
+    "auth/user-not-found": "Aucun utilisateur trouvé avec cette adresse e-mail.",
+    "auth/too-many-requests": "Trop de demandes d'envoi. Veuillez patienter quelques minutes avant de réessayer."
+  },
+  "firestoreGetDocument": {
+    "permission-denied": "Vous n'avez pas l'autorisation de consulter ces données.",
+    "not-found": "Le document demandé n'existe pas ou a été supprimé.",
+    "unavailable": "Impossible de récupérer les données car vous êtes hors ligne ou le serveur ne répond pas."
+  },
+  "firestoreUpdateDocument": {
+    "permission-denied": "Vous n'avez pas l'autorisation de modifier ce document.",
+    "not-found": "Le document à mettre à jour n'existe pas.",
+    "resource-exhausted": "Limite de quota atteinte, impossible de mettre à jour le document.",
+    "unavailable": "Échec de la modification. Vérifiez votre connexion internet."
+  },
+  "firestoreAddDocument": {
+    "permission-denied": "Vous n'avez pas l'autorisation d'ajouter ce document.",
+    "invalid-argument": "Les données fournies sont incorrectes ou mal formatées.",
+    "already-exists": "Un document avec cet identifiant existe déjà.",
+    "unavailable": "Échec de l'enregistrement. L'application est actuellement hors ligne."
+  },
+  "firestoreDeleteDocument": {
+    "permission-denied": "Vous n'avez pas l'autorisation de supprimer ce document.",
+    "not-found": "Le document à supprimer n'existe pas."
+  },
+  "storageUpload": {
+    "storage/unauthorized": "Vous n'avez pas l'autorisation de téléverser ce fichier.",
+    "storage/retry-limit-exceeded": "Le téléversement a échoué après plusieurs tentatives. Vérifiez votre connexion.",
+    "storage/invalid-checksum": "Le fichier a été corrompu lors du transfert. Veuillez réessayer.",
+    "storage/cannot-slice-blob": "Le fichier est trop volumineux ou a été modifié pendant le transfert.",
+    "storage/canceled": "Le téléversement a été annulé par l'utilisateur.",
+    "storage/quota-exceeded": "L'espace de stockage de l'application est plein. Contactez le support."
+  },
+  "storageDelete": {
+    "storage/unauthorized": "Vous n'êtes pas autorisé à supprimer ce fichier.",
+    "storage/object-not-found": "Le fichier à supprimer n'existe pas.",
+    "storage/permission-denied": "Vous n'avez pas l'autorisation de supprimer ce fichier."
+  },
+  "phoneAuth": {
+    "auth/invalid-phone-number": "Le numéro de téléphone n'est pas au bon format (ex: +33612345678).",
+    "auth/quota-exceeded": "Le quota de SMS pour aujourd'hui a été dépassé. Veuillez réessayer demain.",
+    "auth/missing-phone-number": "Veuillez renseigner un numéro de téléphone valide.",
+    "auth/captcha-check-failed": "La vérification de sécurité (reCAPTCHA) a échoué. Veuillez réessayer."
+  }
+}

@@ -19,3 +19,25 @@ export const useCreateBudget = () => {
     },
   });
 };
+
+export const useUpdateBudget = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Budget> }) =>
+      budgetRepository.update(id, data),
+    onSuccess: (_, variables) => {
+      // Invalider les requêtes (on suppose qu'on invalidate tout pour simplifier, ou on passe accountId si dispo)
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+  });
+};
+
+export const useDeleteBudget = (accountId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => budgetRepository.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets', accountId] });
+    },
+  });
+};

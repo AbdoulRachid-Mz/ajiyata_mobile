@@ -62,7 +62,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
             <>
               <View style={[styles.icon, { backgroundColor: selectedCategory.color + '20' }]}>
                 <ThemedText style={{ fontSize: 16 }}>{selectedCategory.icon}</ThemedText>
-              </>
+              </View>
               <ThemedText>{selectedCategory.name}</ThemedText>
             </>
           ) : (

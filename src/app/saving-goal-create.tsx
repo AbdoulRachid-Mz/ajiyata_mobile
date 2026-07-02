@@ -1,19 +1,23 @@
-import { useRouter } from 'expo-router';
-import { useTheme } from '@/contexts/theme-context';
-import SafeAreaView from '@/components/ui/safe-area-view';
-import ThemedView from '@/components/ui/view';
-import ThemedText from '@/components/ui/text';
-import Button from '@/components/ui/button';
-import Spacer from '@/components/ui/spacer';
-import TextInput from '@/components/ui/text-input';
-import KeyboardAvoidingView from '@/components/ui/keyboard-avoiding-view';
-import { View, ScrollView } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { savingGoalFormSchema, SavingGoalFormData } from '@/lib/validation';
-import { useCreateSavingGoal } from '@/features/saving-goals/hooks';
-import { useAppStore } from '@/stores/app-store';
-import { generateUUID, getCurrentTimestamp } from '@/utils/uuid';
+import Button from "@/components/ui/button";
+import KeyboardAvoidingView from "@/components/ui/keyboard-avoiding-view";
+import SafeAreaView from "@/components/ui/safe-area-view";
+import Spacer from "@/components/ui/spacer";
+import ThemedText from "@/components/ui/text";
+import TextInput from "@/components/ui/text-input";
+import ThemedView from "@/components/ui/view";
+import { useTheme } from "@/contexts/theme-context";
+import { useCreateSavingGoal } from "@/features/saving-goals/hooks";
+import {
+  SavingGoalFormData,
+  SavingGoalFormInput,
+  savingGoalFormSchema,
+} from "@/lib/validation";
+import { useAppStore } from "@/stores/app-store";
+import { generateUUID, getCurrentTimestamp } from "@/utils/uuid";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "expo-router";
+import { Controller, useForm } from "react-hook-form";
+import { ScrollView, View } from "react-native";
 
 export default function SavingGoalCreate() {
   const { theme } = useTheme();
@@ -25,11 +29,15 @@ export default function SavingGoalCreate() {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<SavingGoalFormData>({
+  } = useForm<
+    SavingGoalFormInput,
+    any,
+    SavingGoalFormData
+  >({
     resolver: zodResolver(savingGoalFormSchema),
     defaultValues: {
-      title: '',
-      targetAmount: '',
+      title: "",
+      targetAmount: "",
     },
   });
 
@@ -43,29 +51,41 @@ export default function SavingGoalCreate() {
         title: data.title,
         targetAmount: data.targetAmount,
         currentAmount: 0,
-        status: 'active',
+        status: "active",
         createdAt: getCurrentTimestamp(),
         updatedAt: getCurrentTimestamp(),
-        deviceId: 'temp-device-id',
+        deviceId: "temp-device-id",
         version: 1,
-        syncStatus: 'pending',
+        syncStatus: "pending",
         metadata: {},
       });
       router.back();
     } catch (error) {
-      console.error('Failed to create saving goal:', error);
+      console.error("Failed to create saving goal:", error);
     }
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: theme.spacing.lg }}>
-          <ThemedView style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.lg }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: theme.spacing.lg }}
+        >
+          <ThemedView
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: theme.spacing.lg,
+            }}
+          >
             <Button variant="ghost" size="sm" onPress={() => router.back()}>
               ← Annuler
             </Button>
-            <ThemedText variant="xl" weight="bold">Nouvel objectif</ThemedText>
+            <ThemedText variant="xl" weight="bold">
+              Nouvel objectif
+            </ThemedText>
             <View style={{ width: 60 }} />
           </ThemedView>
 
@@ -83,7 +103,12 @@ export default function SavingGoalCreate() {
             )}
           />
           {errors.title && (
-            <ThemedText variant="xs" style={{ color: theme.colors.destructive }}>{errors.title.message}</ThemedText>
+            <ThemedText
+              variant="xs"
+              style={{ color: theme.colors.destructive }}
+            >
+              {errors.title.message}
+            </ThemedText>
           )}
 
           <Spacer height={theme.spacing.lg} />
@@ -97,24 +122,34 @@ export default function SavingGoalCreate() {
                 placeholder="0.00"
                 keyboardType="decimal-pad"
                 onChangeText={onChange}
-                value={value.toString()}
+                value={value}
                 error={!!errors.targetAmount}
               />
             )}
           />
           {errors.targetAmount && (
-            <ThemedText variant="xs" style={{ color: theme.colors.destructive }}>{errors.targetAmount.message}</ThemedText>
+            <ThemedText
+              variant="xs"
+              style={{ color: theme.colors.destructive }}
+            >
+              {errors.targetAmount.message}
+            </ThemedText>
           )}
-
         </ScrollView>
 
-        <ThemedView style={{ padding: theme.spacing.lg, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
+        <ThemedView
+          style={{
+            padding: theme.spacing.lg,
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.border,
+          }}
+        >
           <Button
             size="lg"
             disabled={isSubmitting}
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? 'Création...' : 'Créer l\'objectif'}
+            {isSubmitting ? "Création..." : "Créer l'objectif"}
           </Button>
         </ThemedView>
       </KeyboardAvoidingView>

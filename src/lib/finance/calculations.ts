@@ -11,7 +11,7 @@ export interface FinancialSummary {
  * Calculates financial summary from a list of transactions.
  * Note: Balance is also a derived value in Ajiya Ta's philosophy.
  */
-export const calculateFinancialSummary = (transactions: Transaction[]): FinancialSummary => {
+export const calculateFinancialSummary = (transactions: Transaction[], initialBalance: number = 0): FinancialSummary => {
   let totalIncome = 0;
   let totalExpense = 0;
 
@@ -24,7 +24,7 @@ export const calculateFinancialSummary = (transactions: Transaction[]): Financia
     // Transfer logic could be added here if it affects account-specific balance
   });
 
-  const totalBalance = totalIncome - totalExpense;
+  const totalBalance = initialBalance + totalIncome - totalExpense;
   const profit = totalIncome - totalExpense; // In this simple model, profit = balance
 
   return {

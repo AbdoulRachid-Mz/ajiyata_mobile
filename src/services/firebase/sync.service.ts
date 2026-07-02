@@ -1,0 +1,471 @@
+// import { firestore } from '@/configs/firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDoc,
+  Timestamp,
+  writeBatch,
+  arrayUnion,
+  arrayRemove,
+} from 'firebase/firestore';
+import { db } from '@/db';
+import * as schema from '@/db/schema';
+import { eq, and, isNotNull, SQL } from 'drizzle-orm';
+import { generateUUID, getCurrentTimestamp } from '@/utils/uuid';
+import { Storage } from '@/lib/storage';
+import type { SyncEntity, SyncStatus } from '@/features/sync/types';
+import { firestore } from '@/configs/firebase/config';
+
+// Interface pour les données synchronisables
+interface SyncableEntity {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date | null;
+  syncStatus: SyncStatus;
+  lastSyncedAt?: Date | null;
+  version: number;
+  deviceId: string;
+  metadata: Record<string, any>;
+}
+
+export class FirebaseSyncService {
+  private static instance: FirebaseSyncService;
+  private isSyncing: boolean = false;
+  private syncInterval: number | null = null;
+
+  private constructor() {}
+
+  static getInstance(): FirebaseSyncService {
+    if (!FirebaseSyncService.instance) {
+      FirebaseSyncService.instance = new FirebaseSyncService();
+    }
+    return FirebaseSyncService.instance;
+  }
+
+  /**
+   * Démarrer la synchronisation automatique
+   */
+  startAutoSync(intervalMinutes: number = 5) {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+    }
+    
+    this.syncInterval = setInterval(() => {
+      this.syncAll().catch(console.error);
+    }, intervalMinutes * 60 * 1000) as unknown as number;
+
+    // Première synchronisation immédiate
+    this.syncAll().catch(console.error);
+  }
+
+  /**
+   * Arrêter la synchronisation automatique
+   */
+  stopAutoSync() {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+  }
+
+  /**
+   * Synchroniser toutes les entités
+   */
+  async syncAll(): Promise<void> {
+    if (this.isSyncing) return;
+    
+    this.isSyncing = true;
+    console.log('🔄 Début de la synchronisation...');
+
+    try {
+      const userId = await Storage.getSession();
+      if (!userId) {
+        console.log('⚠️ Utilisateur non connecté, synchronisation ignorée');
+        return;
+      }
+
+      // Récupérer le deviceId
+      const deviceId = await Storage.getCurrentDeviceId() || 'unknown-device';
+
+      // Synchroniser chaque entité
+      await this.syncEntity('users', userId, deviceId);
+      await this.syncEntity('accounts', userId, deviceId);
+      await this.syncEntity('categories', userId, deviceId);
+      await this.syncEntity('transactions', userId, deviceId);
+      await this.syncEntity('budgets', userId, deviceId);
+      await this.syncEntity('savingGoals', userId, deviceId);
+      await this.syncEntity('settings', userId, deviceId);
+
+      // Mettre à jour le timestamp de dernière synchronisation
+      await Storage.setItem('last_sync_at', new Date().toISOString());
+
+      console.log('✅ Synchronisation terminée avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors de la synchronisation:', error);
+      throw error;
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  /**
+   * Synchroniser une entité spécifique
+   */
+  private async syncEntity(
+    entityName: SyncEntity,
+    userId: string,
+    deviceId: string
+  ): Promise<void> {
+    console.log(`🔄 Synchronisation de ${entityName}...`);
+
+    try {
+      // 1. Envoyer les données locales vers Firestore
+      await this.pushLocalToFirestore(entityName, userId, deviceId);
+
+      // 2. Récupérer les données Firestore vers SQLite
+      await this.pullFirestoreToLocal(entityName, userId);
+
+      console.log(`✅ ${entityName} synchronisé avec succès`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la synchronisation de ${entityName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Pousser les données locales vers Firestore
+   */
+  private async pushLocalToFirestore(
+    entityName: SyncEntity,
+    userId: string,
+    deviceId: string
+  ): Promise<void> {
+    // Récupérer les entités en attente de synchronisation
+    const table = this.getTable(entityName);
+    
+    // Vérifier que la table existe
+    if (!table) {
+      console.warn(`⚠️ Table ${entityName} non trouvée`);
+      return;
+    }
+
+    try {
+      // @ts-ignore - Requête dynamique
+      const pendingEntities = await db
+        .select()
+        .from(table)
+        .where(eq(table.syncStatus, 'pending'));
+
+      if (!pendingEntities || pendingEntities.length === 0) {
+        return;
+      }
+
+      console.log(`📤 ${pendingEntities.length} ${entityName} à synchroniser vers Firestore`);
+
+      const batch = writeBatch(firestore);
+      const collectionName = this.getCollectionName(entityName);
+
+      for (const entity of pendingEntities) {
+        try {
+          const docRef = doc(firestore, collectionName, entity.id);
+          
+          // Préparer les données pour Firestore
+          const firestoreData = this.prepareForFirestore(entity);
+          firestoreData.syncedAt = Timestamp.now();
+          firestoreData.deviceId = deviceId;
+          firestoreData.userId = userId;
+
+          // Pour les catégories, vérifier les doublons par nom avant d'insérer
+          if (entityName === 'categories' && entity.name) {
+            const dupQ = query(
+              collection(firestore, collectionName),
+              where('userId', '==', userId),
+              where('name', '==', entity.name)
+            );
+            const dupSnap = await getDocs(dupQ);
+            const existingDocs = dupSnap.docs.filter(d => d.id !== entity.id);
+            if (existingDocs.length > 0) {
+              // Doublon trouvé -> marquer comme synced sans pousser un nouveau doc
+              console.log(`⚠️ Catégorie dupliquée ignorée: "${entity.name}"`);
+              // @ts-ignore
+              await db.update(table)
+                .set({ syncStatus: 'synced', lastSyncedAt: new Date() })
+                .where(eq(table.id, entity.id));
+              continue;
+            }
+          }
+
+          batch.set(docRef, firestoreData, { merge: true });
+
+          // Marquer comme synchronisé en local
+          // @ts-ignore
+          await db.update(table)
+            .set({ 
+              syncStatus: 'synced', 
+              lastSyncedAt: new Date() 
+            })
+            .where(eq(table.id, entity.id));
+
+        } catch (error) {
+          console.error(`❌ Erreur lors de la synchronisation de ${entityName} ${entity.id}:`, error);
+          // Marquer comme échec
+          // @ts-ignore
+          await db.update(table)
+            .set({ syncStatus: 'failed' })
+            .where(eq(table.id, entity.id));
+        }
+      }
+
+      await batch.commit();
+      console.log(`✅ ${pendingEntities.length} ${entityName} synchronisés vers Firestore`);
+    } catch (error) {
+      console.error(`❌ Erreur lors du push de ${entityName}:`, error);
+    }
+  }
+
+  /**
+   * Récupérer les données Firestore vers SQLite
+   */
+  private async pullFirestoreToLocal(
+    entityName: SyncEntity,
+    userId: string
+  ): Promise<void> {
+    const collectionName = this.getCollectionName(entityName);
+    const table = this.getTable(entityName);
+
+    if (!table) {
+      console.warn(`⚠️ Table ${entityName} non trouvée`);
+      return;
+    }
+
+    try {
+      // Récupérer les entités Firestore
+      const q = query(
+        collection(firestore, collectionName),
+        where('userId', '==', userId)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        return;
+      }
+
+      console.log(`📥 ${querySnapshot.size} ${entityName} récupérés de Firestore`);
+
+      for (const docSnapshot of querySnapshot.docs) {
+        const data = docSnapshot.data();
+        const localId = docSnapshot.id;
+
+        try {
+          // Vérifier si l'entité existe déjà localement
+          // @ts-ignore
+          const existing = await db
+            .select()
+            .from(table)
+            .where(eq(table.id, localId))
+            .limit(1);
+
+          if (existing.length === 0) {
+            // Nouvelle entité - l'insérer en local
+            const localData = this.prepareForSQLite(data);
+            // @ts-ignore
+            await db.insert(table).values(localData);
+            console.log(`✅ Nouveau ${entityName} inséré: ${localId}`);
+          } else {
+            // Entité existante - vérifier la version
+            const localVersion = existing[0].version || 0;
+            const remoteVersion = data.version || 0;
+
+            if (remoteVersion > localVersion) {
+              // Mise à jour
+              const localData = this.prepareForSQLite(data);
+              // @ts-ignore
+              await db.update(table)
+                .set(localData)
+                .where(eq(table.id, localId));
+              console.log(`✅ ${entityName} mis à jour: ${localId}`);
+            } else if (data.deletedAt) {
+              // Suppression
+              // @ts-ignore
+              await db.delete(table).where(eq(table.id, localId));
+              console.log(`🗑️ ${entityName} supprimé: ${localId}`);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Erreur lors du traitement de ${entityName} ${localId}:`, error);
+        }
+      }
+
+      console.log(`✅ ${entityName} récupérés de Firestore avec succès`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la récupération de ${entityName}:`, error);
+    }
+  }
+
+  /**
+   * Préparer les données pour Firestore
+   */
+  private prepareForFirestore(entity: any): Record<string, any> {
+    const data: Record<string, any> = { ...entity };
+
+    // Convertir les dates en Timestamp Firestore
+    const dateFields = ['createdAt', 'updatedAt', 'deletedAt', 'lastSyncedAt', 'date', 'startDate', 'endDate', 'deadline', 'lastActiveAt'];
+    for (const field of dateFields) {
+      if (data[field] instanceof Date) {
+        data[field] = Timestamp.fromDate(data[field]);
+      }
+    }
+
+    // Supprimer les champs qui ne doivent pas être synchronisés
+    delete data.syncStatus;
+    delete data.isSynced;
+
+    return data;
+  }
+
+  /**
+   * Préparer les données pour SQLite
+   */
+  private prepareForSQLite(data: Record<string, any>): Record<string, any> {
+    const result: Record<string, any> = { ...data };
+
+    // Convertir les Timestamp Firestore en Date
+    const dateFields = ['createdAt', 'updatedAt', 'deletedAt', 'lastSyncedAt', 'date', 'startDate', 'endDate', 'deadline', 'lastActiveAt'];
+    for (const field of dateFields) {
+      if (data[field] && data[field].toDate) {
+        result[field] = data[field].toDate();
+      }
+    }
+
+    // Supprimer les champs Firestore
+    delete result.syncedAt;
+
+    return result;
+  }
+
+  /**
+   * Obtenir la table Drizzle correspondante
+   */
+  private getTable(entityName: SyncEntity): any {
+    const tables: Record<SyncEntity, any> = {
+      users: schema.users,
+      accounts: schema.accounts,
+      transactions: schema.transactions,
+      categories: schema.categories,
+      budgets: schema.budgets,
+      savingGoals: schema.savingGoals,
+      attachments: schema.attachments,
+      settings: schema.settings,
+    };
+    return tables[entityName];
+  }
+
+  /**
+   * Obtenir le nom de la collection Firestore
+   */
+  private getCollectionName(entityName: SyncEntity): string {
+    const collections: Record<SyncEntity, string> = {
+      users: 'users',
+      accounts: 'accounts',
+      transactions: 'transactions',
+      categories: 'categories',
+      budgets: 'budgets',
+      savingGoals: 'saving_goals',
+      attachments: 'attachments',
+      settings: 'settings',
+    };
+    return collections[entityName];
+  }
+
+  /**
+   * Synchroniser manuellement une entité spécifique
+   */
+  async syncEntityManually(entityName: SyncEntity): Promise<void> {
+    const userId = await Storage.getSession();
+    const deviceId = await Storage.getCurrentDeviceId() || 'unknown-device';
+    
+    if (!userId) {
+      throw new Error('Utilisateur non connecté');
+    }
+
+    await this.syncEntity(entityName, userId, deviceId);
+  }
+
+  /**
+   * Vérifier l'état de la synchronisation
+   */
+  async getSyncStatus(): Promise<{
+    pending: number;
+    total: number;
+    lastSyncAt: string | null;
+  }> {
+    const entities: SyncEntity[] = [
+      'users', 'accounts', 'transactions', 
+      'categories', 'budgets', 'savingGoals'
+    ];
+
+    let pending = 0;
+    let total = 0;
+
+    for (const entityName of entities) {
+      const table = this.getTable(entityName);
+      if (!table) continue;
+
+      try {
+        // @ts-ignore
+        const results = await db.select().from(table);
+        total += results.length;
+        
+        // @ts-ignore
+        const pendingResults = await db
+          .select()
+          .from(table)
+          .where(eq(table.syncStatus, 'pending'));
+        
+        pending += pendingResults.length;
+      } catch (error) {
+        console.error(`Erreur pour ${entityName}:`, error);
+      }
+    }
+
+    const lastSyncAt = await Storage.getItem<string>('last_sync_at');
+
+    return {
+      pending,
+      total,
+      lastSyncAt: lastSyncAt || null,
+    };
+  }
+
+  /**
+   * Nettoyer les entités supprimées
+   */
+  async cleanupDeletedEntities(): Promise<void> {
+    const entities: SyncEntity[] = [
+      'users', 'accounts', 'transactions', 
+      'categories', 'budgets', 'savingGoals'
+    ];
+
+    for (const entityName of entities) {
+      const table = this.getTable(entityName);
+      if (!table) continue;
+
+      try {
+        // @ts-ignore
+        await db.delete(table).where(isNotNull(table.deletedAt));
+      } catch (error) {
+        console.error(`Erreur lors du nettoyage de ${entityName}:`, error);
+      }
+    }
+  }
+}
