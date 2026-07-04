@@ -21,6 +21,7 @@ import {
   View,
 } from "react-native";
 import { z } from "zod";
+import { ActivityIndicator } from "@/components/ui";
 
 const loginSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -32,21 +33,20 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  const { login, loginWithGoogle, isLoading } = useAuth();
+  const { login, loginWithGoogle, loginWithBiometric, isLoading } = useAuth();
   const { setCurrentUser } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
-  const {
-    isBiometricAvailable,
+  const { 
+    isBiometricAvailable, 
     isBiometricEnabled,
     authenticate,
-    getCredentials,
-    saveCredentials,
+    toggleBiometric,
   } = useBiometricAuth();
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -56,32 +56,35 @@ export default function LoginScreen() {
     },
   });
 
-  useEffect(() => {
-    const loadSavedCredentials = async () => {
-      if (isBiometricEnabled) {
-        const { email, password } = await getCredentials();
-        if (email && password) {
-          setValue("email", email);
-          setValue("password", password);
-        }
-      }
-    };
-    loadSavedCredentials();
-  }, [isBiometricEnabled, getCredentials, setValue]);
-
   const onSubmit = async (data: LoginFormData) => {
     const response = await login(data);
     if (response.success) {
-      // Sauvegarder les infos biométriques si activées
-      if (isBiometricEnabled) {
-        await saveCredentials(data.email, data.password);
-      }
-      // S'assurer que l'onboarding est marqué comme terminé
       await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
-      // Sauvegarder user dans app-store si dispo
+      
       if (response.data) {
         setCurrentUser(response.data as any);
       }
+      
+      // Proposer d'activer la biométrie si disponible et non activée
+      if (isBiometricAvailable && !isBiometricEnabled) {
+        Alert.alert(
+          '🔐 Sécurisez votre compte',
+          'Souhaitez-vous activer l\'authentification biométrique pour un accès plus rapide ?',
+          [
+            { text: 'Plus tard', style: 'cancel' },
+            { 
+              text: 'Activer', 
+              onPress: async () => {
+                const success = await toggleBiometric(true);
+                if (!success) {
+                  Alert.alert('Erreur', 'Impossible d\'activer la biométrie.');
+                }
+              }
+            },
+          ]
+        );
+      }
+      
       router.replace("/(tabs)/dashboard");
     } else {
       Alert.alert("Erreur", response.error || "Échec de la connexion");
@@ -98,19 +101,51 @@ export default function LoginScreen() {
   };
 
   const handleBiometricLogin = async () => {
-    const success = await authenticate();
-    if (success) {
-      const { email, password } = await getCredentials();
-      if (email && password) {
-        const response = await login({ email, password });
+    if (isBiometricLoading) return;
+    
+    setIsBiometricLoading(true);
+    try {
+      // Vérifier si la biométrie est disponible et activée
+      if (!isBiometricAvailable) {
+        Alert.alert('Non disponible', 'La biométrie n\'est pas disponible sur cet appareil.');
+        return;
+      }
+      
+      if (!isBiometricEnabled) {
+        Alert.alert(
+          'Biométrie désactivée',
+          'Activez la biométrie dans les paramètres pour utiliser cette fonction.',
+          [
+            { text: 'OK', style: 'cancel' },
+            { 
+              text: 'Paramètres', 
+              onPress: () => router.push('/(tabs)/settings') 
+            },
+          ]
+        );
+        return;
+      }
+
+      // Tenter l'authentification biométrique
+      const success = await authenticate('Déverrouillez Ajiya Ta avec votre empreinte');
+      
+      if (success) {
+        // Récupérer la session existante ou utiliser loginWithBiometric
+        const response = await loginWithBiometric();
         if (response.success) {
           router.replace("/(tabs)/dashboard");
         } else {
-          Alert.alert("Erreur", response.error || "Échec de la connexion");
+          Alert.alert("Erreur", response.error || "Échec de la connexion biométrique");
         }
       } else {
-        Alert.alert("Erreur", "Aucune information de connexion sauvegardée");
+        // L'utilisateur a annulé ou a échoué
+        Alert.alert('Annulé', 'Authentification biométrique annulée.');
       }
+    } catch (error) {
+      console.error('Erreur biométrique:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'authentification biométrique.');
+    } finally {
+      setIsBiometricLoading(false);
     }
   };
 
@@ -146,7 +181,6 @@ export default function LoginScreen() {
           </View>
 
           <View style={{ paddingHorizontal: theme.spacing.sm }}>
-
             <Controller
               control={control}
               name="email"
@@ -248,33 +282,58 @@ export default function LoginScreen() {
               {isLoading ? "Connexion..." : "Se connecter"}
             </Button>
 
+            {/* Bouton Biométrie - Toujours visible si disponible */}
             {isBiometricAvailable && (
               <TouchableOpacity
                 onPress={handleBiometricLogin}
-                disabled={isLoading || !isBiometricEnabled}
+                disabled={isBiometricLoading || isLoading}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
                   paddingVertical: theme.spacing.md,
+                  paddingHorizontal: theme.spacing.lg,
                   borderRadius: theme.borderRadius.md,
-                  backgroundColor: theme.colors.secondary,
-                  opacity: isLoading || !isBiometricEnabled ? 0.5 : 1,
+                  backgroundColor: isBiometricEnabled 
+                    ? theme.colors.primary + '20' 
+                    : theme.colors.muted,
+                  borderWidth: 1,
+                  borderColor: isBiometricEnabled 
+                    ? theme.colors.primary 
+                    : theme.colors.border,
                   marginBottom: theme.spacing.lg,
+                  opacity: isBiometricLoading || isLoading ? 0.5 : 1,
                 }}
               >
-                <Ionicons
-                  name="finger-print-outline"
-                  size={24}
-                  color={theme.colors.primary}
-                />
-                <ThemedText
-                  style={{ marginLeft: 8 }}
-                  color="primary"
-                  weight="semibold"
-                >
-                  Empreinte digitale
-                </ThemedText>
+                {isBiometricLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="finger-print-outline"
+                      size={24}
+                      color={isBiometricEnabled ? theme.colors.primary : theme.colors.mutedForeground}
+                    />
+                    <ThemedText
+                      style={{ marginLeft: 8 }}
+                      color={isBiometricEnabled ? "primary" : "mutedForeground"}
+                      weight={isBiometricEnabled ? "semibold" : "normal"}
+                    >
+                      {isBiometricEnabled 
+                        ? "Connexion avec empreinte" 
+                        : "Biométrie désactivée"}
+                    </ThemedText>
+                    {!isBiometricEnabled && (
+                      <ThemedText 
+                        variant="xs" 
+                        color="mutedForeground" 
+                        style={{ marginLeft: 4 }}
+                      >
+                        (Activer dans paramètres)
+                      </ThemedText>
+                    )}
+                  </>
+                )}
               </TouchableOpacity>
             )}
 

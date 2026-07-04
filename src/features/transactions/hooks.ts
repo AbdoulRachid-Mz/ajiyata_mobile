@@ -1,13 +1,20 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { transactionRepository } from './repositories';
 import type { NewTransaction, Transaction } from '@/types';
 
 export const useTransactions = (accountId: string) => {
   return useQuery({
-    queryKey: ['transactions', accountId],
+    queryKey: ["transactions", accountId],
     queryFn: () => transactionRepository.getAllForAccount(accountId),
+
     enabled: !!accountId,
+
+    placeholderData: keepPreviousData,
+
+    staleTime: 60 * 1000,
+
+    gcTime: 10 * 60 * 1000,
   });
 };
 

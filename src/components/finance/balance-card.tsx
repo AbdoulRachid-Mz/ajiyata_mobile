@@ -23,8 +23,8 @@ export const BalanceCard = ({
   transactionsCount = 0,
 }: BalanceCardProps) => {
   const { theme } = useTheme();
-  const netFlow = (expense || 0) - (income || 0);
-  const finalBalance = (balance || 0) - netFlow;
+  // `balance` is already the final calculated balance from calculateFinancialSummary
+  const finalBalance = balance || 0;
   const isExceeded = finalBalance < 0;
   const balanceLength = formatCurrency(finalBalance, currency).length;
   let balanceStyleSize: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';

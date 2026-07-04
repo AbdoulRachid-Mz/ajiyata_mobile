@@ -23,7 +23,7 @@ export const userRepository = {
   async update(userId: string, updates: Partial<User>): Promise<User | null> {
     const [updated] = await db
       .update(users)
-      .set({ ...updates, updatedAt: new Date() } as any)
+      .set({ ...updates, updatedAt: new Date(), syncStatus: "pending" } as any)
       .where(eq(users.id, userId))
       .returning();
     return updated as User | null;

@@ -7,6 +7,7 @@ export const useCategories = (accountId: string) => {
   return useQuery({
     queryKey: ['categories', accountId],
     queryFn: () => categoryRepository.getAllForAccount(accountId),
+    enabled: !!accountId,
   });
 };
 

@@ -26,34 +26,23 @@ export const IncomeExpenseChart = ({ transactions, currency, period }: IncomeExp
   const getChartData = (): ChartData[] => {
     const dataMap: { [key: string]: ChartData } = {};
     const now = new Date();
-    let periods = 6;
 
     if (period === 'weekly') {
       // Dernières 6 semaines
       for (let i = 5; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i * 7);
-        const key = date.toISOString().split('T')[0];
+        // Utiliser la chaîne de semaine + année pour la clé
+        const weekNumber = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+        const key = `${date.getFullYear()}-W${weekNumber}`;
         dataMap[key] = { 
-          month: `S${i + 1}`, 
-          income: 0, 
-          expense: 0 
-        };
-      }
-    } else if (period === 'yearly') {
-      // Derniers 6 mois
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(now);
-        date.setMonth(date.getMonth() - i);
-        const key = `${date.getFullYear()}-${date.getMonth()}`;
-        dataMap[key] = { 
-          month: date.toLocaleString('fr-FR', { month: 'short' }), 
+          month: `S${i + 1}`, // ou juste le numéro de semaine local, ex: 'S' + semaine locale
           income: 0, 
           expense: 0 
         };
       }
     } else {
-      // Derniers 6 mois
+      // Derniers 6 mois pour "monthly" et "yearly" (on simplifie à mensuel pour le moment)
       for (let i = 5; i >= 0; i--) {
         const date = new Date(now);
         date.setMonth(date.getMonth() - i);
@@ -71,10 +60,8 @@ export const IncomeExpenseChart = ({ transactions, currency, period }: IncomeExp
       let key: string;
       
       if (period === 'weekly') {
-        const weekNumber = Math.floor((date.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
-        key = `S${weekNumber}`;
-      } else if (period === 'yearly') {
-        key = `${date.getFullYear()}`;
+        const weekNumber = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+        key = `${date.getFullYear()}-W${weekNumber}`;
       } else {
         key = `${date.getFullYear()}-${date.getMonth()}`;
       }
@@ -91,11 +78,15 @@ export const IncomeExpenseChart = ({ transactions, currency, period }: IncomeExp
     return Object.values(dataMap);
   };
 
-  const data = getChartData();
+  const data = useMemo(() => {
+    return getChartData();
+  }, [transactions, period]);
 
   // Préparer les données pour le BarChart
   const barData = useMemo(() => {
-    const incomeBars = data.map((item, index) => ({
+    if (!data || data.length === 0) return { incomeBars: [], expenseBars: [] };
+
+    const incomeBars = data.map((item) => ({
       value: item.income,
       label: item.month,
       frontColor: theme.financialColors.income,

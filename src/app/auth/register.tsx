@@ -1,5 +1,4 @@
 import Button from "@/components/ui/button";
-import Card from "@/components/ui/card";
 import SafeAreaView from "@/components/ui/safe-area-view";
 import ThemedText from "@/components/ui/text";
 import TextInput from "@/components/ui/text-input";
@@ -7,7 +6,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -64,11 +62,7 @@ export default function RegisterScreen() {
     });
 
     if (response.success) {
-      Alert.alert(
-        "Inscription réussie !",
-        "Un email de vérification a été envoyé à votre adresse. Veuillez vérifier votre email avant de vous connecter.",
-      );
-      router.push("/auth/login");
+      router.replace("/(tabs)/dashboard");
     } else {
       Alert.alert("Erreur", response.error || "Échec de l'inscription");
     }
@@ -96,9 +90,20 @@ export default function RegisterScreen() {
             />
           </TouchableOpacity>
 
-          <View style={{ marginBottom: theme.spacing.xl, marginTop: theme.spacing.md }}>
-            <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg }}>
-              <Ionicons name="person-add-outline" size={80} color={theme.colors.primary} />
+          <View
+            style={{
+              marginBottom: theme.spacing.xl,
+              marginTop: theme.spacing.md,
+            }}
+          >
+            <View
+              style={{ alignItems: "center", marginBottom: theme.spacing.lg }}
+            >
+              <Ionicons
+                name="person-add-outline"
+                size={80}
+                color={theme.colors.primary}
+              />
             </View>
             <ThemedText
               variant="3xl"
@@ -285,7 +290,10 @@ export default function RegisterScreen() {
               size="lg"
               onPress={handleSubmit(onSubmit)}
               disabled={isLoading}
-              style={{ borderRadius: theme.borderRadius.xl, marginTop: theme.spacing.lg }}
+              style={{
+                borderRadius: theme.borderRadius.xl,
+                marginTop: theme.spacing.lg,
+              }}
             >
               {isLoading ? "Inscription..." : "S'inscrire"}
             </Button>

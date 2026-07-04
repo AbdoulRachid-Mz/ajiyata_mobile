@@ -1,3 +1,10 @@
+import { useEffect, useState } from "react";
+import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Ionicons } from "@expo/vector-icons";
+
 import Button from "@/components/ui/button";
 import KeyboardAvoidingView from "@/components/ui/keyboard-avoiding-view";
 import SafeAreaView from "@/components/ui/safe-area-view";
@@ -6,29 +13,25 @@ import ThemedText from "@/components/ui/text";
 import TextInput from "@/components/ui/text-input";
 import ThemedView from "@/components/ui/view";
 import { useTheme } from "@/contexts/theme-context";
-import { useCreateSavingGoal } from "@/features/saving-goals/hooks";
+import { useUpdateSavingGoal } from "@/features/saving-goals/hooks";
+import { savingGoalRepository } from "@/features/saving-goals/repositories";
 import {
   SavingGoalFormData,
   SavingGoalFormInput,
   savingGoalFormSchema,
 } from "@/lib/validation";
-import { useAppStore } from "@/stores/app-store";
-import { generateUUID, getCurrentTimestamp } from "@/utils/uuid";
-import { Ionicons } from "@expo/vector-icons";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "expo-router";
-import { Controller, useForm } from "react-hook-form";
-import { ScrollView, TouchableOpacity, View } from "react-native";
 
-export default function SavingGoalCreate() {
+export default function SavingGoalEdit() {
   const { theme } = useTheme();
   const router = useRouter();
-  const { currentAccount } = useAppStore();
-  const createGoal = useCreateSavingGoal();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const updateGoal = useUpdateSavingGoal();
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<
     SavingGoalFormInput,
@@ -42,29 +45,53 @@ export default function SavingGoalCreate() {
     },
   });
 
+  useEffect(() => {
+    const loadGoal = async () => {
+      if (!id) {
+        Alert.alert("Erreur", "Objectif non trouvé.");
+        router.back();
+        return;
+      }
+      const goal = await savingGoalRepository.getById(id);
+      if (goal) {
+        reset({
+          title: goal.title,
+          targetAmount: goal.targetAmount.toString(),
+        });
+      } else {
+        Alert.alert("Erreur", "Objectif non trouvé.");
+        router.back();
+      }
+      setIsLoading(false);
+    };
+    loadGoal();
+  }, [id, reset, router]);
+
   const onSubmit = async (data: SavingGoalFormData) => {
-    if (!currentAccount) return;
+    if (!id) return;
 
     try {
-      await createGoal.mutateAsync({
-        id: generateUUID(),
-        accountId: currentAccount.id,
-        title: data.title,
-        targetAmount: data.targetAmount,
-        currentAmount: 0,
-        status: "active",
-        createdAt: getCurrentTimestamp(),
-        updatedAt: getCurrentTimestamp(),
-        deviceId: "temp-device-id",
-        version: 1,
-        syncStatus: "pending",
-        metadata: {},
+      await updateGoal.mutateAsync({
+        goalId: id,
+        data: {
+          title: data.title,
+          targetAmount: data.targetAmount,
+        },
       });
       router.back();
     } catch (error) {
-      console.error("Failed to create saving goal:", error);
+      console.error("Failed to update saving goal:", error);
+      Alert.alert("Erreur", "Impossible de mettre à jour l'objectif.");
     }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ThemedText>Chargement...</ThemedText>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -99,7 +126,7 @@ export default function SavingGoalCreate() {
               />
             </TouchableOpacity>
             <ThemedText variant="base" weight="bold">
-              Nouveau budget
+              Modifier l'objectif
             </ThemedText>
             <View style={{ width: 44 }} />
           </ThemedView>
@@ -164,7 +191,7 @@ export default function SavingGoalCreate() {
             disabled={isSubmitting}
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? "Création..." : "Créer l'objectif"}
+            {isSubmitting ? "Mise à jour..." : "Enregistrer les modifications"}
           </Button>
         </ThemedView>
       </KeyboardAvoidingView>

@@ -1,26 +1,48 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { authService } from '@/services/firebase/auth.service';
-import { AuthUser, AuthCredentials, AuthRegisterData, AuthResponse } from '@/features/auth/types';
-import { Storage } from '@/lib/storage';
+import {
+  AuthCredentials,
+  AuthRegisterData,
+  AuthResponse,
+  AuthUser,
+} from "@/features/auth/types";
+import { authService } from "@/services/auth/AuthService";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isInitialized: boolean;
+  isLocal: boolean;
   login: (credentials: AuthCredentials) => Promise<AuthResponse>;
   register: (data: AuthRegisterData) => Promise<AuthResponse>;
   logout: () => Promise<AuthResponse>;
   resetPassword: (email: string) => Promise<AuthResponse>;
   loginWithGoogle: () => Promise<AuthResponse>;
   loginWithBiometric: () => Promise<AuthResponse>;
-  enableBiometric: () => Promise<AuthResponse>;
-  isBiometricEnabled: () => Promise<boolean>;
-  isBiometricAvailable: () => Promise<{ available: boolean; types: string[]; enrolled: boolean }>;
-  updateProfile: (data: { displayName?: string; photoURL?: string; phoneNumber?: string }) => Promise<AuthResponse>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<AuthResponse>;
+  enableBiometric: () => Promise<boolean>;
+  disableBiometric: () => Promise<void>;
+  isBiometricEnabled: boolean;
+  isBiometricAvailable: () => Promise<{
+    available: boolean;
+    types: string[];
+    enrolled: boolean;
+  }>;
+  updateProfile: (data: {
+    displayName?: string;
+    photoURL?: string;
+    phoneNumber?: string;
+  }) => Promise<AuthResponse>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<AuthResponse>;
   deleteAccount: () => Promise<AuthResponse>;
-  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,7 +50,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -37,30 +59,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       try {
-        // Initialiser le service d'authentification
-        authService.initialize();
+        const { hasSession } = await authService.initialize();
 
-        // Vérifier si un utilisateur est déjà connecté
-        const currentUser = authService.getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-        } else {
-          // Vérifier si une session existe
-          const userId = await Storage.getSession();
-          if (userId) {
-            // Essayer de récupérer l'utilisateur
-            const firebaseUser = authService.getCurrentUser();
-            if (firebaseUser) {
-              setUser(firebaseUser);
-            }
+        if (hasSession) {
+          const currentUser = authService.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            setUser({
+              uid: "local",
+              email: "Utilisateur Local",
+              displayName: "Mode Hors-Ligne",
+              photoURL: null,
+              phoneNumber: null,
+              emailVerified: false,
+              isAnonymous: true,
+            });
           }
+
+          const bioEnabled = await authService.isBiometricEnabled();
+          setIsBiometricEnabled(bioEnabled);
         }
       } catch (error) {
-        console.error('Erreur d\'initialisation de l\'authentification:', error);
+        console.error("Error initializing auth:", error);
       } finally {
         setIsLoading(false);
         setIsInitialized(true);
@@ -74,17 +100,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const refreshUser = async (): Promise<void> => {
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-  };
-
   const login = async (credentials: AuthCredentials): Promise<AuthResponse> => {
     setIsLoading(true);
     try {
       const response = await authService.login(credentials);
       if (response.success && response.data) {
         setUser(response.data as AuthUser);
+        const bioEnabled = await authService.isBiometricEnabled();
+        setIsBiometricEnabled(bioEnabled);
       }
       return response;
     } finally {
@@ -98,6 +121,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await authService.register(data);
       if (response.success && response.data) {
         setUser(response.data as AuthUser);
+        const bioEnabled = await authService.isBiometricEnabled();
+        setIsBiometricEnabled(bioEnabled);
       }
       return response;
     } finally {
@@ -110,7 +135,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await authService.logout();
       if (response.success) {
-        setUser(null);
+        setUser({
+          uid: "local",
+          email: "Utilisateur Local",
+          displayName: "Mode Hors-Ligne",
+          photoURL: null,
+          phoneNumber: null,
+          emailVerified: false,
+          isAnonymous: true,
+        });
+        setIsBiometricEnabled(false);
       }
       return response;
     } finally {
@@ -123,44 +157,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loginWithGoogle = async (): Promise<AuthResponse> => {
-    setIsLoading(true);
-    try {
-      const response = await authService.loginWithGoogle();
-      if (response.success && response.data) {
-        setUser(response.data as AuthUser);
-      }
-      return response;
-    } finally {
-      setIsLoading(false);
-    }
+    return { success: false, error: "Google login not implemented yet" };
   };
 
   const loginWithBiometric = async (): Promise<AuthResponse> => {
-    setIsLoading(true);
-    try {
-      const response = await authService.loginWithBiometric();
-      if (response.success && response.data) {
-        setUser(response.data as AuthUser);
+    const success = await authService.authenticateBiometric();
+    if (success) {
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        setUser({
+          uid: "local",
+          email: "Utilisateur Local",
+          displayName: "Mode Hors-Ligne",
+          photoURL: null,
+          phoneNumber: null,
+          emailVerified: false,
+          isAnonymous: true,
+        });
       }
-      return response;
-    } finally {
-      setIsLoading(false);
+      return { success: true };
     }
+    return { success: false, error: "Biometric authentication failed" };
   };
 
-  const enableBiometric = async (): Promise<AuthResponse> => {
-    return await authService.enableBiometric();
+  const enableBiometric = async (): Promise<boolean> => {
+    const success = await authService.enableBiometric();
+    if (success) {
+      setIsBiometricEnabled(true);
+    }
+    return success;
   };
 
-  const isBiometricEnabled = async (): Promise<boolean> => {
-    return await authService.isBiometricEnabled();
+  const disableBiometric = async (): Promise<void> => {
+    await authService.disableBiometric();
+    setIsBiometricEnabled(false);
   };
 
   const isBiometricAvailable = async () => {
     return await authService.isBiometricAvailable();
   };
 
-  const updateProfile = async (data: { displayName?: string; photoURL?: string; phoneNumber?: string }) => {
+  const updateProfile = async (data: {
+    displayName?: string;
+    photoURL?: string;
+    phoneNumber?: string;
+  }) => {
     const response = await authService.updateUserProfile(data);
     if (response.success && response.data) {
       setUser(response.data as AuthUser);
@@ -168,14 +211,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return response;
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string) => {
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ) => {
     return await authService.changePassword(currentPassword, newPassword);
   };
 
   const deleteAccount = async () => {
     const response = await authService.deleteAccount();
     if (response.success) {
-      setUser(null);
+      setUser({
+        uid: "local",
+        email: "Utilisateur Local",
+        displayName: "Mode Hors-Ligne",
+        photoURL: null,
+        phoneNumber: null,
+        emailVerified: false,
+        isAnonymous: true,
+      });
+      setIsBiometricEnabled(false);
     }
     return response;
   };
@@ -183,8 +238,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && user.uid !== "local",
     isInitialized,
+    isLocal: !user || user.uid === "local",
     login,
     register,
     logout,
@@ -192,17 +248,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loginWithGoogle,
     loginWithBiometric,
     enableBiometric,
+    disableBiometric,
     isBiometricEnabled,
     isBiometricAvailable,
     updateProfile,
     changePassword,
     deleteAccount,
-    refreshUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
 import { Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import ThemedText from '@/components/ui/text';
 
 import { Animated as RNAnimated } from 'react-native';
@@ -66,6 +65,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         if (route.name === 'dashboard') iconName = isFocused ? 'home' : 'home-outline';
         if (route.name === 'transactions') iconName = isFocused ? 'list' : 'list-outline';
         if (route.name === 'budgets') iconName = isFocused ? 'pie-chart' : 'pie-chart-outline';
+        if (route.name === 'goals') iconName = isFocused ? 'trophy' : 'trophy-outline';
         if (route.name === 'settings') iconName = isFocused ? 'settings' : 'settings-outline';
         if (route.name === 'about') iconName = isFocused ? 'information-circle' : 'information-circle-outline';
 
@@ -114,13 +114,19 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="transactions"
         options={{
-          title: 'Transactions',
+          title: 'opérations',
         }}
       />
       <Tabs.Screen
         name="budgets"
         options={{
           title: 'Budgets',
+        }}
+      />
+      <Tabs.Screen
+        name="goals"
+        options={{
+          title: 'Objectifs',
         }}
       />
       <Tabs.Screen

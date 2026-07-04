@@ -36,6 +36,22 @@ export const users = sqliteTable("users", {
   isSynced: int("is_synced", { mode: "boolean" }).notNull().default(false),
 });
 
+// Auth Sessions table - local tracking of active sessions
+export const authSessions = sqliteTable("auth_sessions", {
+  id: text("id").primaryKey(), // UUID
+  firebaseUid: text("firebase_uid"), // Optionnel si session locale pure
+  provider: text("provider", { enum: ["email", "google", "apple", "anonymous", "local"] }).notNull(),
+  deviceId: text("device_id").notNull(),
+  isLocal: int("is_local", { mode: "boolean" }).notNull().default(true),
+  isSynced: int("is_synced", { mode: "boolean" }).notNull().default(false),
+  biometricEnabled: int("biometric_enabled", { mode: "boolean" }).notNull().default(false),
+  createdAt: int("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: int("updated_at", { mode: "timestamp" }).notNull(),
+  lastLogin: int("last_login", { mode: "timestamp" }).notNull(),
+  lastSync: int("last_sync", { mode: "timestamp" }),
+  metadata: text("metadata", { mode: "json" }).notNull().default("{}"),
+});
+
 // Accounts table - multi-account core (personal/business separation)
 export const accounts = sqliteTable("accounts", {
   ...baseSyncColumns,
@@ -280,4 +296,8 @@ export const settingsRelations = relations(settings, ({ one }) => ({
     fields: [settings.userId],
     references: [users.id],
   }),
+}));
+
+export const authSessionsRelations = relations(authSessions, ({ one }) => ({
+  // Optionnel: on pourrait lier à users si firebaseUid == users.id, mais c'est découplé pour le moment.
 }));

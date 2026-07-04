@@ -46,7 +46,8 @@
         {
           "faceIDPermission": "Autorisez Ajiya Ta à utiliser Face ID pour vous connecter."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,

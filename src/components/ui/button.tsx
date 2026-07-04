@@ -158,7 +158,30 @@ const Button = forwardRef(
           style={{ width: isFullWidth ? '100%' : 'auto', height: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm }}
           {...props}
         >
-          {typeof children === "string" ? (
+          {Array.isArray(children) ? (
+            children.map((child, index) => {
+              if (typeof child === "string") {
+                return (
+                  <ThemedText
+                    key={index}
+                    style={{
+                      color: colors.textColor,
+                      fontWeight: "600",
+                      fontSize:
+                        size === "sm"
+                          ? theme.typography.sm
+                          : size === "lg"
+                            ? theme.typography.lg
+                            : theme.typography.base,
+                    }}
+                  >
+                    {child}
+                  </ThemedText>
+                );
+              }
+              return child;
+            })
+          ) : typeof children === "string" ? (
             <ThemedText
               style={{
                 color: colors.textColor,

@@ -8,7 +8,15 @@ import { useTheme } from "@/contexts/theme-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, View, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  View,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  RefreshControl,
+} from "react-native";
 import { useRef } from "react";
 
 // Hooks
@@ -25,7 +33,6 @@ import { useUIStore } from "@/stores/ui-store";
 import { CategoryBreakdownChart } from "@/components/charts/CategoryBreakdownChart";
 import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { BalanceCard } from "@/components/finance/balance-card";
-import { QuickStats } from "@/components/finance/QuickStats";
 import { TransactionItem } from "@/components/finance/transaction-item";
 
 // Utilitaires
@@ -42,12 +49,13 @@ export default function Dashboard() {
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">(
     "monthly",
   );
+  const [refreshing, setRefreshing] = useState(false);
 
   // Données
-  const { data: allTransactions, isLoading: isLoadingAll } =
+  const { data: allTransactions, isLoading: isLoadingAll, refetch: refetchAll } =
     useTransactions(accountId);
   const { data: categories } = useCategories(accountId);
-  const { data: recentTransactions, isLoading: isLoadingRecent } =
+  const { data: recentTransactions, isLoading: isLoadingRecent, refetch: refetchRecent } =
     useRecentTransactions(accountId);
   const deleteTransaction = useDeleteTransaction(accountId);
 
@@ -56,13 +64,20 @@ export default function Dashboard() {
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const currentScrollY = event.nativeEvent.contentOffset.y;
-    if (currentScrollY < 0) return; 
+    if (currentScrollY < 0) return;
     if (currentScrollY > lastScrollY.current + 10) {
-      setTabBarVisible(false); 
+      setTabBarVisible(false);
     } else if (currentScrollY < lastScrollY.current - 10) {
-      setTabBarVisible(true); 
+      setTabBarVisible(true);
     }
     lastScrollY.current = currentScrollY;
+  };
+
+  // Rafraîchissement
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchAll(), refetchRecent()]);
+    setRefreshing(false);
   };
 
   // Calculs
@@ -75,13 +90,16 @@ export default function Dashboard() {
         profit: 0,
       };
     }
+
     return calculateFinancialSummary(
       allTransactions,
       currentAccount?.initialBalance || 0,
     );
   }, [allTransactions, currentAccount?.initialBalance]);
 
+  // Le chargement est en cours, mais on garde les données précédentes
   const isLoading = isLoadingAll || isLoadingRecent;
+  const hasTransactions = allTransactions && allTransactions.length > 0;
 
   // Gestionnaires d'actions
   const handleDeleteTransaction = (transaction: Transaction) => {
@@ -112,10 +130,21 @@ export default function Dashboard() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 120 }}
+        contentContainerStyle={{
+          padding: theme.spacing.lg,
+          paddingBottom: 120,
+        }}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         {/* Header */}
         <ThemedView
@@ -134,20 +163,9 @@ export default function Dashboard() {
               {currentAccount?.name || "Tableau de bord"}
             </ThemedText>
           </ThemedView>
-          {/* <Button
-            variant="ghost"
-            size="sm"
-            onPress={() => router.push("/settings")}
-          >
-            <Ionicons
-              name="settings-outline"
-              size={22}
-              color={theme.colors.foreground}
-            />
-          </Button> */}
         </ThemedView>
 
-        {/* Balance Card */}
+        {/* Balance Card - Toujours visible même en chargement */}
         <BalanceCard
           balance={summary.totalBalance}
           income={summary.totalIncome}
@@ -156,226 +174,232 @@ export default function Dashboard() {
           transactionsCount={allTransactions?.length || 0}
         />
 
-        {/* Quick Stats */}
-        {/* <QuickStats
-          totalIncome={summary.totalIncome}
-          totalExpense={summary.totalExpense}
-          balance={summary.totalBalance}
-          currency={currentAccount?.currency || "XOF"}
-          transactionCount={allTransactions?.length || 0}
-        /> */}
-
-                {/* Actions rapides */}
-        <ThemedText
-          variant="lg"
-          weight="semibold"
-          style={{ marginBottom: theme.spacing.md }}
-        >
-          Actions rapides
-        </ThemedText>
-        <View
-          style={{
-            flexDirection: "row",
-            gap: theme.spacing.md,
-            marginBottom: theme.spacing.lg,
-            flexWrap: "wrap",
-          }}
-        >
-          <Button
-            variant="default"
+        {/* Indicateur de chargement superposé sur le reste du contenu */}
+        {isLoading && (
+          <View
             style={{
-              flex: 1,
-              minWidth: "45%",
-              backgroundColor: theme.financialColors.income,
-              borderRadius: theme.borderRadius.xl,
-              paddingVertical: theme.spacing.lg,
-            }}
-            onPress={() =>
-              router.push({
-                pathname: "/transaction-create",
-                params: { type: "income" },
-              })
-            }
-          >
-            <Ionicons
-              name="add-circle"
-              size={24}
-              color={theme.colors.primaryForeground}
-            />
-            <ThemedText
-              style={{
-                marginLeft: theme.spacing.sm,
-                color: theme.colors.primaryForeground,
-                fontWeight: "600",
-              }}
-            >
-              Revenu
-            </ThemedText>
-          </Button>
-          <Button
-            variant="default"
-            style={{
-              flex: 1,
-              minWidth: "45%",
-              backgroundColor: theme.financialColors.expense,
-              borderRadius: theme.borderRadius.xl,
-              paddingVertical: theme.spacing.lg,
-            }}
-            onPress={() =>
-              router.push({
-                pathname: "/transaction-create",
-                params: { type: "expense" },
-              })
-            }
-          >
-            <Ionicons
-              name="remove-circle"
-              size={24}
-              color={theme.colors.primaryForeground}
-            />
-            <ThemedText
-              style={{
-                marginLeft: theme.spacing.sm,
-                color: theme.colors.primaryForeground,
-                fontWeight: "600",
-              }}
-            >
-              Dépense
-            </ThemedText>
-          </Button>
-          <Button
-            variant="outline"
-            style={{
-              flex: 1,
-              minWidth: "45%",
-              borderRadius: theme.borderRadius.xl,
-              paddingVertical: theme.spacing.lg,
-              borderWidth: 1.5,
-            }}
-            onPress={() => router.push("/budget-create")}
-          >
-            <Ionicons
-              name="wallet-outline"
-              size={24}
-              color={theme.colors.foreground}
-            />
-            <ThemedText
-              style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
-            >
-              Budget
-            </ThemedText>
-          </Button>
-          <Button
-            variant="outline"
-            style={{
-              flex: 1,
-              minWidth: "45%",
-              borderRadius: theme.borderRadius.xl,
-              paddingVertical: theme.spacing.lg,
-              borderWidth: 1.5,
-            }}
-            onPress={() => router.push("/saving-goal-create")}
-          >
-            <Ionicons
-              name="trending-up-outline"
-              size={24}
-              color={theme.colors.foreground}
-            />
-            <ThemedText
-              style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
-            >
-              Épargne
-            </ThemedText>
-          </Button>
-          <Button
-            variant="secondary"
-            style={{
-              flex: 1,
-              width: "100%",
-              borderRadius: theme.borderRadius.xl,
-              paddingVertical: theme.spacing.lg,
-            }}
-            // Calculatrice
-            // @ts-ignore
-            onPress={() => router.push("/calculator")}
-          >
-            <Ionicons
-              name="calculator-outline"
-              size={24}
-              color={theme.colors.foreground}
-            />
-            <ThemedText
-              style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
-            >
-              Calculatrice
-            </ThemedText>
-          </Button>
-        </View>
-
-        {/* Graphiques */}
-        <Card
-          style={{ marginBottom: theme.spacing.md, padding: theme.spacing.md }}
-        >
-          <ThemedView
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: theme.spacing.sm,
+              justifyContent: "center",
+              paddingVertical: theme.spacing.lg,
             }}
           >
-            <ThemedText variant="lg" weight="semibold">
-              Évolution
-            </ThemedText>
-            <View style={{ flexDirection: "row", gap: theme.spacing.xs }}>
-              {(["weekly", "monthly", "yearly"] as const).map((p) => (
-                <Button
-                  key={p}
-                  variant={period === p ? "default" : "ghost"}
-                  size="sm"
-                  onPress={() => setPeriod(p)}
-                  style={{ paddingHorizontal: theme.spacing.sm }}
-                >
-                  {p === "weekly" ? "Sem." : p === "monthly" ? "Mois" : "An"}
-                </Button>
-              ))}
-            </View>
-          </ThemedView>
-
-          {isLoading ? (
             <ActivityIndicator size="large" color={theme.colors.primary} />
-          ) : (
-            <IncomeExpenseChart
-              transactions={allTransactions || []}
-              currency={currentAccount?.currency || "XOF"}
-              period={period}
-            />
-          )}
-        </Card>
+            <ThemedText variant="sm" color="mutedForeground" style={{ marginTop: 8 }}>
+              Chargement des données...
+            </ThemedText>
+          </View>
+        )}
 
-        {/* Catégories */}
-        <Card
-          style={{ marginBottom: theme.spacing.md, padding: theme.spacing.md }}
-        >
-          <CategoryBreakdownChart
-            transactions={allTransactions || []}
-            categories={categories || []}
-            currency={currentAccount?.currency || "XOF"}
-          />
-        </Card>
+        {/* Le reste du contenu est toujours présent, mais peut être masqué si besoin */}
+        {!isLoading && (
+          <>
+            {/* Quick Actions */}
+            <ThemedText
+              variant="lg"
+              weight="semibold"
+              style={{ marginTop: theme.spacing.md, marginBottom: theme.spacing.md }}
+            >
+              Actions rapides
+            </ThemedText>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: theme.spacing.md,
+                marginBottom: theme.spacing.lg,
+                flexWrap: "wrap",
+              }}
+            >
+              <Button
+                variant="default"
+                style={{
+                  flex: 1,
+                  minWidth: "45%",
+                  backgroundColor: theme.financialColors.income,
+                  borderRadius: theme.borderRadius.xl,
+                  paddingVertical: theme.spacing.lg,
+                }}
+                onPress={() =>
+                  router.push({
+                    pathname: "/transaction-create",
+                    params: { type: "income" },
+                  })
+                }
+              >
+                <Ionicons
+                  name="add-circle"
+                  size={24}
+                  color={theme.colors.primaryForeground}
+                />
+                <ThemedText
+                  style={{
+                    marginLeft: theme.spacing.sm,
+                    color: theme.colors.primaryForeground,
+                    fontWeight: "600",
+                  }}
+                >
+                  Revenu
+                </ThemedText>
+              </Button>
+              <Button
+                variant="default"
+                style={{
+                  flex: 1,
+                  minWidth: "45%",
+                  backgroundColor: theme.financialColors.expense,
+                  borderRadius: theme.borderRadius.xl,
+                  paddingVertical: theme.spacing.lg,
+                }}
+                onPress={() =>
+                  router.push({
+                    pathname: "/transaction-create",
+                    params: { type: "expense" },
+                  })
+                }
+              >
+                <Ionicons
+                  name="remove-circle"
+                  size={24}
+                  color={theme.colors.primaryForeground}
+                />
+                <ThemedText
+                  style={{
+                    marginLeft: theme.spacing.sm,
+                    color: theme.colors.primaryForeground,
+                    fontWeight: "600",
+                  }}
+                >
+                  Dépense
+                </ThemedText>
+              </Button>
+              <Button
+                variant="outline"
+                style={{
+                  flex: 1,
+                  minWidth: "45%",
+                  borderRadius: theme.borderRadius.xl,
+                  paddingVertical: theme.spacing.lg,
+                  borderWidth: 1.5,
+                }}
+                onPress={() => router.push("/budget-create")}
+              >
+                <Ionicons
+                  name="wallet-outline"
+                  size={24}
+                  color={theme.colors.foreground}
+                />
+                <ThemedText
+                  style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
+                >
+                  Budget
+                </ThemedText>
+              </Button>
+              <Button
+                variant="outline"
+                style={{
+                  flex: 1,
+                  minWidth: "45%",
+                  borderRadius: theme.borderRadius.xl,
+                  paddingVertical: theme.spacing.lg,
+                  borderWidth: 1.5,
+                }}
+                onPress={() => router.push("/saving-goal-create")}
+              >
+                <Ionicons
+                  name="trending-up-outline"
+                  size={24}
+                  color={theme.colors.foreground}
+                />
+                <ThemedText
+                  style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
+                >
+                  Épargne
+                </ThemedText>
+              </Button>
+              <Button
+                variant="secondary"
+                style={{
+                  flex: 1,
+                  width: "100%",
+                  borderRadius: theme.borderRadius.xl,
+                  paddingVertical: theme.spacing.lg,
+                }}
+                onPress={() => router.push("/calculator")}
+              >
+                <Ionicons
+                  name="calculator-outline"
+                  size={24}
+                  color={theme.colors.foreground}
+                />
+                <ThemedText
+                  style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
+                >
+                  Calculatrice
+                </ThemedText>
+              </Button>
+            </View>
 
+            {/* Graphiques */}
+            <Card
+              style={{ marginBottom: theme.spacing.md, padding: theme.spacing.md }}
+            >
+              <ThemedView
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: theme.spacing.sm,
+                }}
+              >
+                <ThemedText variant="lg" weight="semibold">
+                  Évolution
+                </ThemedText>
+                <View style={{ flexDirection: "row", gap: theme.spacing.xs }}>
+                  {(["weekly", "monthly", "yearly"] as const).map((p) => (
+                    <Button
+                      key={p}
+                      variant={period === p ? "default" : "ghost"}
+                      size="sm"
+                      onPress={() => setPeriod(p)}
+                      style={{ paddingHorizontal: theme.spacing.sm }}
+                    >
+                      {p === "weekly" ? "Sem." : p === "monthly" ? "Mois" : "An"}
+                    </Button>
+                  ))}
+                </View>
+              </ThemedView>
 
-        {/* Transactions récentes */}
+              <IncomeExpenseChart
+                transactions={allTransactions || []}
+                currency={currentAccount?.currency || "XOF"}
+                period={period}
+              />
+            </Card>
+
+            {/* Catégories */}
+            <Card
+              style={{ marginBottom: theme.spacing.md, padding: theme.spacing.md }}
+            >
+              <CategoryBreakdownChart
+                transactions={allTransactions || []}
+                categories={categories || []}
+                currency={currentAccount?.currency || "XOF"}
+              />
+            </Card>
+          </>
+        )}
+
+        {/* Transactions récentes - Toujours affiché, même en chargement */}
         <ThemedView
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: theme.spacing.md,
+            marginTop: isLoading ? theme.spacing.md : 0,
           }}
         >
           <ThemedText variant="lg" weight="semibold">
-            Transactions récentes
+            Opérations récentes
           </ThemedText>
           {recentTransactions && recentTransactions.length > 0 && (
             <Button
@@ -388,9 +412,7 @@ export default function Dashboard() {
           )}
         </ThemedView>
 
-        {isLoading ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        ) : recentTransactions && recentTransactions.length > 0 ? (
+        {recentTransactions && recentTransactions.length > 0 ? (
           <Card style={{ padding: theme.spacing.sm }}>
             {recentTransactions.map((tx) => (
               <TransactionItem
@@ -411,15 +433,19 @@ export default function Dashboard() {
         ) : (
           <Card style={{ padding: theme.spacing.lg, alignItems: "center" }}>
             <ThemedText color="mutedForeground" style={{ textAlign: "center" }}>
-              Aucune operation pour le moment
+              {isLoading ? "Chargement des transactions..." : "Aucune operation pour le moment"}
             </ThemedText>
-            <Spacer height={theme.spacing.md} />
-            <Button
-              variant="outline"
-              onPress={() => router.push("/transaction-create")}
-            >
-              Ajouter ma première operation
-            </Button>
+            {!isLoading && (
+              <>
+                <Spacer height={theme.spacing.md} />
+                <Button
+                  variant="outline"
+                  onPress={() => router.push("/transaction-create")}
+                >
+                  Ajouter ma première operation
+                </Button>
+              </>
+            )}
           </Card>
         )}
       </ScrollView>

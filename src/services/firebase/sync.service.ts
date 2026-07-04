@@ -23,6 +23,7 @@ import { generateUUID, getCurrentTimestamp } from '@/utils/uuid';
 import { Storage } from '@/lib/storage';
 import type { SyncEntity, SyncStatus } from '@/features/sync/types';
 import { firestore } from '@/configs/firebase/config';
+import NetInfo from '@react-native-community/netinfo';
 
 // Interface pour les données synchronisables
 interface SyncableEntity {
@@ -82,6 +83,12 @@ export class FirebaseSyncService {
    */
   async syncAll(): Promise<void> {
     if (this.isSyncing) return;
+
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      console.log('📶 Pas de connexion internet, synchronisation ignorée');
+      return;
+    }
     
     this.isSyncing = true;
     console.log('🔄 Début de la synchronisation...');
@@ -184,8 +191,8 @@ export class FirebaseSyncService {
           firestoreData.deviceId = deviceId;
           firestoreData.userId = userId;
 
-          // Pour les catégories, vérifier les doublons par nom avant d'insérer
-          if (entityName === 'categories' && entity.name) {
+          // Pour les catégories et comptes, vérifier les doublons par nom avant d'insérer
+          if ((entityName === 'categories' || entityName === 'accounts') && entity.name) {
             const dupQ = query(
               collection(firestore, collectionName),
               where('userId', '==', userId),
@@ -195,7 +202,30 @@ export class FirebaseSyncService {
             const existingDocs = dupSnap.docs.filter(d => d.id !== entity.id);
             if (existingDocs.length > 0) {
               // Doublon trouvé -> marquer comme synced sans pousser un nouveau doc
-              console.log(`⚠️ Catégorie dupliquée ignorée: "${entity.name}"`);
+              console.log(`⚠️ ${entityName} dupliqué ignoré: "${entity.name}"`);
+              // @ts-ignore
+              await db.update(table)
+                .set({ syncStatus: 'synced', lastSyncedAt: new Date() })
+                .where(eq(table.id, entity.id));
+              continue;
+            }
+          }
+
+          // Pour les transactions, vérifier les doublons par titre + montant + date
+          if (entityName === 'transactions' && entity.title && entity.amount) {
+            const txDate = entity.date instanceof Date 
+              ? Timestamp.fromDate(entity.date) 
+              : entity.date;
+            const dupQ = query(
+              collection(firestore, collectionName),
+              where('userId', '==', userId),
+              where('title', '==', entity.title),
+              where('amount', '==', entity.amount)
+            );
+            const dupSnap = await getDocs(dupQ);
+            const existingDocs = dupSnap.docs.filter(d => d.id !== entity.id);
+            if (existingDocs.length > 0) {
+              console.log(`⚠️ Transaction dupliquée ignorée: "${entity.title}" - ${entity.amount}`);
               // @ts-ignore
               await db.update(table)
                 .set({ syncStatus: 'synced', lastSyncedAt: new Date() })
@@ -276,29 +306,60 @@ export class FirebaseSyncService {
             .limit(1);
 
           if (existing.length === 0) {
-            // Nouvelle entité - l'insérer en local
+            // Nouvelle entité - vérifier si un doublon existe par nom (pour catégories/comptes)
+            if ((entityName === 'categories' || entityName === 'accounts') && data.name) {
+              // @ts-ignore
+              const dupCheck = await db
+                .select()
+                .from(table)
+                .where(eq(table.name, data.name))
+                .limit(1);
+              
+              if (dupCheck.length > 0) {
+                // Doublon par nom trouvé - comparer updatedAt et garder le plus récent
+                const localUpdated = dupCheck[0].updatedAt ? new Date(dupCheck[0].updatedAt).getTime() : 0;
+                const remoteUpdated = data.updatedAt?.toDate ? data.updatedAt.toDate().getTime() : 0;
+                
+                if (remoteUpdated > localUpdated) {
+                  const localData = this.prepareForSQLite(data);
+                  localData.id = dupCheck[0].id; // Garder l'ID local
+                  // @ts-ignore
+                  await db.update(table)
+                    .set({ ...localData, syncStatus: 'synced', lastSyncedAt: new Date() })
+                    .where(eq(table.id, dupCheck[0].id));
+                  console.log(`🔄 ${entityName} fusionné (doublon par nom): "${data.name}"`);
+                } else {
+                  console.log(`⏭️ ${entityName} local plus récent, doublon ignoré: "${data.name}"`);
+                }
+                continue;
+              }
+            }
+            
+            // Aucun doublon - insérer normalement
             const localData = this.prepareForSQLite(data);
             // @ts-ignore
             await db.insert(table).values(localData);
             console.log(`✅ Nouveau ${entityName} inséré: ${localId}`);
           } else {
-            // Entité existante - vérifier la version
+            // Entité existante - vérifier la version ET updatedAt
             const localVersion = existing[0].version || 0;
             const remoteVersion = data.version || 0;
+            const localUpdated = existing[0].updatedAt ? new Date(existing[0].updatedAt).getTime() : 0;
+            const remoteUpdated = data.updatedAt?.toDate ? data.updatedAt.toDate().getTime() : 0;
 
-            if (remoteVersion > localVersion) {
-              // Mise à jour
-              const localData = this.prepareForSQLite(data);
-              // @ts-ignore
-              await db.update(table)
-                .set(localData)
-                .where(eq(table.id, localId));
-              console.log(`✅ ${entityName} mis à jour: ${localId}`);
-            } else if (data.deletedAt) {
-              // Suppression
+            if (data.deletedAt) {
+              // Suppression distante
               // @ts-ignore
               await db.delete(table).where(eq(table.id, localId));
               console.log(`🗑️ ${entityName} supprimé: ${localId}`);
+            } else if (remoteVersion > localVersion || (remoteVersion === localVersion && remoteUpdated > localUpdated)) {
+              // Firebase est plus récent - mettre à jour
+              const localData = this.prepareForSQLite(data);
+              // @ts-ignore
+              await db.update(table)
+                .set({ ...localData, syncStatus: 'synced', lastSyncedAt: new Date() })
+                .where(eq(table.id, localId));
+              console.log(`✅ ${entityName} mis à jour: ${localId}`);
             }
           }
         } catch (error) {

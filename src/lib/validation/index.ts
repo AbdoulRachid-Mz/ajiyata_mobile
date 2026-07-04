@@ -18,7 +18,7 @@ export const transactionFormSchema = z.object({
   title: titleSchema,
   amount: amountSchema,
   type: z.enum(["income", "expense", "transfer"]),
-  categoryId: z.string().uuid("Catégorie invalide").optional().nullable(),
+  categoryId: z.string().optional().nullable(),
   note: z.string().max(200, "La note est trop longue").optional().nullable(),
   date: z.date().default(() => new Date()),
 });
@@ -27,7 +27,7 @@ export type TransactionFormInput = z.input<typeof transactionFormSchema>;
 export type TransactionFormData = z.infer<typeof transactionFormSchema>;
 
 export const budgetFormSchema = z.object({
-  categoryId: z.string().uuid("Catégorie requise"),
+  categoryId: z.string().min(1, "Catégorie requise"),
   limit: amountSchema,
   period: z.enum(["daily", "weekly", "monthly"]),
 });

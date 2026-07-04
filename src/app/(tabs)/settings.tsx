@@ -1,35 +1,66 @@
 import Button from "@/components/ui/button";
 import Card from "@/components/ui/card";
-import Modal from "@/components/ui/modal";
+import Drawer from "@/components/ui/drawer";
 import SafeAreaView from "@/components/ui/safe-area-view";
 import ScrollView from "@/components/ui/scroll-view";
 import ThemedText from "@/components/ui/text";
 import TextInput from "@/components/ui/text-input";
 import ThemedView from "@/components/ui/view";
 import { useAuth } from "@/contexts/auth-context";
+import { useSync } from "@/contexts/sync-context";
 import { useTheme } from "@/contexts/theme-context";
 import { useUpdateAccount } from "@/features/accounts/hooks";
 import { useUpdateUser } from "@/features/users/hooks";
-import { useBiometricAuth } from "@/hooks/use-biometric-auth";
 import type { Country } from "@/lib/countries";
 import { countries, getDefaultCountry } from "@/lib/countries";
 import { useAppStore } from "@/stores/app-store";
+import { useUIStore } from "@/stores/ui-store";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, Switch, TouchableOpacity, View, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
-import { useRef } from "react";
-import { useUIStore } from "@/stores/ui-store";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Switch,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
   const router = useRouter();
   const { currentUser, setCurrentUser, currentAccount, setCurrentAccount } =
     useAppStore();
-    const email = currentUser?.email || 'rashwrightmz@gmail.com';
-  const { logout } = useAuth();
-  const { isBiometricAvailable, isBiometricEnabled, toggleBiometric, saveCredentials } =
-    useBiometricAuth();
+  const {
+    user,
+    isAuthenticated,
+    logout,
+    enableBiometric,
+    disableBiometric,
+    isBiometricEnabled,
+    isBiometricAvailable,
+  } = useAuth();
+  const {
+    isSyncing,
+    hasCloudData,
+    lastBackupDate,
+    lastRestoreDate,
+    backupToCloud,
+    restoreFromCloud,
+    deleteLocalData,
+    deleteCloudData,
+  } = useSync();
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const result = await isBiometricAvailable();
+      setBiometricAvailable(result.available);
+    };
+    checkBiometrics();
+  }, [isBiometricAvailable]);
   const updateUser = useUpdateUser();
   const updateAccount = useUpdateAccount();
   const { setTabBarVisible } = useUIStore();
@@ -51,8 +82,12 @@ export default function SettingsScreen() {
   const [isCurrencyPickerOpen, setIsCurrencyPickerOpen] = useState(false);
   const [isLanguagePickerOpen, setIsLanguagePickerOpen] = useState(false);
   const [isAccountTypePickerOpen, setIsAccountTypePickerOpen] = useState(false);
-  const [isBiometricPasswordModalOpen, setIsBiometricPasswordModalOpen] = useState(false);
-  const [biometricPassword, setBiometricPassword] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteOptions, setDeleteOptions] = useState({
+    local: false,
+    cloud: false,
+    account: false,
+  });
 
   const [editingName, setEditingName] = useState(currentUser?.name || "");
   const [editingPhone, setEditingPhone] = useState(
@@ -70,6 +105,22 @@ export default function SettingsScreen() {
   const [selectedAccountType, setSelectedAccountType] = useState<
     "personal" | "business"
   >(currentAccount?.type || "personal");
+
+  useEffect(() => {
+    if (currentUser) {
+      setEditingName(currentUser.name || "");
+      setEditingPhone(currentUser.phoneNumber || "");
+      setSelectedCountry(getDefaultCountry(currentUser.country || "NE"));
+      setSelectedLanguage(currentUser.language || "fr");
+      setSelectedCurrency(currentUser.defaultCurrency || "XOF");
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentAccount) {
+      setSelectedAccountType(currentAccount.type || "personal");
+    }
+  }, [currentAccount]);
 
   const handleSaveProfile = async () => {
     if (!currentUser) return;
@@ -103,8 +154,103 @@ export default function SettingsScreen() {
     if (response.success) {
       setCurrentUser(null);
       setCurrentAccount(null);
-      router.replace("/auth/login");
     }
+  };
+
+  const handleDeleteData = async () => {
+    if (
+      !deleteOptions.local &&
+      !deleteOptions.cloud &&
+      !deleteOptions.account
+    ) {
+      Alert.alert("Erreur", "Veuillez sélectionner au moins une option.");
+      return;
+    }
+
+    Alert.alert(
+      "Confirmation de suppression",
+      "Êtes-vous sûr de vouloir continuer ? Cette action est irréversible.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            setIsDeleteModalOpen(false);
+
+            try {
+              if (deleteOptions.local) {
+                await deleteLocalData();
+              }
+
+              if (deleteOptions.cloud && isAuthenticated) {
+                await deleteCloudData();
+              }
+
+              if (deleteOptions.account && isAuthenticated) {
+                await logout();
+                setCurrentUser(null);
+                setCurrentAccount(null);
+              }
+
+              setDeleteOptions({ local: false, cloud: false, account: false });
+              Alert.alert(
+                "Succès",
+                "Les données sélectionnées ont été supprimées.",
+              );
+            } catch (error) {
+              Alert.alert(
+                "Erreur",
+                "Une erreur est survenue lors de la suppression.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleBackup = async () => {
+    Alert.alert(
+      "Sauvegarder les données",
+      "Êtes-vous sûr de vouloir sauvegarder vos données en ligne ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Sauvegarder",
+          onPress: async () => {
+            const result = await backupToCloud();
+            if (result.success) {
+              Alert.alert("Succès", result.message);
+            } else {
+              Alert.alert("Erreur", result.message);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleRestore = async () => {
+    Alert.alert(
+      "Restaurer les données",
+      "Attention : Cette action remplacera toutes vos données locales par celles sauvegardées en ligne. Êtes-vous sûr ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Restaurer",
+          style: "destructive",
+          onPress: async () => {
+            const result = await restoreFromCloud();
+            if (result.success) {
+              Alert.alert("Succès", result.message);
+            } else {
+              Alert.alert("Erreur", result.message);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const languages = [
@@ -128,7 +274,10 @@ export default function SettingsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 120 }}
+        contentContainerStyle={{
+          padding: theme.spacing.lg,
+          paddingBottom: 120,
+        }}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
@@ -138,13 +287,165 @@ export default function SettingsScreen() {
             marginBottom: theme.spacing.lg,
           }}
         >
-          <ThemedText
-            variant="2xl"
-            weight="bold"
-          >
+          <ThemedText variant="2xl" weight="bold">
             Paramètres
           </ThemedText>
         </ThemedView>
+
+        {/* Sync Status Card */}
+        <Card
+          style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
+        >
+          <ThemedText
+            variant="lg"
+            weight="bold"
+            style={{ marginBottom: theme.spacing.sm }}
+          >
+            Sauvegarde et synchronisation
+          </ThemedText>
+
+          {isAuthenticated ? (
+            <View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: theme.spacing.sm,
+                }}
+              >
+                <Ionicons
+                  name="cloud-done"
+                  size={20}
+                  color={theme.financialColors.income}
+                  style={{ marginRight: 8 }}
+                />
+                <ThemedText>Connecté à votre compte</ThemedText>
+              </View>
+
+              <ThemedText
+                variant="sm"
+                color="mutedForeground"
+                style={{ marginBottom: theme.spacing.sm }}
+              >
+                {user?.email}
+              </ThemedText>
+
+              {lastBackupDate && (
+                <ThemedText
+                  variant="sm"
+                  color="mutedForeground"
+                  style={{ marginBottom: theme.spacing.md }}
+                >
+                  Dernière sauvegarde :{" "}
+                  {new Date(lastBackupDate).toLocaleDateString("fr-FR")}
+                </ThemedText>
+              )}
+
+              {lastRestoreDate && (
+                <ThemedText
+                  variant="sm"
+                  color="mutedForeground"
+                  style={{ marginBottom: theme.spacing.md }}
+                >
+                  Dernière restauration :{" "}
+                  {new Date(lastRestoreDate).toLocaleDateString("fr-FR")}
+                </ThemedText>
+              )}
+
+              <View
+                style={{ gap: theme.spacing.sm, marginTop: theme.spacing.md }}
+              >
+                <Button
+                  variant="default"
+                  onPress={handleBackup}
+                  disabled={isSyncing}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {isSyncing ? (
+                    <>
+                      <ActivityIndicator
+                        size="small"
+                        color="white"
+                        style={{ marginRight: 8 }}
+                      />
+                      <ThemedText>Sauvegarde en cours...</ThemedText>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons
+                        name="cloud-upload-outline"
+                        size={20}
+                        color="white"
+                        style={{ marginRight: 8 }}
+                      />
+                      <ThemedText style={{ color: "white" }}>
+                        Sauvegarder dans le cloud
+                      </ThemedText>
+                    </>
+                  )}
+                </Button>
+
+                {hasCloudData && (
+                  <Button
+                    variant="secondary"
+                    onPress={handleRestore}
+                    disabled={isSyncing}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="cloud-download-outline"
+                      size={20}
+                      style={{ marginRight: 8 }}
+                    />
+                    <ThemedText style={{ color: "white" }}>
+                      Restaurer depuis le cloud
+                    </ThemedText>
+                  </Button>
+                )}
+              </View>
+            </View>
+          ) : (
+            <View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: theme.spacing.sm,
+                }}
+              >
+                <Ionicons
+                  name="cloud-offline"
+                  size={20}
+                  color={theme.financialColors.expense}
+                  style={{ marginRight: 8 }}
+                />
+                <ThemedText>Mode hors-ligne</ThemedText>
+              </View>
+              <ThemedText
+                variant="sm"
+                color="mutedForeground"
+                style={{ marginBottom: theme.spacing.md }}
+              >
+                Vos données sont stockées localement. Connectez-vous pour les
+                sauvegarder en ligne.
+              </ThemedText>
+              <Button
+                variant="default"
+                onPress={() => router.push("/auth/login")}
+              >
+                Se connecter pour sauvegarder
+              </Button>
+            </View>
+          )}
+        </Card>
 
         {/* Profile Edit Card */}
         <Card
@@ -163,7 +464,6 @@ export default function SettingsScreen() {
             value={editingName}
             onChangeText={setEditingName}
             style={{ marginBottom: theme.spacing.sm }}
-        
             leftIcon={
               <Ionicons
                 name="person-outline"
@@ -427,7 +727,7 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {isBiometricAvailable && (
+          {biometricAvailable && (
             <View
               style={{
                 flexDirection: "row",
@@ -453,9 +753,15 @@ export default function SettingsScreen() {
                 value={isBiometricEnabled}
                 onValueChange={async (value) => {
                   if (value) {
-                    setIsBiometricPasswordModalOpen(true);
+                    const success = await enableBiometric();
+                    if (!success) {
+                      Alert.alert(
+                        "Erreur",
+                        "Authentification biométrique échouée.",
+                      );
+                    }
                   } else {
-                    await toggleBiometric(false);
+                    await disableBiometric();
                   }
                 }}
                 trackColor={{
@@ -467,14 +773,47 @@ export default function SettingsScreen() {
           )}
         </Card>
 
+        {/* Delete Data */}
+        <Card
+          style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
+        >
+          <ThemedText
+            variant="lg"
+            weight="bold"
+            style={{ marginBottom: theme.spacing.md }}
+          >
+            Supprimer les données
+          </ThemedText>
+          <ThemedText
+            variant="sm"
+            color="mutedForeground"
+            style={{ marginBottom: theme.spacing.md }}
+          >
+            Gérer vos données et votre compte
+          </ThemedText>
+          <Button
+            variant="destructive"
+            onPress={() => setIsDeleteModalOpen(true)}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={20}
+              style={{ marginRight: 8 }}
+            />
+            Supprimer les données
+          </Button>
+        </Card>
+
         {/* Logout */}
-        <Button variant="destructive" onPress={handleLogout}>
-          Déconnexion
-        </Button>
+        {isAuthenticated && (
+          <Button variant="destructive" onPress={handleLogout}>
+            Déconnexion
+          </Button>
+        )}
       </ScrollView>
 
-      {/* Country Picker Modal */}
-      <Modal
+      {/* Country Picker Drawer */}
+      <Drawer
         visible={isCountryPickerOpen}
         onClose={() => setIsCountryPickerOpen(false)}
       >
@@ -512,10 +851,10 @@ export default function SettingsScreen() {
             ))}
           </ScrollView>
         </ThemedView>
-      </Modal>
+      </Drawer>
 
-      {/* Currency Picker Modal */}
-      <Modal
+      {/* Currency Picker Drawer */}
+      <Drawer
         visible={isCurrencyPickerOpen}
         onClose={() => setIsCurrencyPickerOpen(false)}
       >
@@ -546,10 +885,10 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           ))}
         </ThemedView>
-      </Modal>
+      </Drawer>
 
-      {/* Language Picker Modal */}
-      <Modal
+      {/* Language Picker Drawer */}
+      <Drawer
         visible={isLanguagePickerOpen}
         onClose={() => setIsLanguagePickerOpen(false)}
       >
@@ -580,10 +919,10 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           ))}
         </ThemedView>
-      </Modal>
+      </Drawer>
 
-      {/* Account Type Picker Modal */}
-      <Modal
+      {/* Account Type Picker Drawer */}
+      <Drawer
         visible={isAccountTypePickerOpen}
         onClose={() => setIsAccountTypePickerOpen(false)}
       >
@@ -624,61 +963,212 @@ export default function SettingsScreen() {
             {updateAccount.isPending ? "Enregistrement..." : "Enregistrer"}
           </Button>
         </ThemedView>
-      </Modal>
+      </Drawer>
 
-      {/* Biometric Password Modal */}
-      <Modal
-        visible={isBiometricPasswordModalOpen}
-        onClose={() => setIsBiometricPasswordModalOpen(false)}
+      {/* Delete Data Drawer */}
+      <Drawer
+        visible={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeleteOptions({ local: false, cloud: false, account: false });
+        }}
       >
-        <ThemedView style={{ padding: theme.spacing.md }}>
+        <ThemedView style={{ padding: theme.spacing.lg }}>
           <ThemedText
             variant="lg"
             weight="bold"
-            style={{ marginBottom: theme.spacing.md }}
+            style={{ marginBottom: theme.spacing.lg }}
           >
-            Activer la biométrie
+            Supprimer les données
           </ThemedText>
-          <ThemedText style={{ marginBottom: theme.spacing.md }}>
-            Veuillez entrer votre mot de passe actuel pour sécuriser vos informations de connexion.
-          </ThemedText>
-          <TextInput
-            label="Mot de passe"
-            value={biometricPassword}
-            onChangeText={setBiometricPassword}
-            secureTextEntry
-            style={{ marginBottom: theme.spacing.sm }}
-          />
-          <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
+
+          <TouchableOpacity
+            onPress={() =>
+              setDeleteOptions((prev) => ({ ...prev, local: !prev.local }))
+            }
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingVertical: theme.spacing.md,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.colors.border,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: theme.spacing.sm,
+              }}
+            >
+              <Ionicons
+                name="phone-portrait-outline"
+                size={20}
+                color={theme.colors.foreground}
+              />
+              <View>
+                <ThemedText>Données locales</ThemedText>
+                <ThemedText variant="sm" color="mutedForeground">
+                  Supprime les données stockées sur cet appareil
+                </ThemedText>
+              </View>
+            </View>
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 4,
+                borderWidth: 2,
+                borderColor: deleteOptions.local
+                  ? theme.colors.primary
+                  : theme.colors.border,
+                backgroundColor: deleteOptions.local
+                  ? theme.colors.primary
+                  : "transparent",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {deleteOptions.local && (
+                <Ionicons name="checkmark" size={16} color="white" />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {isAuthenticated && (
+            <TouchableOpacity
+              onPress={() =>
+                setDeleteOptions((prev) => ({ ...prev, cloud: !prev.cloud }))
+              }
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: theme.spacing.md,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.colors.border,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: theme.spacing.sm,
+                }}
+              >
+                <Ionicons
+                  name="cloud-outline"
+                  size={20}
+                  color={theme.colors.foreground}
+                />
+                <View>
+                  <ThemedText>Données cloud</ThemedText>
+                  <ThemedText variant="sm" color="mutedForeground">
+                    Supprime les données sauvegardées en ligne
+                  </ThemedText>
+                </View>
+              </View>
+              <View
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 4,
+                  borderWidth: 2,
+                  borderColor: deleteOptions.cloud
+                    ? theme.colors.primary
+                    : theme.colors.border,
+                  backgroundColor: deleteOptions.cloud
+                    ? theme.colors.primary
+                    : "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {deleteOptions.cloud && (
+                  <Ionicons name="checkmark" size={16} color="white" />
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {isAuthenticated && (
+            <TouchableOpacity
+              onPress={() =>
+                setDeleteOptions((prev) => ({
+                  ...prev,
+                  account: !prev.account,
+                }))
+              }
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: theme.spacing.md,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: theme.spacing.sm,
+                }}
+              >
+                <Ionicons
+                  name="person-remove-outline"
+                  size={20}
+                  color={theme.colors.foreground}
+                />
+                <View>
+                  <ThemedText>Compte utilisateur</ThemedText>
+                  <ThemedText variant="sm" color="mutedForeground">
+                    Déconnecte et supprime votre session
+                  </ThemedText>
+                </View>
+              </View>
+              <View
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 4,
+                  borderWidth: 2,
+                  borderColor: deleteOptions.account
+                    ? theme.colors.primary
+                    : theme.colors.border,
+                  backgroundColor: deleteOptions.account
+                    ? theme.colors.primary
+                    : "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {deleteOptions.account && (
+                  <Ionicons name="checkmark" size={16} color="white" />
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+
+          <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
+            <Button variant="destructive" onPress={handleDeleteData}>
+              Confirmer la suppression
+            </Button>
             <Button
-              variant="outline"
-              style={{ flex: 1 }}
+              variant="secondary"
               onPress={() => {
-                setIsBiometricPasswordModalOpen(false);
-                setBiometricPassword("");
+                setIsDeleteModalOpen(false);
+                setDeleteOptions({
+                  local: false,
+                  cloud: false,
+                  account: false,
+                });
               }}
             >
               Annuler
             </Button>
-            <Button
-              style={{ flex: 1 }}
-              onPress={async () => {
-                if (email && biometricPassword) {
-                  await saveCredentials(email, biometricPassword);
-                  await toggleBiometric(true);
-                  setIsBiometricPasswordModalOpen(false);
-                  setBiometricPassword("");
-                  Alert.alert("Succès", "Biométrie activée avec succès !");
-                } else {
-                  Alert.alert("Erreur", "Veuillez entrer votre mot de passe.");
-                }
-              }}
-            >
-              Activer
-            </Button>
           </View>
         </ThemedView>
-      </Modal>
+      </Drawer>
     </SafeAreaView>
   );
 }

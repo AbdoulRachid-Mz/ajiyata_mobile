@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { budgetRepository } from './repositories';
-import type { NewBudget } from '@/types';
+import type { NewBudget, Budget } from '@/types';
 
 export const useBudgets = (accountId: string) => {
   return useQuery({

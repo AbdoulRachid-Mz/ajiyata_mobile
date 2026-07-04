@@ -2,6 +2,7 @@ import {
   auth,
   firestore
 } from '@/configs/firebase/config';
+import { Storage } from '@/lib/storage';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -12,7 +13,6 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   User as FirebaseUser,
-  // sendEmailVerification, // Retiré des imports si vous ne l'utilisez plus
   reload,
   updateEmail,
   updatePassword,
@@ -31,11 +31,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
-import { Storage } from '@/lib/storage';
 import { AuthUser, AuthCredentials, AuthRegisterData, AuthResponse } from '@/features/auth/types';
-import { generateUUID } from '@/utils/uuid';
 
 export class FirebaseAuthService {
   private static instance: FirebaseAuthService;
@@ -62,8 +58,6 @@ export class FirebaseAuthService {
         await this.saveUserToFirestore(user);
       } else {
         this.currentUser = null;
-        await Storage.removeSession();
-        await Storage.removeItem('biometric_enabled');
       }
     });
   }
@@ -147,6 +141,7 @@ export class FirebaseAuthService {
         data.email,
         data.password
       );
+    await Storage.setSession(userCredential.user.uid);
 
       // Mettre à jour le profil
       await updateProfile(userCredential.user, {
@@ -160,7 +155,7 @@ export class FirebaseAuthService {
       await this.saveUserToFirestore(userCredential.user);
 
       // Sauvegarder le token de session
-      await Storage.setSession(userCredential.user.uid);
+      // La session locale est gérée par AuthManager
 
       return {
         success: true,
@@ -186,13 +181,13 @@ export class FirebaseAuthService {
         credentials.email,
         credentials.password
       );
+    await Storage.setSession(userCredential.user.uid);
 
       // --- BLOC DE VÉRIFICATION D'EMAIL DÉSACTIVÉ ---
       // La condition qui vérifiait `!userCredential.user.emailVerified` a été supprimée
       // pour permettre aux utilisateurs non vérifiés de se connecter directement.
 
-      // Sauvegarder la session
-      await Storage.setSession(userCredential.user.uid);
+      // Note: La session locale est maintenant gérée par AuthManager
 
       return {
         success: true,
@@ -229,167 +224,12 @@ export class FirebaseAuthService {
   }
 
   /**
-   * Vérifier si la biométrie est disponible
-   */
-  async isBiometricAvailable(): Promise<{
-    available: boolean;
-    types: string[];
-    enrolled: boolean;
-  }> {
-    try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      return {
-        available: hasHardware && isEnrolled,
-        types: supportedTypes.map(t => {
-          switch (t) {
-            case LocalAuthentication.AuthenticationType.FINGERPRINT:
-              return 'Empreinte digitale';
-            case LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION:
-              return 'Reconnaissance faciale';
-            case LocalAuthentication.AuthenticationType.IRIS:
-              return 'Iris';
-            default:
-              return 'Biométrie';
-          }
-        }),
-        enrolled: isEnrolled,
-      };
-    } catch (error) {
-      console.error('Erreur de vérification biométrique:', error);
-      return { available: false, types: [], enrolled: false };
-    }
-  }
-
-  /**
-   * Activer la biométrie
-   */
-  async enableBiometric(): Promise<AuthResponse> {
-    try {
-      const isAvailable = await this.isBiometricAvailable();
-      
-      if (!isAvailable.available) {
-        return {
-          success: false,
-          error: 'La biométrie n\'est pas disponible sur cet appareil.',
-        };
-      }
-
-      // Authentifier avec biométrie
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Déverrouiller Ajiya Ta',
-        fallbackLabel: 'Utiliser le mot de passe',
-        disableDeviceFallback: false,
-        cancelLabel: 'Annuler',
-        requireConfirmation: true,
-      });
-
-      if (result.success) {
-        await SecureStore.setItemAsync('biometric_enabled', 'true');
-        return {
-          success: true,
-          data: { enabled: true },
-        };
-      } else {
-        return {
-          success: false,
-          error: result.error || 'Authentification biométrique échouée.',
-        };
-      }
-    } catch (error: any) {
-      console.error('Erreur lors de l\'activation biométrique:', error);
-      return {
-        success: false,
-        error: error.message || 'Erreur lors de l\'activation de la biométrie.',
-      };
-    }
-  }
-
-  /**
-   * Vérifier si la biométrie est activée
-   */
-  async isBiometricEnabled(): Promise<boolean> {
-    try {
-      const value = await SecureStore.getItemAsync('biometric_enabled');
-      return value === 'true';
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Désactiver la biométrie
-   */
-  async disableBiometric(): Promise<void> {
-    try {
-      await SecureStore.deleteItemAsync('biometric_enabled');
-    } catch (error) {
-      console.error('Erreur lors de la désactivation biométrique:', error);
-    }
-  }
-
-  /**
-   * Connexion avec biométrie
-   */
-  async loginWithBiometric(): Promise<AuthResponse> {
-    try {
-      const isEnabled = await this.isBiometricEnabled();
-      if (!isEnabled) {
-        return {
-          success: false,
-          error: 'La biométrie n\'est pas activée.',
-        };
-      }
-
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Connectez-vous avec votre empreinte',
-        fallbackLabel: 'Utiliser le mot de passe',
-        disableDeviceFallback: false,
-        cancelLabel: 'Annuler',
-        requireConfirmation: true,
-      });
-
-      if (result.success) {
-        // Récupérer la session existante
-        const userId = await Storage.getSession();
-        if (userId) {
-          // Vérifier que l'utilisateur existe toujours
-          const user = auth.currentUser;
-          if (user && user.uid === userId) {
-            return {
-              success: true,
-              data: this.mapFirebaseUser(user),
-            };
-          }
-        }
-        return {
-          success: false,
-          error: 'Session invalide, veuillez vous reconnecter.',
-        };
-      } else {
-        return {
-          success: false,
-          error: result.error || 'Authentification biométrique échouée.',
-        };
-      }
-    } catch (error: any) {
-      console.error('Erreur de connexion biométrique:', error);
-      return {
-        success: false,
-        error: error.message || 'Erreur lors de la connexion biométrique.',
-      };
-    }
-  }
-
-  /**
    * Déconnexion
    */
   async logout(): Promise<AuthResponse> {
     try {
       await firebaseSignOut(auth);
-      await Storage.removeSession();
+    await Storage.removeSession();
       this.currentUser = null;
       return {
         success: true,
@@ -524,7 +364,7 @@ export class FirebaseAuthService {
         deletedAt: serverTimestamp(),
       });
 
-      await Storage.removeSession();
+
       this.currentUser = null;
 
       return {
