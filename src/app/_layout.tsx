@@ -8,13 +8,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SyncProvider } from '@/contexts/sync-context';
 import { NotificationProvider } from '@/contexts/notification-context';
 import { AuthProvider } from '@/contexts/auth-context';
+import Toast from 'react-native-toast-message';
 // global.css
-import './../../global.css';
+import '@/global.css';
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <Toast position="top" />
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <AuthProvider>

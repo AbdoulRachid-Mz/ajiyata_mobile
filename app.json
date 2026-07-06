@@ -13,9 +13,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/primary.png",
+        "backgroundImage": "./assets/images/primary.png",
+        "monochromeImage": "./assets/images/primary.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.abdoulrachidmz.ajiya",
@@ -26,17 +26,20 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/primary.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#E6F4FE",
           "android": {
-            "image": "./assets/images/primary.png",
-            "imageWidth": 76
+            "image": "./assets/primary.png",
+            // imageWidth correspond à la largeur de l'image de splash en pixels (px) sur Android. 
+            // La valeur ici est calculée pour que l'image occupe 80% de la largeur de l'écran Android moyen (1080px),
+            // en conservant les proportions de votre fichier image original. La plage 70-90% correspond à 756-972px pour un écran 1080px.
+            "imageWidth": 864
           }
         }
       ],

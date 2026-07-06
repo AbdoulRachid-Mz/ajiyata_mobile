@@ -327,7 +327,7 @@ export default function LoginScreen() {
                       <ThemedText 
                         variant="xs" 
                         color="mutedForeground" 
-                        style={{ marginLeft: 4 }}
+                        style={{ marginLeft: 2 }}
                       >
                         (Activer dans paramètres)
                       </ThemedText>

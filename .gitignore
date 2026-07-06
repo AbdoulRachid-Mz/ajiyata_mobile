@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+src/services/*.json
+src/services/ajiya-ta-e95905a3868a.json
