@@ -18,6 +18,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
   ActivityIndicator,
   Alert,
@@ -31,8 +32,12 @@ import {
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
   const router = useRouter();
-  const { currentUser, setCurrentUser, currentAccount, setCurrentAccount } =
-    useAppStore();
+  const { 
+    currentUser, setCurrentUser, currentAccount, setCurrentAccount,
+    isAppLockEnabled, setAppLockEnabled,
+    reminderEnabled, setReminderEnabled,
+    reminderTime, setReminderTime
+  } = useAppStore();
   const {
     user,
     isAuthenticated,
@@ -83,6 +88,7 @@ export default function SettingsScreen() {
   const [isLanguagePickerOpen, setIsLanguagePickerOpen] = useState(false);
   const [isAccountTypePickerOpen, setIsAccountTypePickerOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
   const [deleteOptions, setDeleteOptions] = useState({
     local: false,
     cloud: false,
@@ -728,49 +734,190 @@ export default function SettingsScreen() {
           </View>
 
           {biometricAvailable && (
+            <>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: theme.spacing.sm,
+                  }}
+                >
+                  <Ionicons
+                    name="finger-print-outline"
+                    size={20}
+                    color={theme.colors.foreground}
+                  />
+                  <ThemedText>Authentification biométrique</ThemedText>
+                </View>
+                <Switch
+                  value={isBiometricEnabled}
+                  onValueChange={async (value) => {
+                    if (value) {
+                      const success = await enableBiometric();
+                      if (!success) {
+                        Alert.alert(
+                          "Erreur",
+                          "Authentification biométrique échouée.",
+                        );
+                      }
+                    } else {
+                      await disableBiometric();
+                      setAppLockEnabled(false);
+                    }
+                  }}
+                  trackColor={{
+                    false: theme.colors.border,
+                    true: theme.colors.primary,
+                  }}
+                />
+              </View>
+
+              {isBiometricEnabled && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: theme.spacing.md,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: theme.spacing.sm,
+                    }}
+                  >
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={20}
+                      color={theme.colors.foreground}
+                    />
+                    <ThemedText>Verrouiller à l'ouverture (5 min)</ThemedText>
+                  </View>
+                  <Switch
+                    value={isAppLockEnabled}
+                    onValueChange={setAppLockEnabled}
+                    trackColor={{
+                      false: theme.colors.border,
+                      true: theme.colors.primary,
+                    }}
+                  />
+                </View>
+              )}
+            </>
+          )}
+        </Card>
+
+        {/* Reminders */}
+        <ThemedText
+          variant="lg"
+          weight="semibold"
+          style={{ marginBottom: theme.spacing.md }}
+        >
+          Rappels quotidiens
+        </ThemedText>
+        <Card
+          style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: reminderEnabled ? theme.spacing.md : 0,
+            }}
+          >
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
                 alignItems: "center",
+                gap: theme.spacing.sm,
+              }}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={theme.colors.foreground}
+              />
+              <ThemedText>Activer les rappels</ThemedText>
+            </View>
+            <Switch
+              value={reminderEnabled}
+              onValueChange={setReminderEnabled}
+              trackColor={{
+                false: theme.colors.border,
+                true: theme.colors.primary,
+              }}
+            />
+          </View>
+
+          {reminderEnabled && (
+            <TouchableOpacity
+              onPress={() => setIsTimePickerOpen(true)}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingVertical: theme.spacing.sm,
+                paddingHorizontal: theme.spacing.md,
+                borderRadius: theme.spacing.sm,
+                backgroundColor: theme.colors.muted,
+                marginTop: theme.spacing.xs,
               }}
             >
               <View
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
+                  flexDirection: 'row',
+                  alignItems: 'center',
                   gap: theme.spacing.sm,
                 }}
               >
                 <Ionicons
-                  name="finger-print-outline"
+                  name="time-outline"
                   size={20}
                   color={theme.colors.foreground}
                 />
-                <ThemedText>Authentification biométrique</ThemedText>
+                <ThemedText>Heure du rappel</ThemedText>
               </View>
-              <Switch
-                value={isBiometricEnabled}
-                onValueChange={async (value) => {
-                  if (value) {
-                    const success = await enableBiometric();
-                    if (!success) {
-                      Alert.alert(
-                        "Erreur",
-                        "Authentification biométrique échouée.",
-                      );
-                    }
-                  } else {
-                    await disableBiometric();
-                  }
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: theme.spacing.sm,
                 }}
-                trackColor={{
-                  false: theme.colors.border,
-                  true: theme.colors.primary,
-                }}
-              />
-            </View>
+              >
+                <ThemedText
+                  weight="bold"
+                  style={{ color: theme.colors.primary, fontSize: 17 }}
+                >
+                  {reminderTime}
+                </ThemedText>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={theme.colors.mutedForeground}
+                />
+              </View>
+            </TouchableOpacity>
           )}
+
+          <TimePicker
+            visible={isTimePickerOpen}
+            value={reminderTime}
+            onConfirm={(time) => {
+              setReminderTime(time);
+              setIsTimePickerOpen(false);
+            }}
+            onClose={() => setIsTimePickerOpen(false)}
+          />
         </Card>
 
         {/* Delete Data */}

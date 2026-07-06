@@ -3,6 +3,7 @@ import { useTheme } from '@/contexts/theme-context';
 import { Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import ThemedText from '@/components/ui/text';
+import { useDailyReminders } from '@/hooks/use-daily-reminders';
 
 import { Animated as RNAnimated } from 'react-native';
 import { useEffect, useRef } from 'react';
@@ -98,6 +99,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 }
 
 export default function TabsLayout() {
+  useDailyReminders();
+  
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}

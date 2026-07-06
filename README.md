@@ -1,56 +1,372 @@
-# Welcome to your Expo app 👋
+# AJIYA TA
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Product Requirements Document (PRD) & Technical Architecture Document (Version 1.0)
 
-## Get started
+---
 
-1. Install dependencies
+# 1. Présentation du projet
 
-   ```bash
-   npm install
-   ```
+## Nom du projet
 
-2. Start the app
+**Ajiya Ta**
 
-   ```bash
-   npx expo start
-   ```
+> En haoussa, "Ajiya" fait référence à l'épargne, à la réserve ou au capital, tandis que "Ta" signifie "ton" ou "ta". Le nom peut être compris comme **"Ton épargne"**, **"Ta trésorerie"** ou **"Ton argent"**, ce qui reflète parfaitement la mission de l'application.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+# Vision
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Ajiya Ta est une application mobile **offline-first** de gestion financière personnelle et commerciale.
 
-## Get a fresh project
+Elle permet à un utilisateur d'enregistrer rapidement ses revenus, dépenses et ventes, tout en calculant automatiquement les indicateurs financiers en arrière-plan.
 
-When you're ready, run:
+L'objectif principal est de proposer une application extrêmement simple à utiliser, mais suffisamment robuste pour évoluer vers une solution complète de gestion financière.
 
-```bash
-npm run reset-project
-```
+L'utilisateur ne fait jamais de calculs.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Il enregistre simplement ses opérations.
 
-### Other setup steps
+L'application calcule automatiquement :
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+* les revenus
+* les dépenses
+* les bénéfices
+* les pertes
+* les budgets
+* les objectifs d'épargne
+* les statistiques
+* les graphiques
+* les rapports
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+# Philosophie du projet
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Ajiya Ta suit plusieurs principes fondamentaux.
 
-## Join the community
+## Simplicité
 
-Join our community of developers creating universal apps.
+Chaque fonctionnalité doit demander le minimum d'actions possible.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+L'utilisateur doit pouvoir enregistrer une opération en moins de cinq secondes.
+
+---
+
+## Offline First
+
+Toutes les fonctionnalités principales doivent fonctionner sans connexion Internet.
+
+Les données sont enregistrées localement.
+
+Internet n'est utilisé que pour :
+
+* la sauvegarde
+* la synchronisation
+* les notifications
+* les mises à jour des taux de change
+* le partage entre plusieurs appareils
+
+---
+
+## Performance
+
+Toutes les opérations doivent être instantanées.
+
+Aucun écran ne doit attendre Internet pour fonctionner.
+
+---
+
+## Évolutivité
+
+L'architecture doit permettre d'ajouter ultérieurement :
+
+* plusieurs entreprises
+* plusieurs caisses
+* plusieurs utilisateurs
+* des abonnements
+* un inventaire
+* des clients
+* des fournisseurs
+* des employés
+* des modules supplémentaires
+
+sans refondre la base du projet.
+
+---
+
+## Sécurité
+
+Les données financières sont privées.
+
+Les sauvegardes doivent être sécurisées.
+
+Les informations sensibles doivent être stockées de manière chiffrée lorsque cela est nécessaire.
+
+---
+
+# Public cible
+
+L'application est destinée à plusieurs catégories d'utilisateurs.
+
+## Compte Personnel
+
+* particuliers
+* étudiants
+* salariés
+* freelances
+* artisans
+
+Fonctionnalités simplifiées.
+
+---
+
+## Compte Commercial
+
+* boutiques
+* restaurants
+* pharmacies
+* alimentations
+* vendeurs
+* petites entreprises
+
+Fonctionnalités avancées.
+
+---
+
+# Fonctionnalités principales
+
+Le projet sera construit autour des modules suivants.
+
+## Gestion des opérations
+
+* revenus
+* dépenses
+* ventes
+* achats
+* transferts internes
+
+---
+
+## Comptabilité automatique
+
+Calcul permanent :
+
+* revenus
+* dépenses
+* résultat
+* bénéfices
+* pertes
+
+---
+
+## Statistiques
+
+Visualisation par :
+
+* jour
+* semaine
+* mois
+* année
+* période personnalisée
+
+---
+
+## Objectifs d'épargne
+
+Création d'objectifs.
+
+Suivi automatique de leur progression.
+
+---
+
+## Budgets
+
+Définition d'un budget.
+
+Suivi des dépassements.
+
+Notifications.
+
+---
+
+## Rapports
+
+Export :
+
+* PDF
+* Excel
+* CSV
+
+---
+
+## Synchronisation
+
+Synchronisation facultative.
+
+Création de compte uniquement lorsque l'utilisateur souhaite sauvegarder ses données.
+
+---
+
+## Gestion multi-appareils
+
+Les données pourront être restaurées sur un nouveau téléphone après authentification.
+
+---
+
+## Gestion des devises
+
+Support de plusieurs devises.
+
+Les taux de conversion seront mis à jour automatiquement via une API externe et conservés localement afin de permettre les conversions même hors connexion.
+
+---
+
+## Pièces jointes
+
+Chaque opération pourra contenir :
+
+* photo
+* facture
+* reçu
+
+Les fichiers seront enregistrés localement puis synchronisés vers Cloudinary uniquement si la synchronisation est activée.
+
+---
+
+# Architecture générale
+
+Le projet repose sur une architecture moderne basée sur le principe Offline First.
+
+SQLite constitue la base de données principale.
+
+Firestore constitue uniquement une base de synchronisation.
+
+Cloudinary héberge les images synchronisées.
+
+TanStack Query orchestre les accès aux données.
+
+Toutes les règles métier sont exécutées localement avant toute synchronisation.
+
+---
+
+# Stack technique
+
+## Framework
+
+* Expo SDK (dernière version stable)
+* React Native
+* Expo Router
+* TypeScript (mode strict)
+
+---
+
+## Interface
+
+* NativeWind
+* React Native Reanimated
+* React Native Gesture Handler
+* React Native Screens
+* React Native Safe Area Context
+* React Native SVG
+* FlashList
+
+Une bibliothèque UI externe ne sera pas utilisée comme fondation principale.
+
+Le projet reposera sur une librairie UI interne (`components/ui`) entièrement maîtrisée, inspirée des bonnes pratiques de NativeWind, mais adaptée aux besoins spécifiques d'Ajiya Ta.
+
+---
+
+## Design System
+
+Le Design System sera entièrement personnalisé.
+
+Il comprendra notamment :
+
+* thèmes clair et sombre
+* palette métier (revenu, dépense, bénéfice, perte, épargne, budget...)
+* typographie
+* espacements
+* rayons
+* ombres
+* animations
+* tailles d'icônes
+* composants réutilisables
+
+L'ensemble des composants utilisera ce Design System sans dépendre de bibliothèques UI tierces.
+
+---
+
+## Base locale
+
+* Expo SQLite
+* Drizzle ORM
+* Drizzle Kit
+
+---
+
+## Synchronisation Cloud
+
+* Firebase Authentication
+* Cloud Firestore
+
+---
+
+## Images
+
+* Cloudinary
+
+---
+
+## Gestion d'état
+
+* TanStack Query
+* Zustand
+
+---
+
+## Validation
+
+* React Hook Form
+* Zod
+
+---
+
+## Notifications
+
+* Expo Notifications
+* Firebase Cloud Messaging
+
+---
+
+## Sécurité
+
+* Expo Secure Store
+* Expo Local Authentication
+
+---
+
+## Médias
+
+* Expo Image Picker
+* Expo File System
+* Expo Sharing
+
+---
+
+## Internationalisation
+
+* i18next
+* react-i18next
+
+---
+
+## Utilitaires
+
+* date-fns
+* MMKV
+* react-native-bottom-sheet
+* react-native-toast-message
+
+---
+
+Ce document constitue la base de référence du projet. Les chapitres suivants détailleront l'architecture des dossiers, le Design System, la structure de la base de données, les flux de synchronisation, les conventions de code, les modules métier et le plan de développement.

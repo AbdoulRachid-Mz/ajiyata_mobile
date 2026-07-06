@@ -6,8 +6,8 @@ import ThemedText from "@/components/ui/text";
 import ThemedView from "@/components/ui/view";
 import { useTheme } from "@/contexts/theme-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useMemo, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,8 +16,11 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   RefreshControl,
+  BackHandler,
 } from "react-native";
 import { useRef } from "react";
+import Toast from 'react-native-toast-message';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 
 // Hooks
 import { useCategories } from "@/features/categories/hooks";
@@ -30,14 +33,20 @@ import { useAppStore } from "@/stores/app-store";
 import { useUIStore } from "@/stores/ui-store";
 
 // Composants
-import { CategoryBreakdownChart } from "@/components/charts/CategoryBreakdownChart";
-import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { BalanceCard } from "@/components/finance/balance-card";
 import { TransactionItem } from "@/components/finance/transaction-item";
 
 // Utilitaires
 import { calculateFinancialSummary } from "@/lib/finance/calculations";
 import { Transaction } from "@/types";
+
+function formatCurrency(amount: number, currency = 'XOF') {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 
 export default function Dashboard() {
   const { theme } = useTheme();
@@ -46,10 +55,38 @@ export default function Dashboard() {
   const accountId = currentAccount?.id || "";
 
   // États
-  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">(
-    "monthly",
-  );
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Double back press to exit
+  const lastBackPressTime = useRef(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        const currentTime = new Date().getTime();
+        
+        if (currentTime - lastBackPressTime.current < 2000) {
+          // Si l'utilisateur appuie deux fois en moins de 2 secondes, on quitte
+          BackHandler.exitApp();
+          return true;
+        }
+
+        lastBackPressTime.current = currentTime;
+        Toast.show({
+          type: 'info',
+          text1: 'Appuyez à nouveau pour quitter',
+          position: 'bottom',
+          bottomOffset: 80,
+        });
+        
+        return true; // Empêche le comportement par défaut
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [])
+  );
 
   // Données
   const { data: allTransactions, isLoading: isLoadingAll, refetch: refetchAll } =
@@ -97,9 +134,78 @@ export default function Dashboard() {
     );
   }, [allTransactions, currentAccount?.initialBalance]);
 
-  // Le chargement est en cours, mais on garde les données précédentes
+  const currency = currentAccount?.currency || 'XOF';
+
+  const kpiStats = useMemo(() => {
+    const txs = allTransactions || [];
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+
+    const monthTxs = txs.filter(tx => {
+      const d = new Date(tx.date);
+      return isWithinInterval(d, { start: monthStart, end: monthEnd });
+    });
+
+    const dayOfMonth = now.getDate();
+    const monthExpenses = monthTxs.filter(tx => tx.type === 'expense');
+    const monthIncomes = monthTxs.filter(tx => tx.type === 'income');
+
+    const totalMonthExpense = monthExpenses.reduce((s, tx) => s + Number(tx.amount), 0);
+    const totalMonthIncome = monthIncomes.reduce((s, tx) => s + Number(tx.amount), 0);
+
+    const avgDailyExpense = dayOfMonth > 0 ? totalMonthExpense / dayOfMonth : 0;
+    const avgDailyIncome = dayOfMonth > 0 ? totalMonthIncome / dayOfMonth : 0;
+
+    const highestExpense = monthExpenses.length > 0
+      ? monthExpenses.reduce((max, tx) => Number(tx.amount) > Number(max.amount) ? tx : max)
+      : null;
+
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    const lastWeekStart = new Date(weekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(weekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+
+    const thisWeekExpenses = txs.filter(tx => {
+      const d = new Date(tx.date);
+      return tx.type === 'expense' && isWithinInterval(d, { start: weekStart, end: weekEnd });
+    }).reduce((s, tx) => s + Number(tx.amount), 0);
+
+    const lastWeekExpenses = txs.filter(tx => {
+      const d = new Date(tx.date);
+      return tx.type === 'expense' && d >= lastWeekStart && d <= lastWeekEnd;
+    }).reduce((s, tx) => s + Number(tx.amount), 0);
+
+    const weeklyTrend = lastWeekExpenses > 0
+      ? ((thisWeekExpenses - lastWeekExpenses) / lastWeekExpenses) * 100
+      : 0;
+
+    const catSpending: Record<string, number> = {};
+    monthExpenses.forEach(tx => {
+      if (tx.categoryId) {
+        catSpending[tx.categoryId] = (catSpending[tx.categoryId] || 0) + Number(tx.amount);
+      }
+    });
+
+    const topCategories = Object.entries(catSpending)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([catId, total]) => {
+        const cat = (categories || []).find(c => c.id === catId);
+        return {
+          id: catId,
+          name: cat?.name || 'Inconnu',
+          color: cat?.color || '#888',
+          total,
+        };
+      });
+
+    return { avgDailyExpense, avgDailyIncome, highestExpense, thisWeekExpenses, lastWeekExpenses, weeklyTrend, topCategories };
+  }, [allTransactions, categories]);
+
   const isLoading = isLoadingAll || isLoadingRecent;
-  const hasTransactions = allTransactions && allTransactions.length > 0;
 
   // Gestionnaires d'actions
   const handleDeleteTransaction = (transaction: Transaction) => {
@@ -338,53 +444,98 @@ export default function Dashboard() {
               </Button>
             </View>
 
-            {/* Graphiques */}
-            <Card
-              style={{ marginBottom: theme.spacing.md, padding: theme.spacing.md }}
-            >
-              <ThemedView
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: theme.spacing.sm,
-                }}
-              >
-                <ThemedText variant="lg" weight="semibold">
-                  Évolution
+            {/* Statistiques */}
+            <ThemedText variant="lg" weight="semibold" style={{ marginBottom: theme.spacing.md }}>
+              Statistiques du mois
+            </ThemedText>
+
+            {/* KPI Grid */}
+            <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginBottom: theme.spacing.md }}>
+              <Card style={{ flex: 1, padding: theme.spacing.md }}>
+                <ThemedText variant="xs" color="mutedForeground">Dépense moy./jour</ThemedText>
+                <ThemedText variant="xl" weight="bold">
+                  {formatCurrency(kpiStats.avgDailyExpense, currency)}
                 </ThemedText>
-                <View style={{ flexDirection: "row", gap: theme.spacing.xs }}>
-                  {(["weekly", "monthly", "yearly"] as const).map((p) => (
-                    <Button
-                      key={p}
-                      variant={period === p ? "default" : "ghost"}
-                      size="sm"
-                      onPress={() => setPeriod(p)}
-                      style={{ paddingHorizontal: theme.spacing.sm }}
-                    >
-                      {p === "weekly" ? "Sem." : p === "monthly" ? "Mois" : "An"}
-                    </Button>
-                  ))}
+              </Card>
+              <Card style={{ flex: 1, padding: theme.spacing.md }}>
+                <ThemedText variant="xs" color="mutedForeground">Revenu moy./jour</ThemedText>
+                <ThemedText variant="xl" weight="bold" style={{ color: theme.financialColors.income }}>
+                  {formatCurrency(kpiStats.avgDailyIncome, currency)}
+                </ThemedText>
+              </Card>
+            </View>
+
+            {/* Weekly trend card */}
+            <Card style={{ padding: theme.spacing.md, marginBottom: theme.spacing.md }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <ThemedText variant="xs" color="mutedForeground">Tendance hebdomadaire</ThemedText>
+                  <ThemedText variant="lg" weight="semibold">
+                    {formatCurrency(kpiStats.thisWeekExpenses, currency)}
+                  </ThemedText>
+                  <ThemedText variant="xs" color="mutedForeground">
+                    Semaine précédente: {formatCurrency(kpiStats.lastWeekExpenses, currency)}
+                  </ThemedText>
                 </View>
-              </ThemedView>
-
-              <IncomeExpenseChart
-                transactions={allTransactions || []}
-                currency={currentAccount?.currency || "XOF"}
-                period={period}
-              />
+                <View style={{ alignItems: 'center' }}>
+                  <Ionicons
+                    name={kpiStats.weeklyTrend <= 0 ? 'trending-down' : 'trending-up'}
+                    size={28}
+                    color={kpiStats.weeklyTrend <= 0 ? theme.financialColors.income : theme.financialColors.expense}
+                  />
+                  <ThemedText
+                    variant="sm"
+                    weight="bold"
+                    style={{ color: kpiStats.weeklyTrend <= 0 ? theme.financialColors.income : theme.financialColors.expense }}
+                  >
+                    {kpiStats.weeklyTrend > 0 ? '+' : ''}{kpiStats.weeklyTrend.toFixed(0)}%
+                  </ThemedText>
+                </View>
+              </View>
             </Card>
 
-            {/* Catégories */}
-            <Card
-              style={{ marginBottom: theme.spacing.md, padding: theme.spacing.md }}
+            {/* Highest transactions */}
+            {kpiStats.highestExpense && (
+              <Card style={{ padding: theme.spacing.md, marginBottom: theme.spacing.md }}>
+                <ThemedText variant="xs" color="mutedForeground">Plus grosse dépense du mois</ThemedText>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                  <ThemedText variant="base" weight="semibold" numberOfLines={1} style={{ flex: 1 }}>
+                    {kpiStats.highestExpense.title}
+                  </ThemedText>
+                  <ThemedText variant="base" weight="bold" style={{ color: theme.financialColors.expense }}>
+                    {formatCurrency(kpiStats.highestExpense.amount, currency)}
+                  </ThemedText>
+                </View>
+              </Card>
+            )}
+
+            {/* Top categories */}
+            {kpiStats.topCategories.length > 0 && (
+              <Card style={{ padding: theme.spacing.md, marginBottom: theme.spacing.md }}>
+                <ThemedText variant="sm" weight="semibold" style={{ marginBottom: theme.spacing.sm }}>Top catégories (dépenses)</ThemedText>
+                {kpiStats.topCategories.map((cat, i) => (
+                  <View key={cat.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: cat.color }} />
+                      <ThemedText variant="sm">{cat.name}</ThemedText>
+                    </View>
+                    <ThemedText variant="sm" weight="semibold">{formatCurrency(cat.total, currency)}</ThemedText>
+                  </View>
+                ))}
+              </Card>
+            )}
+
+            {/* Export button */}
+            <Button
+              variant="outline"
+              style={{ marginBottom: theme.spacing.md, borderRadius: theme.borderRadius.xl, paddingVertical: theme.spacing.md }}
+              onPress={() => router.push('/export')}
             >
-              <CategoryBreakdownChart
-                transactions={allTransactions || []}
-                categories={categories || []}
-                currency={currentAccount?.currency || "XOF"}
-              />
-            </Card>
+              <Ionicons name="download-outline" size={20} color={theme.colors.foreground} />
+              <ThemedText style={{ marginLeft: theme.spacing.sm, fontWeight: '600' }}>
+                Exporter les données
+              </ThemedText>
+            </Button>
           </>
         )}
 

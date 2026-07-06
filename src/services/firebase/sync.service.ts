@@ -24,6 +24,7 @@ import { Storage } from '@/lib/storage';
 import type { SyncEntity, SyncStatus } from '@/features/sync/types';
 import { firestore } from '@/configs/firebase/config';
 import NetInfo from '@react-native-community/netinfo';
+import { CloudinaryUploadService } from '@/services/cloudinary/upload.service';
 
 // Interface pour les données synchronisables
 interface SyncableEntity {
@@ -185,8 +186,11 @@ export class FirebaseSyncService {
         try {
           const docRef = doc(firestore, collectionName, entity.id);
           
+          // Uploader les pièces jointes locales vers Cloudinary si nécessaire
+          const entityWithCloudUrls = await this.uploadAttachmentsIfNeeded(entity);
+          
           // Préparer les données pour Firestore
-          const firestoreData = this.prepareForFirestore(entity);
+          const firestoreData = this.prepareForFirestore(entityWithCloudUrls);
           firestoreData.syncedAt = Timestamp.now();
           firestoreData.deviceId = deviceId;
           firestoreData.userId = userId;
@@ -391,6 +395,54 @@ export class FirebaseSyncService {
     delete data.syncStatus;
     delete data.isSynced;
 
+    return data;
+  }
+
+  /**
+   * Upload les pièces jointes locales vers Cloudinary avant sync
+   * Remplace les URIs locales (file://) par des URLs Cloudinary
+   */
+  private async uploadAttachmentsIfNeeded(entity: any): Promise<any> {
+    const data = { ...entity };
+    
+    // Vérifier si l'entité a des pièces jointes (attachments ou images)
+    const attachmentFields = ['attachments', 'images', 'receiptUrl', 'imageUrl', 'photoUrl'];
+    const uploader = CloudinaryUploadService.getInstance();
+    
+    for (const field of attachmentFields) {
+      if (!data[field]) continue;
+      
+      if (typeof data[field] === 'string' && data[field].startsWith('file://')) {
+        // Single local URI
+        try {
+          console.log(`☁️ Upload pièce jointe vers Cloudinary: ${field}`);
+          const result = await uploader.uploadImage(data[field]);
+          data[field] = result.secureUrl;
+          console.log(`✅ Pièce jointe uploadée: ${result.secureUrl}`);
+        } catch (err) {
+          console.warn(`⚠️ Upload échoué pour ${field}, URI locale conservée:`, err);
+        }
+      } else if (Array.isArray(data[field])) {
+        // Array of URIs
+        const uploaded: string[] = [];
+        for (const uri of data[field]) {
+          if (typeof uri === 'string' && uri.startsWith('file://')) {
+            try {
+              const result = await uploader.uploadImage(uri);
+              uploaded.push(result.secureUrl);
+              console.log(`✅ Pièce jointe uploadée: ${result.secureUrl}`);
+            } catch (err) {
+              console.warn(`⚠️ Upload échoué pour une image, URI locale conservée:`, err);
+              uploaded.push(uri); // Keep local URI as fallback
+            }
+          } else {
+            uploaded.push(uri); // Already a cloud URL
+          }
+        }
+        data[field] = uploaded;
+      }
+    }
+    
     return data;
   }
 

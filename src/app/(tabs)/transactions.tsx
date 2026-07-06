@@ -5,7 +5,6 @@ import SafeAreaView from "@/components/ui/safe-area-view";
 import ThemedView from "@/components/ui/view";
 import ThemedText from "@/components/ui/text";
 import Button from "@/components/ui/button";
-import FlatList from "@/components/ui/flat-list";
 import {
   useDeleteTransaction,
   useTransactions,
@@ -19,8 +18,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  SectionList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
 import { TransactionFilters } from "@/features/transactions/types/filters";
 import { filterTransactions, getFilterSummary } from "@/utils/filter-utils";
 import { Transaction } from "@/types";
@@ -60,6 +62,37 @@ export default function TransactionsScreen() {
       (filters.search && filters.search.trim().length > 0)
     );
   }, [filters]);
+
+  const groupedTransactions = useMemo(() => {
+    if (!filteredTransactions) return [];
+    
+    const groups: { [key: string]: Transaction[] } = {};
+    
+    filteredTransactions.forEach(tx => {
+      // date is likely string or Date, parse it safely
+      const dateObj = typeof tx.date === 'string' ? parseISO(tx.date as string) : new Date(tx.date);
+      let dateKey = "";
+      
+      if (isToday(dateObj)) {
+        dateKey = "Aujourd'hui";
+      } else if (isYesterday(dateObj)) {
+        dateKey = "Hier";
+      } else {
+        // e.g. "4 juillet 2026"
+        dateKey = format(dateObj, "d MMMM yyyy", { locale: fr });
+      }
+      
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(tx);
+    });
+    
+    return Object.keys(groups).map(key => ({
+      title: key,
+      data: groups[key]
+    }));
+  }, [filteredTransactions]);
 
   // Gestionnaires d'actions
   const handleDeleteTransaction = (transaction: Transaction) => {
@@ -155,9 +188,16 @@ export default function TransactionsScreen() {
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
         ) : (
-          <FlatList
-            data={filteredTransactions}
+          <SectionList
+            sections={groupedTransactions}
             keyExtractor={(item) => item.id}
+            renderSectionHeader={({ section: { title } }) => (
+              <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, backgroundColor: theme.colors.background }}>
+                <ThemedText variant="sm" weight="bold" color="mutedForeground">
+                  {title}
+                </ThemedText>
+              </View>
+            )}
             renderItem={({ item }) => (
               <View style={{ paddingHorizontal: theme.spacing.lg }}>
                 <TransactionItem

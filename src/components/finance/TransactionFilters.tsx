@@ -16,9 +16,10 @@ import Card from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import Spacer from '@/components/ui/spacer';
 import { Badge } from '@/components/ui/badge';
-import { TransactionFilters, TransactionType, SortField, SortDirection, DatePreset } from '@/features/transactions/types/filters';
 import { useCategories } from '@/features/categories/hooks';
+import { useBudgets } from '@/features/budgets/hooks';
 import { useAppStore } from '@/stores/app-store';
+import { DatePreset, SortField, TransactionFilters, TransactionType } from '@/features/transactions/types/filters';
 
 interface TransactionFiltersProps {
   filters: TransactionFilters;
@@ -35,11 +36,34 @@ export const TransactionFiltersModal = ({
 }: TransactionFiltersProps) => {
   const { theme } = useTheme();
   const { currentAccount } = useAppStore();
-  const { data: categories } = useCategories(currentAccount?.id || '');
+  const accountId = currentAccount?.id || '';
+  const { data: categories } = useCategories(accountId);
+  const { data: budgets } = useBudgets(accountId);
   const searchInputRef = useRef<RNTextInput>(null);
 
   const [localFilters, setLocalFilters] = useState<TransactionFilters>({ ...filters });
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Computed state for active budget filter
+  const activeBudgetId = React.useMemo(() => {
+    if (!budgets || !localFilters.categoryIds || localFilters.categoryIds.length !== 1) return null;
+    const catId = localFilters.categoryIds[0];
+    const budget = budgets.find(b => b.categoryId === catId && b.status === 'active');
+    return budget ? budget.id : null;
+  }, [budgets, localFilters.categoryIds]);
+
+  const handleBudgetSelect = (budgetId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const budget = budgets?.find(b => b.id === budgetId);
+    if (!budget) return;
+    
+    // Si on clique sur le même budget, on le désélectionne
+    if (activeBudgetId === budgetId) {
+       setLocalFilters(prev => ({ ...prev, categoryIds: [] }));
+    } else {
+       setLocalFilters(prev => ({ ...prev, categoryIds: [budget.categoryId] }));
+    }
+  };
 
   const handleTypePress = (type: TransactionType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -249,6 +273,45 @@ export const TransactionFiltersModal = ({
               ))}
             </View>
           </View>
+
+          {/* Budgets (filtre par catégorie du budget) */}
+          {budgets && budgets.filter(b => b.status === 'active').length > 0 && (
+            <View style={styles.section}>
+              <ThemedText variant="sm" weight="semibold" style={styles.sectionTitle}>
+                Budgets
+              </ThemedText>
+              <View style={styles.categoriesContainer}>
+                {budgets.filter(b => b.status === 'active').map(budget => {
+                  const cat = categories?.find(c => c.id === budget.categoryId);
+                  if (!cat) return null;
+                  const isSelected = activeBudgetId === budget.id;
+                  return (
+                    <TouchableOpacity
+                      key={budget.id}
+                      style={[
+                        styles.categoryButton,
+                        {
+                          borderColor: isSelected ? cat.color : theme.colors.border,
+                          backgroundColor: isSelected ? cat.color + '15' : 'transparent',
+                        },
+                      ]}
+                      onPress={() => handleBudgetSelect(budget.id)}
+                    >
+                      <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                      <ThemedText
+                        variant="sm"
+                        style={{
+                          color: isSelected ? cat.color : theme.colors.foreground,
+                        }}
+                      >
+                        Budget {cat.name}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
           {/* Catégories */}
           {categories && categories.length > 0 && (

@@ -8,6 +8,12 @@ import {
   NativeScrollEvent,
   StyleSheet,
 } from 'react-native';
+import {
+  startOfDay, endOfDay,
+  startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth,
+  isWithinInterval
+} from 'date-fns';
 import { useRouter } from 'expo-router';
 import SafeAreaView from '@/components/ui/safe-area-view';
 import ThemedText from '@/components/ui/text';
@@ -26,12 +32,7 @@ import { BudgetCard } from '@/components/finance/budget-card';
 
 // ---- Helpers ----
 
-function getMonthRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  return { start, end };
-}
+// Removed global getMonthRange()
 
 function formatCurrency(amount: number, currency = 'XOF') {
   return new Intl.NumberFormat('fr-FR', {
@@ -79,23 +80,6 @@ export default function BudgetsScreen() {
     lastScrollY.current = currentScrollY;
   };
 
-  // Calcul des dépenses par catégorie sur le mois courant
-  const { start, end } = useMemo(() => getMonthRange(), []);
-
-  const spentByCategory = useMemo(() => {
-    const map: Record<string, number> = {};
-    if (!transactions) return map;
-    for (const tx of transactions) {
-      if (!tx.categoryId) continue;
-      const txDate = new Date(tx.date);
-      if (txDate < start || txDate > end) continue;
-      if (tx.type === 'expense') {
-        map[tx.categoryId] = (map[tx.categoryId] || 0) + Number(tx.amount);
-      }
-    }
-    return map;
-  }, [transactions, start, end]);
-
   const categoryMap = useMemo(() => {
     const map: Record<string, Category> = {};
     if (!categories) return map;
@@ -105,10 +89,38 @@ export default function BudgetsScreen() {
     return map;
   }, [categories]);
 
-  const activeBudgets = useMemo(
-    () => (budgets || []).filter((b) => b.status === 'active'),
-    [budgets]
-  );
+  const activeBudgets = useMemo(() => {
+    if (!budgets) return [];
+    const active = budgets.filter((b) => b.status === 'active');
+    
+    return active.map(budget => {
+      let start, end;
+      const now = new Date();
+      if (budget.period === 'daily') {
+        start = startOfDay(now);
+        end = endOfDay(now);
+      } else if (budget.period === 'weekly') {
+        start = startOfWeek(now, { weekStartsOn: 1 });
+        end = endOfWeek(now, { weekStartsOn: 1 });
+      } else {
+        start = startOfMonth(now);
+        end = endOfMonth(now);
+      }
+      
+      let spent = 0;
+      if (transactions) {
+        for (const tx of transactions) {
+          if (tx.categoryId === budget.categoryId && tx.type === 'expense') {
+            const txDate = new Date(tx.date);
+            if (isWithinInterval(txDate, { start, end })) {
+              spent += Number(tx.amount);
+            }
+          }
+        }
+      }
+      return { ...budget, spent };
+    });
+  }, [budgets, transactions]);
 
   // KPI summary
   const totalLimit = useMemo(
@@ -116,12 +128,12 @@ export default function BudgetsScreen() {
     [activeBudgets]
   );
   const totalSpent = useMemo(
-    () => activeBudgets.reduce((sum, b) => sum + (spentByCategory[b.categoryId] || 0), 0),
-    [activeBudgets, spentByCategory]
+    () => activeBudgets.reduce((sum, b) => sum + (b.spent || 0), 0),
+    [activeBudgets]
   );
   const overCount = useMemo(
-    () => activeBudgets.filter((b) => (spentByCategory[b.categoryId] || 0) > Number(b.limit || 0)).length,
-    [activeBudgets, spentByCategory]
+    () => activeBudgets.filter((b) => (b.spent || 0) > Number(b.limit || 0)).length,
+    [activeBudgets]
   );
 
   const currency = currentAccount?.currency || 'XOF';
@@ -264,7 +276,7 @@ export default function BudgetsScreen() {
                 key={budget.id}
                 budget={{
                   ...budget,
-                  spent: spentByCategory[budget.categoryId] || 0,
+                  spent: budget.spent || 0,
                   account: { 
                     id: currentAccount?.id || '',
                     name: currentAccount?.name || '',

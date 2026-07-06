@@ -1,86 +1,45 @@
-// @/components/ui/view.tsx
 import { useTheme } from "@/contexts/theme-context";
-import { ReactNode, forwardRef, useEffect, useMemo } from "react";
-import { StyleSheet, ViewStyle, View as RNView } from "react-native";
-import Animated, {
-    Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
-} from "react-native-reanimated";
-
-type ViewBackground =
-  | "background"
-  | "card"
-  | "secondary"
-  | "muted"
-  | "accent"
-  | "transparent";
+import React, { forwardRef } from "react";
+import {
+  StyleProp,
+  ViewStyle,
+  View as RNView,
+} from "react-native";
+import Animated from "react-native-reanimated";
 
 interface ViewProps {
-  children: ReactNode;
-  background?: ViewBackground;
-  className?: string;
-  style?: ViewStyle;
-  animateBackgroundChange?: boolean;
-  animationDuration?: number;
+  children: React.ReactNode;
+  background?:
+    | "background"
+    | "card"
+    | "secondary"
+    | "muted"
+    | "accent"
+    | "transparent";
+  style?: StyleProp<ViewStyle>;
 }
 
 const ThemedView = forwardRef<RNView, ViewProps>(
-  (
-    {
-      children,
-      background = "transparent",
-      style,
-      animateBackgroundChange = true,
-      animationDuration = 200,
-    },
-    ref,
-  ) => {
+  ({ children, background = "transparent", style }, ref) => {
     const { theme } = useTheme();
 
-
-    const getBackgroundColor = () => {
-      if (background === "transparent") return "transparent";
-      return theme.colors[background];
-    };
-
-    
-    const bg = useSharedValue(getBackgroundColor());
-
-useEffect(() => {
-  bg.value = withTiming(getBackgroundColor(), {
-    duration: animationDuration,
-    easing: Easing.inOut(Easing.quad),
-  });
-}, [theme.colors, background, animationDuration]);
-
-    const staticStyles = useMemo(
-      () =>
-        StyleSheet.create({
-          base: {},
-        }),
-      [],
-    );
-const animatedStyle = useAnimatedStyle(() => {
-  return {
-    backgroundColor: bg.value,
-  };
-});
-
-    const baseStyles = [staticStyles.base, style];
+    const backgroundColor =
+      background === "transparent"
+        ? "transparent"
+        : theme.colors[background];
 
     return (
       <Animated.View
-        ref={ref as any}
-        style={[...baseStyles, animatedStyle]}
+        ref={ref}
+        style={[
+          { backgroundColor },
+          style,
+        ]}
       >
         {children}
       </Animated.View>
     );
-  },
+  }
 );
-
-ThemedView.displayName = "View";
 
 export default ThemedView;

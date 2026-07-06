@@ -20,7 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
 
 export default function BudgetEdit() {
   const { theme } = useTheme();
@@ -61,20 +61,39 @@ export default function BudgetEdit() {
   const onSubmit = async (data: BudgetFormData) => {
     if (!currentAccount) return;
 
-    try {
-      await updateBudget.mutateAsync({
-        id: budgetId,
-        data: {
-          categoryId: data.categoryId,
-          limit: data.limit,
-          period: data.period,
-          updatedAt: getCurrentTimestamp(),
-          syncStatus: "pending",
-        }
-      });
-      router.back();
-    } catch (error) {
-      console.error("Failed to update budget:", error);
+    const duplicate = budgets?.find(
+      (b) => b.id !== budgetId && b.categoryId === data.categoryId && b.period === data.period && b.status === "active"
+    );
+
+    const performUpdate = async () => {
+      try {
+        await updateBudget.mutateAsync({
+          id: budgetId,
+          data: {
+            categoryId: data.categoryId,
+            limit: data.limit,
+            period: data.period,
+            updatedAt: getCurrentTimestamp(),
+            syncStatus: "pending",
+          }
+        });
+        router.back();
+      } catch (error) {
+        console.error("Failed to update budget:", error);
+      }
+    };
+
+    if (duplicate) {
+      Alert.alert(
+        "Budget existant",
+        "Un autre budget actif existe déjà pour cette catégorie et cette période. Voulez-vous vraiment modifier celui-ci ainsi ?",
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "Modifier", onPress: performUpdate }
+        ]
+      );
+    } else {
+      await performUpdate();
     }
   };
 

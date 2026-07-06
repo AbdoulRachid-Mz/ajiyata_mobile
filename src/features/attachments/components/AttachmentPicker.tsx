@@ -16,7 +16,6 @@ import { useTheme } from '@/contexts/theme-context';
 import ThemedText from '@/components/ui/text';
 import Card from '@/components/ui/card';
 import Button from '@/components/ui/button';
-import { CloudinaryUploadService } from '@/services/cloudinary/upload.service';
 import { Attachment, NewAttachment } from '@/types';
 import { generateUUID, getCurrentTimestamp } from '@/utils/uuid';
 import { useAppStore } from '@/stores/app-store';
@@ -40,8 +39,6 @@ export const AttachmentPicker = ({
   const { currentAccount } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
-
-  const uploadService = CloudinaryUploadService.getInstance();
 
   const requestPermissions = async () => {
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
@@ -71,13 +68,13 @@ export const AttachmentPicker = ({
 
       if (source === 'camera') {
         result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsEditing: true,
           quality: 0.8,
         });
       } else {
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsEditing: true,
           quality: 0.8,
         });
@@ -124,56 +121,34 @@ export const AttachmentPicker = ({
     const attachmentId = generateUUID();
 
     try {
-      // Upload vers Cloudinary
-      const uploadResult = await uploadService.uploadImage(uri, {
-        onProgress: (progress) => {
-          setUploadProgress(prev => ({ ...prev, [attachmentId]: progress }));
-        },
-        quality: 80,
-        maxWidth: 1024,
-        maxHeight: 1024,
-      });
-
-      // Créer l'attachment local
+      // Créer l'attachment local (l'upload Cloudinary se fera lors de la synchronisation)
       const newAttachment: NewAttachment = {
         id: attachmentId,
         accountId: currentAccount.id,
         transactionId: transactionId || null,
         type: 'image',
         localUri: uri,
-        uploadUrl: uploadResult.secureUrl,
-        uploadId: uploadResult.publicId,
-        size: uploadResult.bytes,
-        isSynced: true,
+        uploadUrl: null,
+        uploadId: null,
+        size: 0,
+        isSynced: false, // Sera synchronisé plus tard
         createdAt: getCurrentTimestamp(),
         updatedAt: getCurrentTimestamp(),
         deviceId: 'temp-device-id',
         version: 1,
-        syncStatus: 'synced',
+        syncStatus: 'pending', // 'pending' pour indiquer qu'il doit être synchronisé
         metadata: {
           fileName: fileName || 'image.jpg',
-          width: uploadResult.width,
-          height: uploadResult.height,
-          format: uploadResult.format,
         },
       };
 
-      // Ici, on appellerait le repository pour sauvegarder en local
-      // Pour l'instant, on simule
-      const attachment = newAttachment as Attachment;
-      onAttachmentAdded(attachment);
-
+      onAttachmentAdded(newAttachment as Attachment);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Erreur lors de l\'upload:', error);
-      Alert.alert('Erreur', 'Impossible de télécharger l\'image.');
+      console.error('Erreur lors du traitement de l\'image:', error);
+      Alert.alert('Erreur', 'Impossible de traiter l\'image.');
     } finally {
       setIsUploading(false);
-      setUploadProgress(prev => {
-        const newState = { ...prev };
-        delete newState[attachmentId];
-        return newState;
-      });
     }
   };
 
@@ -202,9 +177,9 @@ export const AttachmentPicker = ({
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.attachmentList}>
           {existingAttachments.map((attachment) => (
             <View key={attachment.id} style={[styles.attachmentItem, { borderColor: theme.colors.border }]}>
-              {attachment.uploadUrl ? (
+              {attachment.localUri || attachment.uploadUrl ? (
                 <Image
-                  source={{ uri: attachment.uploadUrl }}
+                  source={{ uri: attachment.localUri || attachment.uploadUrl || '' }}
                   style={styles.attachmentImage}
                   resizeMode="cover"
                 />

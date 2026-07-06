@@ -1,8 +1,8 @@
 export const CLOUDINARY_CONFIG = {
-  cloudName: process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || '',
-  uploadPreset: process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '',
-  apiKey: process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY || '',
-  apiSecret: process.env.EXPO_PUBLIC_CLOUDINARY_API_SECRET || '',
+  cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+  uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || '',
+  apiKey: process.env.CLOUDINARY_API_KEY || '',
+  apiSecret: process.env.CLOUDINARY_API_SECRET || '',
 };
 
 export const getCloudinaryUploadUrl = () => {

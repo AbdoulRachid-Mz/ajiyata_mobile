@@ -6,7 +6,7 @@ import ThemedText from "@/components/ui/text";
 import TextInput from "@/components/ui/text-input";
 import ThemedView from "@/components/ui/view";
 import { useTheme } from "@/contexts/theme-context";
-import { useCreateBudget } from "@/features/budgets/hooks";
+import { useCreateBudget, useBudgets } from "@/features/budgets/hooks";
 import { CategoryPicker } from "@/features/categories/components/category-picker";
 import {
   BudgetFormData,
@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
 
 export default function BudgetCreate() {
   const { theme } = useTheme();
@@ -39,30 +39,51 @@ export default function BudgetCreate() {
     },
   });
 
+  const { data: existingBudgets } = useBudgets(currentAccount?.id || "");
+
   const onSubmit = async (data: BudgetFormData) => {
     if (!currentAccount) return;
 
-    try {
-      await createBudget.mutateAsync({
-        id: generateUUID(),
-        accountId: currentAccount.id,
-        categoryId: data.categoryId,
-        limit: data.limit,
-        spent: 0,
-        period: data.period,
-        startDate: new Date(),
-        endDate: new Date(), // Calculation logic needed here
-        status: "active",
-        createdAt: getCurrentTimestamp(),
-        updatedAt: getCurrentTimestamp(),
-        deviceId: "temp-device-id",
-        version: 1,
-        syncStatus: "pending",
-        metadata: {},
-      });
-      router.back();
-    } catch (error) {
-      console.error("Failed to create budget:", error);
+    const duplicate = existingBudgets?.find(
+      (b) => b.categoryId === data.categoryId && b.period === data.period && b.status === "active"
+    );
+
+    const performCreation = async () => {
+      try {
+        await createBudget.mutateAsync({
+          id: generateUUID(),
+          accountId: currentAccount.id,
+          categoryId: data.categoryId,
+          limit: data.limit,
+          spent: 0,
+          period: data.period,
+          startDate: new Date(),
+          endDate: new Date(), // Calculation logic needed here
+          status: "active",
+          createdAt: getCurrentTimestamp(),
+          updatedAt: getCurrentTimestamp(),
+          deviceId: "temp-device-id",
+          version: 1,
+          syncStatus: "pending",
+          metadata: {},
+        });
+        router.back();
+      } catch (error) {
+        console.error("Failed to create budget:", error);
+      }
+    };
+
+    if (duplicate) {
+      Alert.alert(
+        "Budget existant",
+        "Un budget actif existe déjà pour cette catégorie et cette période. Voulez-vous vraiment en créer un autre ?",
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "Créer", onPress: performCreation }
+        ]
+      );
+    } else {
+      await performCreation();
     }
   };
 

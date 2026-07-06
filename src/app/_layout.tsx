@@ -9,6 +9,7 @@ import { SyncProvider } from '@/contexts/sync-context';
 import { NotificationProvider } from '@/contexts/notification-context';
 import { AuthProvider } from '@/contexts/auth-context';
 import Toast from 'react-native-toast-message';
+import { AppLock } from '@/components/auth/app-lock';
 // global.css
 import '@/global.css';
 
@@ -23,6 +24,7 @@ export default function RootLayout() {
               <SyncProvider>
                 <NotificationProvider>
                   <MigrationLoader>
+                    <AppLock />
                     <Stack
                       screenOptions={{
                         headerShown: false,

@@ -1,16 +1,37 @@
- ERROR  Text strings must be rendered within a <Text> component.
+ ERROR  [TypeError: undefined is not a function]
 
-Code: button.tsx
-  151 |     return (
-  152 |       <Animated.View style={[buttonStyles.container, style, animatedStyle] as any}>
-> 153 |         <Pressable
-      |         ^
-  154 |           ref={ref}
-  155 |           disabled={disabled}
-  156 |           onPressIn={handlePressIn}
+Code: dashboard.tsx
+  86 |
+  87 |       return () =>
+> 88 |         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+     |                                        ^
+  89 |     }, [])
+  90 |   );
+  91 |
 Call Stack
-  forwardRef$argument_0 (src\components\ui\button.tsx:153:9)
-  SettingsScreen (src\app\(tabs)\settings.tsx:794:11)
-  TabsLayout (src\app\(tabs)\_layout.tsx:103:5)
-  RootLayout (src\app\_layout.tsx:24:21)
- ERROR  Backup error: [FirebaseError: Invalid document reference. Document references must have an even number of segments, but users/UZxnrD3KDeQ6JAntEyHqZosT2X93/categories has 3.] FirebaseError: Invalid document reference. Document references must have an even number of segments, but users/UZxnrD3KDeQ6JAntEyHqZosT2X93/categories has 3.
+  <anonymous> (src\app\(tabs)\dashboard.tsx:88:40)
+
+Code: _layout.tsx
+  103 |
+  104 |   return (
+> 105 |     <Tabs
+      |     ^
+  106 |       tabBar={(props) => <CustomTabBar {...props} />}
+  107 |       screenOptions={{
+  108 |         headerShown: false,
+Call Stack
+  TabsLayout (src\app\(tabs)\_layout.tsx:105:5)
+  RootLayout (src\app\_layout.tsx:28:21)
+ ERROR  [TypeError: undefined is not a function]
+
+Code: dashboard.tsx
+  86 |
+  87 |       return () =>
+> 88 |         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+     |                                        ^
+  89 |     }, [])
+  90 |   );
+  91 |
+Call Stack
+  <anonymous> (src\app\(tabs)\dashboard.tsx:88:40)
+    at Dashboard(./(tabs)/dashboard.tsx) (<anonymous>)

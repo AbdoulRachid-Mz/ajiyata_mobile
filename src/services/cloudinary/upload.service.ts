@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { getCloudinaryUploadUrl } from '@/configs/cloudinary';
+import { CLOUDINARY_CONFIG, getCloudinaryUploadUrl } from '@/configs/cloudinary';
 import { Storage } from '@/lib/storage';
 
 interface UploadResult {
@@ -51,16 +51,14 @@ export class CloudinaryUploadService {
       // Préparer le formulaire
       const formData = new FormData();
       formData.append('file', `data:image/jpeg;base64,${base64}`);
-      formData.append('upload_preset', process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+      formData.append('upload_preset', process.env.CLOUDINARY_UPLOAD_PRESET || '');
       formData.append('folder', 'ajiya-ta/attachments');
 
       // Upload vers Cloudinary
       const response = await fetch(getCloudinaryUploadUrl(), {
         method: 'POST',
         body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+
       });
 
       if (!response.ok) {

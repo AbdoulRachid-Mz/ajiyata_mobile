@@ -36,9 +36,6 @@
           "backgroundColor": "#E6F4FE",
           "android": {
             "image": "./assets/primary.png",
-            // imageWidth correspond à la largeur de l'image de splash en pixels (px) sur Android. 
-            // La valeur ici est calculée pour que l'image occupe 80% de la largeur de l'écran Android moyen (1080px),
-            // en conservant les proportions de votre fichier image original. La plage 70-90% correspond à 756-972px pour un écran 1080px.
             "imageWidth": 864
           }
         }
@@ -50,7 +47,9 @@
           "faceIDPermission": "Autorisez Ajiya Ta à utiliser Face ID pour vous connecter."
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-sharing",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
