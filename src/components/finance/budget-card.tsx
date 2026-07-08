@@ -179,7 +179,7 @@ export const BudgetCard = ({
                 </ThemedText>
                 <ThemedText weight="semibold">
                   {/* {formatCurrency(budget.spent, budget.currency)} */}
-                  {formatCurrency(budget.spent, budget.account.currency || 'XOF')}
+                  {formatCurrency(budget.spent, budget?.account?.currency || 'XOF')}
                 </ThemedText>
               </View>
 
@@ -197,7 +197,7 @@ export const BudgetCard = ({
                       : theme.financialColors.saving,
                   }}
                 >
-                  {formatCurrency(Math.max(0, budget.limit - budget.spent), budget.account.currency || 'XOF')}
+                  {formatCurrency(Math.max(0, budget.limit - budget.spent), budget?.account?.currency || 'XOF')}
                 </ThemedText>
               </View>
 
@@ -206,7 +206,7 @@ export const BudgetCard = ({
                   Total
                 </ThemedText>
                 <ThemedText weight="semibold">
-                  {formatCurrency(budget.limit, budget.account.currency || 'XOF')}
+                  {formatCurrency(budget.limit, budget?.account?.currency || 'XOF')}
                 </ThemedText>
               </View>
             </View>

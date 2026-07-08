@@ -43,7 +43,7 @@ function WheelPicker({
           offset: selectedIndex * ITEM_HEIGHT,
           animated: false,
         });
-      }, 50);
+      }, 100);
     }
   }, [selectedIndex]);
 
@@ -52,6 +52,13 @@ function WheelPicker({
     const index = Math.round(offsetY / ITEM_HEIGHT);
     const clampedIndex = Math.max(0, Math.min(index, data.length - 1));
     onSelect(data[clampedIndex]);
+  };
+
+  // Fonction pour obtenir l'item à afficher (avec padding)
+  const getItem = (index: number) => {
+    const realIndex = index - 2;
+    if (realIndex < 0 || realIndex >= data.length) return '';
+    return data[realIndex];
   };
 
   return (
@@ -70,16 +77,16 @@ function WheelPicker({
       />
       <FlatList
         ref={listRef}
-        data={['', '', ...data, '', '']}
+        data={Array.from({ length: data.length + 4 }, (_, i) => i)}
         keyExtractor={(_, idx) => idx.toString()}
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
         showsVerticalScrollIndicator={false}
         onMomentumScrollEnd={handleMomentumScrollEnd}
-        renderItem={({ item, index }) => {
-          // Real index (accounting for 2 padding items)
+        renderItem={({ index }) => {
+          const item = getItem(index);
           const realIndex = index - 2;
-          const isSelected = item === selected;
+          const isSelected = item === selected && realIndex >= 0 && realIndex < data.length;
           return (
             <View
               style={{
@@ -110,13 +117,15 @@ function WheelPicker({
 
 export function TimePicker({ visible, value, onConfirm, onClose }: Props) {
   const { theme } = useTheme();
-  const [hour, setHour] = useState(value.split(':')[0] || '08');
-  const [minute, setMinute] = useState(value.split(':')[1] || '00');
+  const [hour, setHour] = useState('08');
+  const [minute, setMinute] = useState('00');
 
+  // Mettre à jour les valeurs quand le picker s'ouvre avec la valeur actuelle
   useEffect(() => {
     if (visible) {
-      setHour(value.split(':')[0] || '08');
-      setMinute(value.split(':')[1] || '00');
+      const [h, m] = value.split(':');
+      setHour(h || '08');
+      setMinute(m || '00');
     }
   }, [visible, value]);
 
@@ -138,7 +147,6 @@ export function TimePicker({ visible, value, onConfirm, onClose }: Props) {
       />
       <View style={styles.centeredContainer} pointerEvents="box-none">
         <ThemedView
-        
           style={[
             styles.container,
             {

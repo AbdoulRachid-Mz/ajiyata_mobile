@@ -20,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 
 export default function BudgetCreate() {
   const { theme } = useTheme();
@@ -41,15 +42,87 @@ export default function BudgetCreate() {
 
   const { data: existingBudgets } = useBudgets(currentAccount?.id || "");
 
+  /**
+   * Vérifier si un budget existe déjà pour la même période
+   * Retourne true si un budget actif existe dans la même période
+   */
+  const isDuplicateBudget = (categoryId: string, period: string): boolean => {
+    if (!existingBudgets) return false;
+
+    const now = new Date();
+    let periodStart: Date;
+    let periodEnd: Date;
+
+    // Déterminer la période actuelle
+    switch (period) {
+      case 'daily':
+        periodStart = startOfDay(now);
+        periodEnd = endOfDay(now);
+        break;
+      case 'weekly':
+        periodStart = startOfWeek(now, { weekStartsOn: 1 });
+        periodEnd = endOfWeek(now, { weekStartsOn: 1 });
+        break;
+      case 'monthly':
+        periodStart = startOfMonth(now);
+        periodEnd = endOfMonth(now);
+        break;
+      default:
+        return false;
+    }
+
+    // Vérifier si un budget actif existe pour cette catégorie et période
+    return existingBudgets.some(budget => {
+      // Vérifier si le budget est actif
+      if (budget.status !== 'active') return false;
+      
+      // Vérifier si c'est la même catégorie
+      if (budget.categoryId !== categoryId) return false;
+      
+      // Vérifier si c'est la même période
+      if (budget.period !== period) return false;
+
+      // Vérifier si les dates se chevauchent
+      const budgetStart = new Date(budget.startDate);
+      const budgetEnd = new Date(budget.endDate);
+      
+      // Vérifier si la période actuelle est dans la période du budget existant
+      return isWithinInterval(periodStart, { start: budgetStart, end: budgetEnd }) ||
+             isWithinInterval(periodEnd, { start: budgetStart, end: budgetEnd });
+    });
+  };
+
   const onSubmit = async (data: BudgetFormData) => {
     if (!currentAccount) return;
 
-    const duplicate = existingBudgets?.find(
-      (b) => b.categoryId === data.categoryId && b.period === data.period && b.status === "active"
-    );
+    // Vérifier si un doublon existe dans la même période
+    const hasDuplicate = isDuplicateBudget(data.categoryId, data.period);
 
     const performCreation = async () => {
       try {
+        // Calculer la période correcte
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date;
+
+        switch (data.period) {
+          case 'daily':
+            startDate = startOfDay(now);
+            endDate = endOfDay(now);
+            break;
+          case 'weekly':
+            startDate = startOfWeek(now, { weekStartsOn: 1 });
+            endDate = endOfWeek(now, { weekStartsOn: 1 });
+            break;
+          case 'monthly':
+            startDate = startOfMonth(now);
+            endDate = endOfMonth(now);
+            break;
+          default:
+            startDate = now;
+            endDate = now;
+        }
+
         await createBudget.mutateAsync({
           id: generateUUID(),
           accountId: currentAccount.id,
@@ -57,8 +130,8 @@ export default function BudgetCreate() {
           limit: data.limit,
           spent: 0,
           period: data.period,
-          startDate: new Date(),
-          endDate: new Date(), // Calculation logic needed here
+          startDate: startDate,
+          endDate: endDate,
           status: "active",
           createdAt: getCurrentTimestamp(),
           updatedAt: getCurrentTimestamp(),
@@ -70,16 +143,17 @@ export default function BudgetCreate() {
         router.back();
       } catch (error) {
         console.error("Failed to create budget:", error);
+        Alert.alert("Erreur", "Impossible de créer le budget.");
       }
     };
 
-    if (duplicate) {
+    if (hasDuplicate) {
       Alert.alert(
         "Budget existant",
-        "Un budget actif existe déjà pour cette catégorie et cette période. Voulez-vous vraiment en créer un autre ?",
+        "Un budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment en créer un autre ?",
         [
           { text: "Annuler", style: "cancel" },
-          { text: "Créer", onPress: performCreation }
+          { text: "Créer quand même", onPress: performCreation }
         ]
       );
     } else {

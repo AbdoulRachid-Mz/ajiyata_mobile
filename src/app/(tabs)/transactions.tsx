@@ -26,6 +26,7 @@ import { fr } from "date-fns/locale";
 import { TransactionFilters } from "@/features/transactions/types/filters";
 import { filterTransactions, getFilterSummary } from "@/utils/filter-utils";
 import { Transaction } from "@/types";
+import { ScreenSkeleton } from "@/components/ui/screen-skeleton";
 // import { filterTransactions, getFilterSummary } from '@/features/transactions/utils/filter-utils';
 
 export default function TransactionsScreen() {
@@ -65,14 +66,17 @@ export default function TransactionsScreen() {
 
   const groupedTransactions = useMemo(() => {
     if (!filteredTransactions) return [];
-    
+
     const groups: { [key: string]: Transaction[] } = {};
-    
-    filteredTransactions.forEach(tx => {
+
+    filteredTransactions.forEach((tx) => {
       // date is likely string or Date, parse it safely
-      const dateObj = typeof tx.date === 'string' ? parseISO(tx.date as string) : new Date(tx.date);
+      const dateObj =
+        typeof tx.date === "string"
+          ? parseISO(tx.date as string)
+          : new Date(tx.date);
       let dateKey = "";
-      
+
       if (isToday(dateObj)) {
         dateKey = "Aujourd'hui";
       } else if (isYesterday(dateObj)) {
@@ -81,16 +85,16 @@ export default function TransactionsScreen() {
         // e.g. "4 juillet 2026"
         dateKey = format(dateObj, "d MMMM yyyy", { locale: fr });
       }
-      
+
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
       groups[dateKey].push(tx);
     });
-    
-    return Object.keys(groups).map(key => ({
+
+    return Object.keys(groups).map((key) => ({
       title: key,
-      data: groups[key]
+      data: groups[key],
     }));
   }, [filteredTransactions]);
 
@@ -182,17 +186,19 @@ export default function TransactionsScreen() {
 
         {/* Contenu */}
         {isLoading ? (
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
+          <ScreenSkeleton type="transactions" />
         ) : (
           <SectionList
             sections={groupedTransactions}
             keyExtractor={(item) => item.id}
             renderSectionHeader={({ section: { title } }) => (
-              <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, backgroundColor: theme.colors.background }}>
+              <View
+                style={{
+                  paddingHorizontal: theme.spacing.lg,
+                  paddingVertical: theme.spacing.sm,
+                  backgroundColor: theme.colors.background,
+                }}
+              >
                 <ThemedText variant="sm" weight="bold" color="mutedForeground">
                   {title}
                 </ThemedText>

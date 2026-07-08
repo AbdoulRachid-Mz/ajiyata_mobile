@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,15 +8,17 @@ interface AppState {
   currentAccount: Account | null;
   setCurrentUser: (user: User | null) => void;
   setCurrentAccount: (account: Account | null) => void;
-  // Securité
+  // Sécurité
   isAppLockEnabled: boolean;
   setAppLockEnabled: (enabled: boolean) => void;
+  lockTimeoutMinutes: number; // Temps en minutes avant verrouillage
+  setLockTimeoutMinutes: (minutes: number) => void;
   lastBackgroundTime: number | null;
   setLastBackgroundTime: (time: number | null) => void;
   // Rappels
   reminderEnabled: boolean;
   setReminderEnabled: (enabled: boolean) => void;
-  reminderTime: string; // Format "HH:mm", par défaut "08:00"
+  reminderTime: string;
   setReminderTime: (time: string) => void;
 }
 
@@ -31,6 +32,9 @@ export const useAppStore = create<AppState>()(
       
       isAppLockEnabled: false,
       setAppLockEnabled: (enabled) => set({ isAppLockEnabled: enabled }),
+      
+      lockTimeoutMinutes: 5, // Valeur par défaut: 5 minutes
+      setLockTimeoutMinutes: (minutes) => set({ lockTimeoutMinutes: minutes }),
       
       lastBackgroundTime: null,
       setLastBackgroundTime: (time) => set({ lastBackgroundTime: time }),

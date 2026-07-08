@@ -21,6 +21,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 
 export default function BudgetEdit() {
   const { theme } = useTheme();
@@ -58,21 +59,93 @@ export default function BudgetEdit() {
     }
   }, [budget, reset]);
 
+  /**
+   * Vérifier si un budget existe déjà pour la même période (hors celui en cours d'édition)
+   */
+  const isDuplicateBudget = (categoryId: string, period: string): boolean => {
+    if (!budgets) return false;
+
+    const now = new Date();
+    let periodStart: Date;
+    let periodEnd: Date;
+
+    switch (period) {
+      case 'daily':
+        periodStart = startOfDay(now);
+        periodEnd = endOfDay(now);
+        break;
+      case 'weekly':
+        periodStart = startOfWeek(now, { weekStartsOn: 1 });
+        periodEnd = endOfWeek(now, { weekStartsOn: 1 });
+        break;
+      case 'monthly':
+        periodStart = startOfMonth(now);
+        periodEnd = endOfMonth(now);
+        break;
+      default:
+        return false;
+    }
+
+    return budgets.some(b => {
+      // Ignorer le budget en cours d'édition
+      if (b.id === budgetId) return false;
+      
+      // Vérifier si le budget est actif
+      if (b.status !== 'active') return false;
+      
+      // Vérifier si c'est la même catégorie
+      if (b.categoryId !== categoryId) return false;
+      
+      // Vérifier si c'est la même période
+      if (b.period !== period) return false;
+
+      // Vérifier si les dates se chevauchent
+      const bStart = new Date(b.startDate);
+      const bEnd = new Date(b.endDate);
+      
+      return isWithinInterval(periodStart, { start: bStart, end: bEnd }) ||
+             isWithinInterval(periodEnd, { start: bStart, end: bEnd });
+    });
+  };
+
   const onSubmit = async (data: BudgetFormData) => {
     if (!currentAccount) return;
 
-    const duplicate = budgets?.find(
-      (b) => b.id !== budgetId && b.categoryId === data.categoryId && b.period === data.period && b.status === "active"
-    );
+    const hasDuplicate = isDuplicateBudget(data.categoryId, data.period);
 
     const performUpdate = async () => {
       try {
+        // Recalculer les dates de la période
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date;
+
+        switch (data.period) {
+          case 'daily':
+            startDate = startOfDay(now);
+            endDate = endOfDay(now);
+            break;
+          case 'weekly':
+            startDate = startOfWeek(now, { weekStartsOn: 1 });
+            endDate = endOfWeek(now, { weekStartsOn: 1 });
+            break;
+          case 'monthly':
+            startDate = startOfMonth(now);
+            endDate = endOfMonth(now);
+            break;
+          default:
+            startDate = now;
+            endDate = now;
+        }
+
         await updateBudget.mutateAsync({
           id: budgetId,
           data: {
             categoryId: data.categoryId,
             limit: data.limit,
             period: data.period,
+            startDate: startDate,
+            endDate: endDate,
             updatedAt: getCurrentTimestamp(),
             syncStatus: "pending",
           }
@@ -80,16 +153,17 @@ export default function BudgetEdit() {
         router.back();
       } catch (error) {
         console.error("Failed to update budget:", error);
+        Alert.alert("Erreur", "Impossible de mettre à jour le budget.");
       }
     };
 
-    if (duplicate) {
+    if (hasDuplicate) {
       Alert.alert(
         "Budget existant",
-        "Un autre budget actif existe déjà pour cette catégorie et cette période. Voulez-vous vraiment modifier celui-ci ainsi ?",
+        "Un autre budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment modifier celui-ci ?",
         [
           { text: "Annuler", style: "cancel" },
-          { text: "Modifier", onPress: performUpdate }
+          { text: "Modifier quand même", onPress: performUpdate }
         ]
       );
     } else {

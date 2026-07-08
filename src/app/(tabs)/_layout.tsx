@@ -1,13 +1,12 @@
-import { Tabs } from 'expo-router';
-import { useTheme } from '@/contexts/theme-context';
-import { Ionicons } from '@expo/vector-icons';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import ThemedText from '@/components/ui/text';
-import { useDailyReminders } from '@/hooks/use-daily-reminders';
-
-import { Animated as RNAnimated } from 'react-native';
-import { useEffect, useRef } from 'react';
-import { useUIStore } from '@/stores/ui-store';
+import { Tabs } from "expo-router";
+import { useTheme } from "@/contexts/theme-context";
+import { Ionicons } from "@expo/vector-icons";
+import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import ThemedText from "@/components/ui/text";
+import { useDailyReminders } from "@/hooks/use-daily-reminders";
+import { Animated as RNAnimated } from "react-native";
+import { useEffect, useRef } from "react";
+import { useUIStore } from "@/stores/ui-store";
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { theme } = useTheme();
@@ -23,29 +22,31 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   }, [isTabBarVisible]);
 
   return (
-    <RNAnimated.View style={[
-      styles.tabBar, 
-      { 
-        backgroundColor: theme.colors.background,
-        borderTopColor: 'transparent',
-        transform: [{ translateY }],
-        shadowColor: theme.colors.foreground,
-      }
-    ]}>
+    <RNAnimated.View
+      style={[
+        styles.tabBar,
+        {
+          backgroundColor: theme.colors.background,
+          borderTopColor: "transparent",
+          transform: [{ translateY }],
+          shadowColor: theme.colors.foreground,
+        },
+      ]}
+    >
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const label =
           options.tabBarLabel !== undefined
             ? options.tabBarLabel
             : options.title !== undefined
-            ? options.title
-            : route.name;
+              ? options.title
+              : route.name;
 
         const isFocused = state.index === index;
 
         const onPress = () => {
           const event = navigation.emit({
-            type: 'tabPress',
+            type: "tabPress",
             target: route.key,
             canPreventDefault: true,
           });
@@ -57,20 +58,30 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
         const onLongPress = () => {
           navigation.emit({
-            type: 'tabLongPress',
+            type: "tabLongPress",
             target: route.key,
           });
         };
 
-        let iconName = 'ellipse-outline';
-        if (route.name === 'dashboard') iconName = isFocused ? 'home' : 'home-outline';
-        if (route.name === 'transactions') iconName = isFocused ? 'list' : 'list-outline';
-        if (route.name === 'budgets') iconName = isFocused ? 'pie-chart' : 'pie-chart-outline';
-        if (route.name === 'goals') iconName = isFocused ? 'trophy' : 'trophy-outline';
-        if (route.name === 'settings') iconName = isFocused ? 'settings' : 'settings-outline';
-        if (route.name === 'about') iconName = isFocused ? 'information-circle' : 'information-circle-outline';
+        let iconName = "ellipse-outline";
+        if (route.name === "dashboard")
+          iconName = isFocused ? "home" : "home-outline";
+        if (route.name === "transactions")
+          iconName = isFocused ? "list" : "list-outline";
+        if (route.name === "budgets")
+          iconName = isFocused ? "pie-chart" : "pie-chart-outline";
+        if (route.name === "goals")
+          iconName = isFocused ? "trophy" : "trophy-outline";
+        if (route.name === "settings")
+          iconName = isFocused ? "settings" : "settings-outline";
+        if (route.name === "about")
+          iconName = isFocused
+            ? "information-circle"
+            : "information-circle-outline";
 
-        const color = isFocused ? theme.colors.primary : theme.colors.mutedForeground;
+        const color = isFocused
+          ? theme.colors.primary
+          : theme.colors.mutedForeground;
 
         return (
           <TouchableOpacity
@@ -83,11 +94,24 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             onLongPress={onLongPress}
             style={styles.tabItem}
           >
-            <View style={[styles.iconContainer, isFocused && { backgroundColor: theme.colors.primary + '20', borderRadius: theme.spacing.md }]}>
+            <View
+              style={[
+                styles.iconContainer,
+                isFocused && {
+                  backgroundColor: theme.colors.primary + "20",
+                  borderRadius: theme.spacing.md,
+                },
+              ]}
+            >
               <Ionicons name={iconName as any} size={24} color={color} />
             </View>
-            <ThemedText 
-              style={{ fontSize: 10, color: color, marginTop: 4, fontWeight: isFocused ? '600' : '400' }}
+            <ThemedText
+              style={{
+                fontSize: 10,
+                color: color,
+                marginTop: 4,
+                fontWeight: isFocused ? "600" : "400",
+              }}
             >
               {label as string}
             </ThemedText>
@@ -99,8 +123,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 }
 
 export default function TabsLayout() {
+  // Appeler les hooks ici une seule fois
   useDailyReminders();
-  
+
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
@@ -111,37 +136,37 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Accueil',
+          title: "Accueil",
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
-          title: 'opérations',
+          title: "Opérations",
         }}
       />
       <Tabs.Screen
         name="budgets"
         options={{
-          title: 'Budgets',
+          title: "Budgets",
         }}
       />
       <Tabs.Screen
         name="goals"
         options={{
-          title: 'Objectifs',
+          title: "Objectifs",
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Paramètres',
+          title: "Paramètres",
         }}
       />
       <Tabs.Screen
         name="about"
         options={{
-          title: 'À propos',
+          title: "À propos",
         }}
       />
     </Tabs>
@@ -150,15 +175,15 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    flexDirection: 'row',
-    height: Platform.OS === 'ios' ? 70 : 65,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 5,
+    flexDirection: "row",
+    height: Platform.OS === "ios" ? 70 : 65,
+    paddingBottom: Platform.OS === "ios" ? 10 : 5,
     borderTopWidth: 0,
     elevation: 10,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 20,
     right: 20,
@@ -166,13 +191,13 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 8,
   },
   iconContainer: {
     paddingHorizontal: 16,
     paddingVertical: 4,
     borderRadius: 20,
-  }
+  },
 });

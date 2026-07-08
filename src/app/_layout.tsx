@@ -1,25 +1,27 @@
-import { Stack } from 'expo-router';
-import { ThemeProvider } from '@/contexts/theme-context';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '@/configs/query-client';
-import { MigrationLoader } from '@/components/MigrationLoader';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SyncProvider } from '@/contexts/sync-context';
-import { NotificationProvider } from '@/contexts/notification-context';
-import { AuthProvider } from '@/contexts/auth-context';
-import Toast from 'react-native-toast-message';
-import { AppLock } from '@/components/auth/app-lock';
+import { Stack } from "expo-router";
+import { ThemeProvider } from "@/contexts/theme-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/configs/query-client";
+import { MigrationLoader } from "@/components/MigrationLoader";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SyncProvider } from "@/contexts/sync-context";
+import { NotificationProvider } from "@/contexts/notification-context";
+import { AuthProvider } from "@/contexts/auth-context";
+import Toast from "react-native-toast-message";
+import { toastConfig } from "@/configs/toast-config";
+import { AppLock } from "@/components/auth/app-lock";
+
 // global.css
-import '@/global.css';
+import "@/global.css";
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <Toast position="top" />
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
+            <Toast position="top" topOffset={50} config={toastConfig} />
             <AuthProvider>
               <SyncProvider>
                 <NotificationProvider>
@@ -28,7 +30,7 @@ export default function RootLayout() {
                     <Stack
                       screenOptions={{
                         headerShown: false,
-                        animation: 'slide_from_right',
+                        animation: "slide_from_right",
                       }}
                     />
                   </MigrationLoader>

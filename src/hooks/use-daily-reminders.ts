@@ -1,25 +1,32 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNotifications } from '@/contexts/notification-context';
 import { useAppStore } from '@/stores/app-store';
-import { notificationService } from '@/configs/notifications/notifications.native';
 
 // Identifiant unique pour notre notification quotidienne
 const DAILY_REMINDER_ID = 'daily_reminder';
 
 export const useDailyReminders = () => {
   const { reminderEnabled, reminderTime } = useAppStore();
-  const { scheduleNotification } = useNotifications();
+  const { scheduleNotification, cancelNotification, isExpoGo } = useNotifications();
+  const scheduledIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Ne pas planifier dans Expo Go
+    if (isExpoGo) {
+      console.log('⚠️ Rappels quotidiens désactivés dans Expo Go');
+      return;
+    }
+
     const configureDailyReminder = async () => {
-      // 1. Annuler l'ancien rappel s'il existe
-      // Expo ne permet pas d'annuler par ID facilement sauf si on a stocké l'ID de retour, 
-      // mais on peut annuler toutes les notifications planifiées et re-planifier (attention aux autres rappels).
-      // On va plutôt juste planifier et espérer que l'utilisateur ne change pas l'heure tous les jours.
-      // Dans une implémentation robuste, on garde une trace de `lastNotificationId` dans le store.
-      
+      // Annuler l'ancien rappel s'il existe
+      if (scheduledIdRef.current) {
+        await cancelNotification(scheduledIdRef.current);
+        scheduledIdRef.current = null;
+      }
+
+      // Si désactivé, on arrête là
       if (!reminderEnabled) {
-        // Si désactivé, on essaie d'annuler (dans un vrai projet, on stockerait l'ID retourné par schedule)
+        console.log('🔕 Rappels quotidiens désactivés');
         return;
       }
 
@@ -28,13 +35,19 @@ export const useDailyReminders = () => {
         const hour = parseInt(hourStr, 10);
         const minute = parseInt(minuteStr, 10);
 
-        if (isNaN(hour) || isNaN(minute)) return;
+        if (isNaN(hour) || isNaN(minute)) {
+          console.error('Heure de rappel invalide:', reminderTime);
+          return;
+        }
 
         // Planifier la nouvelle notification
-        await scheduleNotification({
-          title: 'Ajiya Ta - Point Quotidien ☀️',
-          body: "C'est l'heure de faire le point ! N'oubliez pas de vérifier vos budgets et objectifs aujourd'hui.",
-          data: { type: 'daily_reminder' },
+        const id = await scheduleNotification({
+          title: '💰 Ajiya Ta - Point Quotidien',
+          body: "C'est l'heure de faire le point ! Vérifiez vos budgets, objectifs et transactions du jour.",
+          data: { 
+            type: 'daily_reminder',
+            route: '/(tabs)/dashboard',
+          },
           categoryIdentifier: 'daily_reminder',
           trigger: {
             hour,
@@ -42,11 +55,23 @@ export const useDailyReminders = () => {
             repeats: true,
           },
         });
+
+        if (id) {
+          scheduledIdRef.current = id;
+          console.log(`✅ Rappel quotidien planifié à ${reminderTime} (ID: ${id})`);
+        }
       } catch (error) {
-        console.error("Erreur lors de la configuration du rappel quotidien", error);
+        console.error("❌ Erreur lors de la configuration du rappel quotidien:", error);
       }
     };
 
     configureDailyReminder();
-  }, [reminderEnabled, reminderTime, scheduleNotification]);
+
+    // Nettoyer à la destruction
+    return () => {
+      if (scheduledIdRef.current) {
+        cancelNotification(scheduledIdRef.current);
+      }
+    };
+  }, [reminderEnabled, reminderTime, scheduleNotification, cancelNotification, isExpoGo]);
 };

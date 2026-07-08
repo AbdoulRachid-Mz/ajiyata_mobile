@@ -7,18 +7,23 @@ import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '@/components/ui/text';
 import Button from '@/components/ui/button';
 
-// Temps de verrouillage (ex: 5 minutes = 300 000 ms)
-const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
-
 export function AppLock() {
   const { theme } = useTheme();
-  const { isAppLockEnabled, lastBackgroundTime, setLastBackgroundTime } = useAppStore();
+  const { 
+    isAppLockEnabled, 
+    lastBackgroundTime, 
+    setLastBackgroundTime,
+    lockTimeoutMinutes,
+  } = useAppStore();
   const { authenticate, isBiometricAvailable } = useBiometricAuth();
   const [isLocked, setIsLocked] = useState(false);
   const appState = useRef(AppState.currentState);
 
+  // Convertir les minutes en millisecondes
+  const lockTimeoutMs = lockTimeoutMinutes * 60 * 1000;
+
   useEffect(() => {
-    // Si la sécurité n'est pas activée, on ne fait rien
+    // Si la sécurité n'est pas activée ou la biométrie non disponible, on ne fait rien
     if (!isAppLockEnabled || !isBiometricAvailable) return;
 
     const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
@@ -38,8 +43,8 @@ export function AppLock() {
         const now = Date.now();
         const backgroundTime = useAppStore.getState().lastBackgroundTime;
         
-        // Si l'application a été en arrière-plan plus de 5 minutes (ou temps non défini)
-        if (backgroundTime && (now - backgroundTime) >= LOCK_TIMEOUT_MS) {
+        // Si l'application a été en arrière-plan plus que le temps défini
+        if (backgroundTime && (now - backgroundTime) >= lockTimeoutMs) {
           setIsLocked(true);
           await handleUnlock();
         }
@@ -54,7 +59,7 @@ export function AppLock() {
     return () => {
       subscription.remove();
     };
-  }, [isAppLockEnabled, isBiometricAvailable, setLastBackgroundTime]);
+  }, [isAppLockEnabled, isBiometricAvailable, setLastBackgroundTime, lockTimeoutMs]);
 
   const handleUnlock = async () => {
     const success = await authenticate('Veuillez vous authentifier pour déverrouiller Ajiya Ta');
@@ -66,16 +71,23 @@ export function AppLock() {
   if (!isLocked) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.background, zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]}>
+    <View style={[StyleSheet.absoluteFill, { 
+      backgroundColor: theme.colors.background, 
+      zIndex: 9999, 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      padding: theme.spacing.xl,
+    }]}>
       <Ionicons name="lock-closed" size={64} color={theme.colors.primary} style={{ marginBottom: 24 }} />
-      <ThemedText variant="2xl" weight="bold" style={{ marginBottom: 8 }}>
+      <ThemedText variant="2xl" weight="bold" style={{ marginBottom: 8, textAlign: 'center' }}>
         Application verrouillée
       </ThemedText>
-      <ThemedText color="mutedForeground" style={{ marginBottom: 32 }}>
-        Veuillez vous authentifier pour continuer
+      <ThemedText color="mutedForeground" style={{ marginBottom: 32, textAlign: 'center' }}>
+        Verrouillage automatique après {lockTimeoutMinutes} minute{lockTimeoutMinutes > 1 ? 's' : ''} d'inactivité
       </ThemedText>
       
-      <Button onPress={handleUnlock} size="lg">
+      <Button onPress={handleUnlock} size="lg" style={{ minWidth: 200 }}>
+        <Ionicons name="finger-print-outline" size={24} color={theme.colors.primaryForeground} style={{ marginRight: 8 }} />
         Déverrouiller
       </Button>
     </View>

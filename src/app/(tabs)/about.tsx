@@ -14,11 +14,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useUIStore } from "@/stores/ui-store";
 import { useRef } from "react";
+import { useRouter } from "expo-router";
 
 export default function AboutScreen() {
   const { theme } = useTheme();
   const { setTabBarVisible } = useUIStore();
   const lastScrollY = useRef(0);
+
+  const router = useRouter();
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const currentScrollY = event.nativeEvent.contentOffset.y;
@@ -37,6 +40,11 @@ export default function AboutScreen() {
 
   const handleOpenTwitter = () => {
     Linking.openURL("https://twitter.com/"); // Fallback twitter URL
+  };
+
+  // handleOpenContact
+  const handleOpenContact = (number: string) => {
+    Linking.openURL(`tel:${number}`); // Using the phone from settings
   };
 
   return (
@@ -152,6 +160,7 @@ export default function AboutScreen() {
               alignItems: "center",
               marginVertical: 8,
             }}
+            onPress={() => handleOpenContact("+22796021553")}
           >
             <Ionicons
               name="call-outline"
@@ -160,6 +169,54 @@ export default function AboutScreen() {
               style={{ marginRight: 12 }}
             />
             <ThemedText>+227 96021553</ThemedText>
+          </TouchableOpacity>
+        </Card>
+
+        <Card
+          style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}
+        >
+          <ThemedText
+            variant="lg"
+            weight="semibold"
+            style={{ marginBottom: theme.spacing.md }}
+          >
+            Mentions légales
+          </ThemedText>
+
+          <TouchableOpacity
+            // @ts-ignore
+            onPress={() => router.push("/privacy")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingVertical: theme.spacing.sm,
+            }}
+          >
+            <ThemedText>Politique de confidentialité</ThemedText>
+            <Ionicons
+              name="chevron-forward-outline"
+              size={20}
+              color={theme.colors.mutedForeground}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            // @ts-ignore
+            onPress={() => router.push("/terms")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingVertical: theme.spacing.sm,
+            }}
+          >
+            <ThemedText>Conditions d'utilisation</ThemedText>
+            <Ionicons
+              name="chevron-forward-outline"
+              size={20}
+              color={theme.colors.mutedForeground}
+            />
           </TouchableOpacity>
         </Card>
       </ScrollView>

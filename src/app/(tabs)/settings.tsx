@@ -28,15 +28,36 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Constants from "expo-constants";
+import { useNotifications } from "@/contexts/notification-context";
+
+// Importer conditionnellement expo-notifications uniquement si ce n'est pas Expo Go
+const isExpoGo = Constants.appOwnership === 'expo';
+let Notifications: any = null;
+
+if (!isExpoGo) {
+  try {
+    // @ts-ignore - Import dynamique
+    Notifications = require('expo-notifications');
+  } catch (e) {
+    console.log('expo-notifications non disponible');
+  }
+}
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
   const router = useRouter();
-  const { 
-    currentUser, setCurrentUser, currentAccount, setCurrentAccount,
-    isAppLockEnabled, setAppLockEnabled,
-    reminderEnabled, setReminderEnabled,
-    reminderTime, setReminderTime
+  const {
+    currentUser,
+    setCurrentUser,
+    currentAccount,
+    setCurrentAccount,
+    isAppLockEnabled,
+    setAppLockEnabled,
+    reminderEnabled,
+    setReminderEnabled,
+    reminderTime,
+    setReminderTime,
   } = useAppStore();
   const {
     user,
@@ -58,6 +79,8 @@ export default function SettingsScreen() {
     deleteCloudData,
   } = useSync();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [isLockTimeoutPickerOpen, setIsLockTimeoutPickerOpen] = useState(false);
+  const [lockTimeoutMinutes, setLockTimeoutMinutes] = useState(5);
 
   useEffect(() => {
     const checkBiometrics = async () => {
@@ -66,6 +89,7 @@ export default function SettingsScreen() {
     };
     checkBiometrics();
   }, [isBiometricAvailable]);
+  
   const updateUser = useUpdateUser();
   const updateAccount = useUpdateAccount();
   const { setTabBarVisible } = useUIStore();
@@ -108,9 +132,9 @@ export default function SettingsScreen() {
   const [selectedCurrency, setSelectedCurrency] = useState(
     currentUser?.defaultCurrency || "XOF",
   );
-  const [selectedAccountType, setSelectedAccountType] = useState<
+  const [selectedAccountType, setSelectedAccountType] = useState<(
     "personal" | "business"
-  >(currentAccount?.type || "personal");
+  )>(currentAccount?.type || "personal");
 
   useEffect(() => {
     if (currentUser) {
@@ -275,6 +299,51 @@ export default function SettingsScreen() {
       icon: "briefcase-outline",
     },
   ];
+
+  // Fonction pour gérer les permissions de notifications
+  const handleNotificationPermission = async (value: boolean) => {
+    // Si on désactive, on continue
+    if (!value) {
+      setReminderEnabled(value);
+      return;
+    }
+
+    // Si on active, vérifier les permissions
+    if (isExpoGo) {
+      Alert.alert(
+        "⚠️ Non disponible",
+        "Les notifications ne sont pas disponibles dans Expo Go. Utilisez un build de développement.",
+      );
+      return;
+    }
+
+    try {
+      // Vérifier si Notifications est disponible
+      if (!Notifications) {
+        Alert.alert(
+          "⚠️ Non disponible",
+          "Les notifications ne sont pas disponibles sur cet appareil.",
+        );
+        return;
+      }
+
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== "granted") {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        if (newStatus !== "granted") {
+          Alert.alert(
+            "Permission refusée",
+            "Veuillez autoriser les notifications dans les paramètres de votre appareil.",
+          );
+          return;
+        }
+      }
+      setReminderEnabled(value);
+    } catch (error) {
+      console.error("Erreur de permission:", error);
+      Alert.alert("Erreur", "Impossible de vérifier les permissions.");
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -780,37 +849,70 @@ export default function SettingsScreen() {
               </View>
 
               {isBiometricEnabled && (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginTop: theme.spacing.md,
-                  }}
-                >
+                <>
                   <View
                     style={{
                       flexDirection: "row",
+                      justifyContent: "space-between",
                       alignItems: "center",
-                      gap: theme.spacing.sm,
+                      marginTop: theme.spacing.md,
                     }}
                   >
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={20}
-                      color={theme.colors.foreground}
-                    />
-                    <ThemedText>Verrouiller à l'ouverture (5 min)</ThemedText>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: theme.spacing.sm,
+                      }}
+                    >
+                      <Ionicons
+                        name="lock-closed-outline"
+                        size={20}
+                        color={theme.colors.foreground}
+                      />
+                      <ThemedText>Verrouiller après</ThemedText>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setIsLockTimeoutPickerOpen(true)}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: theme.spacing.sm,
+                        paddingVertical: 4,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                        backgroundColor: theme.colors.muted,
+                      }}
+                    >
+                      <ThemedText
+                        weight="bold"
+                        style={{ color: theme.colors.primary, fontSize: 16 }}
+                      >
+                        {lockTimeoutMinutes} min
+                      </ThemedText>
+                      <Ionicons
+                        name="chevron-down"
+                        size={16}
+                        color={theme.colors.mutedForeground}
+                      />
+                    </TouchableOpacity>
                   </View>
-                  <Switch
-                    value={isAppLockEnabled}
-                    onValueChange={setAppLockEnabled}
-                    trackColor={{
-                      false: theme.colors.border,
-                      true: theme.colors.primary,
+
+                  {/* Sélecteur de temps pour le verrouillage */}
+                  <TimePicker
+                    visible={isLockTimeoutPickerOpen}
+                    value={`${String(lockTimeoutMinutes).padStart(2, "0")}:00`}
+                    onConfirm={(time) => {
+                      const minutes = parseInt(time.split(":")[0], 10);
+                      if (!isNaN(minutes) && minutes > 0) {
+                        setLockTimeoutMinutes(minutes);
+                        // setAppLockTimeout(minutes);
+                      }
+                      setIsLockTimeoutPickerOpen(false);
                     }}
+                    onClose={() => setIsLockTimeoutPickerOpen(false)}
                   />
-                </View>
+                </>
               )}
             </>
           )}
@@ -851,21 +953,20 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={reminderEnabled}
-              onValueChange={setReminderEnabled}
+              onValueChange={handleNotificationPermission}
               trackColor={{
                 false: theme.colors.border,
                 true: theme.colors.primary,
               }}
             />
           </View>
-
           {reminderEnabled && (
             <TouchableOpacity
               onPress={() => setIsTimePickerOpen(true)}
               style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
                 paddingVertical: theme.spacing.sm,
                 paddingHorizontal: theme.spacing.md,
                 borderRadius: theme.spacing.sm,
@@ -875,8 +976,8 @@ export default function SettingsScreen() {
             >
               <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
                   gap: theme.spacing.sm,
                 }}
               >
@@ -889,8 +990,8 @@ export default function SettingsScreen() {
               </View>
               <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
                   gap: theme.spacing.sm,
                 }}
               >
@@ -908,7 +1009,6 @@ export default function SettingsScreen() {
               </View>
             </TouchableOpacity>
           )}
-
           <TimePicker
             visible={isTimePickerOpen}
             value={reminderTime}
@@ -918,6 +1018,50 @@ export default function SettingsScreen() {
             }}
             onClose={() => setIsTimePickerOpen(false)}
           />
+          // Dans la section des rappels, après le sélecteur d'heure
+          {reminderEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={async () => {
+                const { sendNotification } = useNotifications();
+                await sendNotification({
+                  title: "🔔 Test de rappel",
+                  body: "Cette notification fonctionne correctement !",
+                  data: { type: "test" },
+                });
+              }}
+              style={{ marginTop: theme.spacing.sm }}
+            >
+              Tester la notification
+            </Button>
+          )}
+        </Card>
+
+        {/* export data */}
+        <Card
+          style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
+        >
+          <Button
+            variant="outline"
+            style={{
+              marginBottom: theme.spacing.md,
+              borderRadius: theme.borderRadius.xl,
+              paddingVertical: theme.spacing.md,
+            }}
+            onPress={() => router.push("/export")}
+          >
+            <Ionicons
+              name="download-outline"
+              size={20}
+              color={theme.colors.foreground}
+            />
+            <ThemedText
+              style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
+            >
+              Exporter les données
+            </ThemedText>
+          </Button>
         </Card>
 
         {/* Delete Data */}

@@ -1,122 +1,194 @@
-import React, { useState, useMemo } from 'react';
-import { View, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import React, { useState, useMemo } from "react";
+import {
+  View,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
 
-import SafeAreaView from '@/components/ui/safe-area-view';
-import ThemedText from '@/components/ui/text';
-import ThemedView from '@/components/ui/view';
-import Card from '@/components/ui/card';
-import Button from '@/components/ui/button';
-import { useTheme } from '@/contexts/theme-context';
-import { useAppStore } from '@/stores/app-store';
-import { useTransactions } from '@/features/transactions/hooks';
-import { useCategories } from '@/features/categories/hooks';
-import { exportData, ExportOptions } from '@/lib/export/export-service';
+import SafeAreaView from "@/components/ui/safe-area-view";
+import ThemedText from "@/components/ui/text";
+import ThemedView from "@/components/ui/view";
+import Card from "@/components/ui/card";
+import Button from "@/components/ui/button";
+import { useTheme } from "@/contexts/theme-context";
+import { useAppStore } from "@/stores/app-store";
+import { useTransactions } from "@/features/transactions/hooks";
+import { useBudgets } from "@/features/budgets/hooks";
+import { useSavingGoals } from "@/features/saving-goals/hooks";
+import { useCategories } from "@/features/categories/hooks";
+import { structuredExport } from "@/lib/export/structured-export";
 
-type ExportFormat = 'pdf' | 'json' | 'excel';
-type PeriodKey = 'week' | 'month' | 'year' | 'all';
+type ExportFormat = "json" | "csv";
+type ExportType = "transactions" | "budgets" | "goals" | "all";
 
-const FORMAT_OPTIONS: { key: ExportFormat; label: string; icon: string; desc: string }[] = [
-  { key: 'pdf', label: 'PDF', icon: 'document-text-outline', desc: 'Rapport formaté avec tableau' },
-  { key: 'json', label: 'JSON', icon: 'code-slash-outline', desc: 'Données brutes structurées' },
-  { key: 'excel', label: 'Excel', icon: 'grid-outline', desc: 'Feuille de calcul (.xlsx)' },
+const TYPE_OPTIONS: {
+  key: ExportType;
+  label: string;
+  icon: string;
+  desc: string;
+}[] = [
+  {
+    key: "all",
+    label: "Tout exporter",
+    icon: "folder-outline",
+    desc: "Export complet de toutes vos données",
+  },
+  {
+    key: "transactions",
+    label: "Transactions",
+    icon: "list-outline",
+    desc: "Export des transactions",
+  },
+  {
+    key: "budgets",
+    label: "Budgets",
+    icon: "wallet-outline",
+    desc: "Export des budgets",
+  },
+  {
+    key: "goals",
+    label: "Objectifs",
+    icon: "trophy-outline",
+    desc: "Export des objectifs d'épargne",
+  },
 ];
 
-const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
-  { key: 'week', label: 'Cette semaine' },
-  { key: 'month', label: 'Ce mois' },
-  { key: 'year', label: 'Cette année' },
-  { key: 'all', label: 'Tout' },
+const FORMAT_OPTIONS: { key: ExportFormat; label: string; icon: string }[] = [
+  { key: "json", label: "JSON", icon: "code-slash-outline" },
+  { key: "csv", label: "CSV", icon: "document-text-outline" },
 ];
 
-function formatCurrency(amount: number, currency = 'XOF') {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function getPeriodRange(key: PeriodKey): { start: Date; end: Date } | undefined {
-  const now = new Date();
-  switch (key) {
-    case 'week':
-      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-    case 'month':
-      return { start: startOfMonth(now), end: endOfMonth(now) };
-    case 'year':
-      return { start: startOfYear(now), end: endOfYear(now) };
-    case 'all':
-      return undefined;
-  }
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
 export default function ExportScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
-  const { data: allTransactions } = useTransactions(currentAccount?.id || '');
-  const { data: categories } = useCategories(currentAccount?.id || '');
 
-  const [format, setFormat] = useState<ExportFormat>('pdf');
-  const [periodKey, setPeriodKey] = useState<PeriodKey>('month');
+  const { data: transactions } = useTransactions(currentAccount?.id || "");
+  const { data: budgets } = useBudgets(currentAccount?.id || "");
+  const { data: goals } = useSavingGoals(currentAccount?.id || "");
+  const { data: categories } = useCategories(currentAccount?.id || "");
+
+  const [exportType, setExportType] = useState<ExportType>("all");
   const [isExporting, setIsExporting] = useState(false);
+  const [storageInfo, setStorageInfo] = useState<{
+    freeSpace: number;
+    isEnough: boolean;
+  } | null>(null);
 
-  const currency = currentAccount?.currency || 'XOF';
+  const currency = currentAccount?.currency || "XOF";
 
-  const period = useMemo(() => getPeriodRange(periodKey), [periodKey]);
-
-  const filteredTransactions = useMemo(() => {
-    if (!allTransactions) return [];
-    if (!period) return allTransactions;
-    return allTransactions.filter(tx => {
-      const d = new Date(tx.date);
-      return d >= period.start && d <= period.end;
-    });
-  }, [allTransactions, period]);
-
-  const summary = useMemo(() => {
-    let income = 0, expense = 0;
-    filteredTransactions.forEach(tx => {
-      if (tx.type === 'income') income += Number(tx.amount);
-      else if (tx.type === 'expense') expense += Number(tx.amount);
-    });
-    return { income, expense, count: filteredTransactions.length };
-  }, [filteredTransactions]);
+  const counts = useMemo(
+    () => ({
+      transactions: transactions?.length || 0,
+      budgets: budgets?.length || 0,
+      goals: goals?.length || 0,
+      categories: categories?.length || 0,
+    }),
+    [transactions, budgets, goals, categories],
+  );
 
   const handleExport = async () => {
-    if (filteredTransactions.length === 0) {
-      Alert.alert('Aucune donnée', 'Aucune transaction à exporter pour cette période.');
+    if (
+      counts.transactions === 0 &&
+      counts.budgets === 0 &&
+      counts.goals === 0
+    ) {
+      Alert.alert("Aucune donnée", "Aucune donnée à exporter.");
+      return;
+    }
+
+    // Vérifier l'espace disque
+    const storage = await structuredExport.getStorageInfo();
+    if (!storage.isEnough) {
+      Alert.alert(
+        "Espace insuffisant",
+        `Il ne reste que ${formatSize(storage.freeSpace)} d'espace libre. Libérez de l'espace pour exporter.`,
+      );
       return;
     }
 
     setIsExporting(true);
+
     try {
-      await exportData({
-        format,
-        transactions: filteredTransactions,
-        period,
-        accountName: currentAccount?.name,
-        currency,
-        categories: categories || [],
+      const result = await structuredExport.exportAllData({
+        transactions:
+          exportType === "all" || exportType === "transactions"
+            ? transactions
+            : [],
+        budgets:
+          exportType === "all" || exportType === "budgets" ? budgets : [],
+        goals: exportType === "all" || exportType === "goals" ? goals : [],
+        categories,
+        account: currentAccount || undefined,
       });
+
+      if (result.success) {
+        Alert.alert(
+          "Export terminé !",
+          `${result.message}\n\nLes fichiers sont sauvegardés dans:\n${result.rootPath}\n\n${result.files.length} fichiers générés.`,
+          [
+            { text: "OK" },
+            {
+              text: "Voir les fichiers",
+              onPress: () => {
+                // Ouvrir le dossier (fonctionnalité à ajouter avec un gestionnaire de fichiers)
+              },
+            },
+          ],
+        );
+      } else {
+        Alert.alert("Erreur", result.message);
+      }
     } catch (error: any) {
-      Alert.alert('Erreur', error?.message || 'Impossible d\'exporter les données.');
+      Alert.alert("Erreur", error?.message || "Erreur lors de l'export.");
     } finally {
       setIsExporting(false);
     }
   };
 
+  const getSelectedCount = () => {
+    switch (exportType) {
+      case "all":
+        return counts.transactions + counts.budgets + counts.goals;
+      case "transactions":
+        return counts.transactions;
+      case "budgets":
+        return counts.budgets;
+      case "goals":
+        return counts.goals;
+      default:
+        return 0;
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <ScrollView contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }}
+      >
         {/* Header */}
         <ThemedView
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             marginBottom: theme.spacing.lg,
             gap: theme.spacing.md,
           }}
@@ -127,112 +199,239 @@ export default function ExportScreen() {
               width: 44,
               height: 44,
               borderRadius: 22,
-              backgroundColor: theme.colors.primary + '20',
-              justifyContent: 'center',
-              alignItems: 'center',
+              backgroundColor: theme.colors.primary + "20",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={theme.colors.primary}
+            />
           </TouchableOpacity>
           <ThemedText variant="2xl" weight="bold">
             Exporter les données
           </ThemedText>
         </ThemedView>
 
-        {/* Format selection */}
-        <ThemedText variant="sm" weight="semibold" style={{ marginBottom: theme.spacing.sm }}>
-          Format
+        {/* Type selection */}
+        <ThemedText
+          variant="sm"
+          weight="semibold"
+          style={{ marginBottom: theme.spacing.sm }}
+        >
+          Quelles données exporter ?
         </ThemedText>
         <View style={{ gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
-          {FORMAT_OPTIONS.map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              onPress={() => setFormat(opt.key)}
-              activeOpacity={0.7}
-            >
-              <Card
-                style={{
-                  padding: theme.spacing.md,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: theme.spacing.md,
-                  borderWidth: format === opt.key ? 2 : 1,
-                  borderColor: format === opt.key ? theme.colors.primary : theme.colors.border,
-                  backgroundColor: format === opt.key ? theme.colors.primary + '08' : theme.colors.card,
-                }}
+          {TYPE_OPTIONS.map((opt) => {
+            const count =
+              opt.key === "all"
+                ? counts.transactions + counts.budgets + counts.goals
+                : opt.key === "transactions"
+                  ? counts.transactions
+                  : opt.key === "budgets"
+                    ? counts.budgets
+                    : counts.goals;
+
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                onPress={() => setExportType(opt.key)}
+                activeOpacity={0.7}
+                disabled={count === 0 && opt.key !== "all"}
               >
-                <View
+                <Card
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    backgroundColor: format === opt.key ? theme.colors.primary + '20' : theme.colors.muted,
-                    justifyContent: 'center',
-                    alignItems: 'center',
+                    padding: theme.spacing.md,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: theme.spacing.md,
+                    borderWidth: exportType === opt.key ? 2 : 1,
+                    borderColor:
+                      exportType === opt.key
+                        ? theme.colors.primary
+                        : theme.colors.border,
+                    backgroundColor:
+                      exportType === opt.key
+                        ? theme.colors.primary + "08"
+                        : theme.colors.card,
+                    opacity: count === 0 && opt.key !== "all" ? 0.5 : 1,
                   }}
                 >
-                  <Ionicons
-                    name={opt.icon as any}
-                    size={22}
-                    color={format === opt.key ? theme.colors.primary : theme.colors.mutedForeground}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <ThemedText variant="base" weight="semibold">
-                    {opt.label}
-                  </ThemedText>
-                  <ThemedText variant="xs" color="mutedForeground">
-                    {opt.desc}
-                  </ThemedText>
-                </View>
-                {format === opt.key && (
-                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
-                )}
-              </Card>
-            </TouchableOpacity>
-          ))}
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor:
+                        exportType === opt.key
+                          ? theme.colors.primary + "20"
+                          : theme.colors.muted,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name={opt.icon as any}
+                      size={22}
+                      color={
+                        exportType === opt.key
+                          ? theme.colors.primary
+                          : theme.colors.mutedForeground
+                      }
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText variant="base" weight="semibold">
+                      {opt.label}
+                    </ThemedText>
+                    <ThemedText variant="xs" color="mutedForeground">
+                      {opt.desc} ({count} élément{count > 1 ? "s" : ""})
+                    </ThemedText>
+                  </View>
+                  {exportType === opt.key && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={theme.colors.primary}
+                    />
+                  )}
+                </Card>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Period selection */}
-        <ThemedText variant="sm" weight="semibold" style={{ marginBottom: theme.spacing.sm }}>
-          Période
-        </ThemedText>
-        <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginBottom: theme.spacing.lg, flexWrap: 'wrap' }}>
-          {PERIOD_OPTIONS.map(opt => (
-            <Button
-              key={opt.key}
-              variant={periodKey === opt.key ? 'default' : 'outline'}
-              size="sm"
-              onPress={() => setPeriodKey(opt.key)}
-              style={{ minWidth: 100 }}
-            >
-              {opt.label}
-            </Button>
-          ))}
-        </View>
+        {/* Prévisualisation */}
+        <Card
+          style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}
+        >
+          <ThemedText
+            variant="sm"
+            weight="semibold"
+            style={{ marginBottom: theme.spacing.sm }}
+          >
+            Résumé de l'export
+          </ThemedText>
 
-        {/* Preview */}
-        <ThemedText variant="sm" weight="semibold" style={{ marginBottom: theme.spacing.sm }}>
-          Aperçu
-        </ThemedText>
-        <Card style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-            <ThemedText variant="sm" color="mutedForeground">Transactions</ThemedText>
-            <ThemedText variant="sm" weight="bold">{summary.count}</ThemedText>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-            <ThemedText variant="sm" color="mutedForeground">Revenus</ThemedText>
-            <ThemedText variant="sm" weight="bold" style={{ color: '#16a34a' }}>
-              {formatCurrency(summary.income, currency)}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 4,
+            }}
+          >
+            <ThemedText variant="xs" color="mutedForeground">
+              Transactions
+            </ThemedText>
+            <ThemedText variant="xs" weight="bold">
+              {counts.transactions}
             </ThemedText>
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <ThemedText variant="sm" color="mutedForeground">Dépenses</ThemedText>
-            <ThemedText variant="sm" weight="bold" style={{ color: '#dc2626' }}>
-              {formatCurrency(summary.expense, currency)}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 4,
+            }}
+          >
+            <ThemedText variant="xs" color="mutedForeground">
+              Budgets
+            </ThemedText>
+            <ThemedText variant="xs" weight="bold">
+              {counts.budgets}
+            </ThemedText>
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 4,
+            }}
+          >
+            <ThemedText variant="xs" color="mutedForeground">
+              Objectifs d'épargne
+            </ThemedText>
+            <ThemedText variant="xs" weight="bold">
+              {counts.goals}
+            </ThemedText>
+          </View>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <ThemedText variant="xs" color="mutedForeground">
+              Catégories
+            </ThemedText>
+            <ThemedText variant="xs" weight="bold">
+              {counts.categories}
             </ThemedText>
           </View>
         </Card>
+
+        {/* Structure d'export */}
+        <Card
+          style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}
+        >
+          <ThemedText
+            variant="sm"
+            weight="semibold"
+            style={{ marginBottom: theme.spacing.sm }}
+          >
+            📁 Structure d'export
+          </ThemedText>
+          <ThemedText
+            variant="xs"
+            color="mutedForeground"
+            style={{ lineHeight: 18 }}
+          >
+            Les fichiers seront organisés comme suit :{"\n"}
+            {"  📁 ajiyata/\n"}
+            {"    📁 transactions/\n"}
+            {"      📁 income/\n"}
+            {"      📁 expense/\n"}
+            {"      📁 transfer/\n"}
+            {"      📁 by_category/\n"}
+            {"    📁 budgets/\n"}
+            {"      📁 active/\n"}
+            {"      📁 completed/\n"}
+            {"      📁 exceeded/\n"}
+            {"    📁 goals/\n"}
+            {"      📁 active/\n"}
+            {"      📁 completed/\n"}
+            {"      📁 paused/\n"}
+            {"    📁 categories/\n"}
+            {"    📁 reports/\n"}
+          </ThemedText>
+        </Card>
+
+        {/* Stockage info */}
+        {storageInfo && (
+          <Card
+            style={{
+              padding: theme.spacing.md,
+              marginBottom: theme.spacing.lg,
+            }}
+          >
+            <ThemedText
+              variant="sm"
+              weight="semibold"
+              style={{ marginBottom: theme.spacing.sm }}
+            >
+              💾 Espace disponible
+            </ThemedText>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <ThemedText variant="xs" color="mutedForeground">
+                Espace libre
+              </ThemedText>
+              <ThemedText variant="xs" weight="bold">
+                {formatSize(storageInfo.freeSpace)}
+              </ThemedText>
+            </View>
+          </Card>
+        )}
       </ScrollView>
 
       {/* Footer */}
@@ -245,19 +444,26 @@ export default function ExportScreen() {
       >
         <Button
           size="lg"
-          disabled={isExporting || summary.count === 0}
+          disabled={isExporting || getSelectedCount() === 0}
           onPress={handleExport}
         >
           {isExporting ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <ActivityIndicator size="small" color="#fff" />
-              <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Exportation...</ThemedText>
+              <ThemedText style={{ color: "#fff", fontWeight: "600" }}>
+                Exportation...
+              </ThemedText>
             </View>
           ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <Ionicons name="download-outline" size={20} color="#fff" />
-              <ThemedText style={{ color: '#fff', fontWeight: '600' }}>
-                Exporter en {format.toUpperCase()}
+              <ThemedText style={{ color: "#fff", fontWeight: "600" }}>
+                Exporter ({getSelectedCount()} élément
+                {getSelectedCount() > 1 ? "s" : ""})
               </ThemedText>
             </View>
           )}
