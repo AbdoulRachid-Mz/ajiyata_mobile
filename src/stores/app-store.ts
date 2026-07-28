@@ -11,7 +11,7 @@ interface AppState {
   // Sécurité
   isAppLockEnabled: boolean;
   setAppLockEnabled: (enabled: boolean) => void;
-  lockTimeoutMinutes: number; // Temps en minutes avant verrouillage
+  lockTimeoutMinutes: number;
   setLockTimeoutMinutes: (minutes: number) => void;
   lastBackgroundTime: number | null;
   setLastBackgroundTime: (time: number | null) => void;
@@ -20,6 +20,8 @@ interface AppState {
   setReminderEnabled: (enabled: boolean) => void;
   reminderTime: string;
   setReminderTime: (time: string) => void;
+  isLocked: boolean;
+  setIsLocked: (locked: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -31,13 +33,25 @@ export const useAppStore = create<AppState>()(
       setCurrentAccount: (account) => set({ currentAccount: account }),
       
       isAppLockEnabled: false,
-      setAppLockEnabled: (enabled) => set({ isAppLockEnabled: enabled }),
+      setAppLockEnabled: (enabled) => {
+        console.log('📱 Store - setAppLockEnabled:', enabled);
+        set({ isAppLockEnabled: enabled });
+      },
+
+      isLocked: false,
+      setIsLocked: (locked) => set({ isLocked: locked }),
       
-      lockTimeoutMinutes: 5, // Valeur par défaut: 5 minutes
-      setLockTimeoutMinutes: (minutes) => set({ lockTimeoutMinutes: minutes }),
+      lockTimeoutMinutes: 5,
+      setLockTimeoutMinutes: (minutes) => {
+        console.log('📱 Store - setLockTimeoutMinutes:', minutes);
+        set({ lockTimeoutMinutes: minutes });
+      },
       
       lastBackgroundTime: null,
-      setLastBackgroundTime: (time) => set({ lastBackgroundTime: time }),
+      setLastBackgroundTime: (time) => {
+        console.log('📱 Store - setLastBackgroundTime:', time);
+        set({ lastBackgroundTime: time });
+      },
       
       reminderEnabled: false,
       setReminderEnabled: (enabled) => set({ reminderEnabled: enabled }),
@@ -48,6 +62,12 @@ export const useAppStore = create<AppState>()(
     {
       name: 'ajiya-app-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => {
+        console.log('📱 Store - Rehydrating...');
+        return (state) => {
+          console.log('📱 Store - Rehydrated state successfully');
+        };
+      },
     }
   )
 );

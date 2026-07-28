@@ -31,7 +31,7 @@ export const users = sqliteTable("users", {
   language: text("language"),
   defaultCurrency: text("default_currency").notNull(),
   accountType: text("account_type", {
-    enum: ["personal", "business"],
+    enum: ["personal", "business", "family"],
   }).notNull(),
   isSynced: int("is_synced", { mode: "boolean" }).notNull().default(false),
 });
@@ -59,7 +59,7 @@ export const accounts = sqliteTable("accounts", {
     .notNull()
     .references(() => users.id),
   name: text("name").notNull(),
-  type: text("type", { enum: ["personal", "business"] }).notNull(),
+  type: text("type", { enum: ["personal", "business", "family"] }).notNull(),
   currency: text("currency").notNull(),
   initialBalance: real("initial_balance").notNull().default(0), // Initial balance set by user during onboarding
   balance: real("balance").notNull().default(0), // Derived value: initialBalance + (sum of income - sum of expenses)
@@ -121,7 +121,7 @@ export const budgets = sqliteTable("budgets", {
     .references(() => categories.id),
   limit: real("limit").notNull(),
   spent: real("spent").notNull().default(0), // Derived value from transactions
-  period: text("period", { enum: ["daily", "weekly", "monthly"] }).notNull(),
+  period: text("period", { enum: ["daily", "weekly", "monthly"] }).notNull().default("daily"),
   startDate: int("start_date", { mode: "timestamp" }).notNull(),
   endDate: int("end_date", { mode: "timestamp" }).notNull(),
   status: text("status", { enum: ["active", "exceeded", "completed"] })
@@ -158,7 +158,7 @@ export const devices = sqliteTable("devices", {
     .notNull()
     .references(() => users.id),
   name: text("name").notNull(),
-  platform: text("platform", { enum: ["android", "ios"] }).notNull(),
+  platform: text("platform", { enum: ["android", "ios", "web"] }).notNull(),
   lastActiveAt: int("last_active_at", { mode: "timestamp" }).notNull(),
 });
 

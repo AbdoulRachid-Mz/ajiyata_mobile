@@ -1,36 +1,31 @@
-import React, { useState, useMemo } from "react";
-import {
-  View,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
+import { useMemo, useState } from "react";
 import {
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
-} from "date-fns";
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Toast from "react-native-toast-message";
 
+import Button from "@/components/ui/button";
+import Card from "@/components/ui/card";
 import SafeAreaView from "@/components/ui/safe-area-view";
 import ThemedText from "@/components/ui/text";
 import ThemedView from "@/components/ui/view";
-import Card from "@/components/ui/card";
-import Button from "@/components/ui/button";
 import { useTheme } from "@/contexts/theme-context";
-import { useAppStore } from "@/stores/app-store";
-import { useTransactions } from "@/features/transactions/hooks";
 import { useBudgets } from "@/features/budgets/hooks";
-import { useSavingGoals } from "@/features/saving-goals/hooks";
 import { useCategories } from "@/features/categories/hooks";
+import { useSavingGoals } from "@/features/saving-goals/hooks";
+import { useTransactions } from "@/features/transactions/hooks";
+import { exportData } from "@/lib/export/export-service";
 import { structuredExport } from "@/lib/export/structured-export";
+import { useAppStore } from "@/stores/app-store";
 
-type ExportFormat = "json" | "csv";
+type ExportFormat = "json" | "excel" | "pdf";
 type ExportType = "transactions" | "budgets" | "goals" | "all";
 
 const TYPE_OPTIONS: {
@@ -67,7 +62,8 @@ const TYPE_OPTIONS: {
 
 const FORMAT_OPTIONS: { key: ExportFormat; label: string; icon: string }[] = [
   { key: "json", label: "JSON", icon: "code-slash-outline" },
-  { key: "csv", label: "CSV", icon: "document-text-outline" },
+  { key: "excel", label: "Excel", icon: "document-text-outline" },
+  { key: "pdf", label: "PDF", icon: "document-outline" },
 ];
 
 function formatSize(bytes: number): string {
@@ -87,10 +83,13 @@ export default function ExportScreen() {
   const { data: categories } = useCategories(currentAccount?.id || "");
 
   const [exportType, setExportType] = useState<ExportType>("all");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("json");
   const [isExporting, setIsExporting] = useState(false);
-  const [storageInfo, setStorageInfo] = useState<{
-    freeSpace: number;
-    isEnough: boolean;
+  const [exportResult, setExportResult] = useState<{
+    success: boolean;
+    message: string;
+    files?: string[];
+    rootPath?: string;
   } | null>(null);
 
   const currency = currentAccount?.currency || "XOF";
@@ -106,61 +105,66 @@ export default function ExportScreen() {
   );
 
   const handleExport = async () => {
-    if (
-      counts.transactions === 0 &&
-      counts.budgets === 0 &&
-      counts.goals === 0
-    ) {
-      Alert.alert("Aucune donnée", "Aucune donnée à exporter.");
-      return;
-    }
+    const selectedTransactions =
+      exportType === "all" || exportType === "transactions" ? transactions : [];
 
-    // Vérifier l'espace disque
-    const storage = await structuredExport.getStorageInfo();
-    if (!storage.isEnough) {
+    if (!selectedTransactions || selectedTransactions.length === 0) {
       Alert.alert(
-        "Espace insuffisant",
-        `Il ne reste que ${formatSize(storage.freeSpace)} d'espace libre. Libérez de l'espace pour exporter.`,
+        "Aucune donnée",
+        "Seules les transactions peuvent être exportées en PDF/Excel pour l'instant.",
       );
       return;
     }
 
     setIsExporting(true);
+    setExportResult(null);
 
     try {
-      const result = await structuredExport.exportAllData({
-        transactions:
-          exportType === "all" || exportType === "transactions"
-            ? transactions
-            : [],
-        budgets:
-          exportType === "all" || exportType === "budgets" ? budgets : [],
-        goals: exportType === "all" || exportType === "goals" ? goals : [],
-        categories,
-        account: currentAccount || undefined,
-      });
+      if (exportFormat === "json" && exportType !== "transactions") {
+        // Use structured export for all data types
+        const result = await structuredExport.exportAllData({
+          transactions: selectedTransactions,
+          budgets:
+            exportType === "all" || exportType === "budgets" ? budgets : [],
+          goals: exportType === "all" || exportType === "goals" ? goals : [],
+          categories,
+          account: currentAccount || undefined,
+        });
 
-      if (result.success) {
-        Alert.alert(
-          "Export terminé !",
-          `${result.message}\n\nLes fichiers sont sauvegardés dans:\n${result.rootPath}\n\n${result.files.length} fichiers générés.`,
-          [
-            { text: "OK" },
-            {
-              text: "Voir les fichiers",
-              onPress: () => {
-                // Ouvrir le dossier (fonctionnalité à ajouter avec un gestionnaire de fichiers)
-              },
-            },
-          ],
-        );
+        setExportResult(result);
+        Toast.show({ type: "success", text1: result.message });
       } else {
-        Alert.alert("Erreur", result.message);
+        // Use export service for transactions
+        await exportData({
+          format: exportFormat,
+          transactions: selectedTransactions || [],
+          accountName: currentAccount?.name,
+          currency: currency,
+          categories: categories || [],
+        });
+        Toast.show({ type: "success", text1: "Export terminé avec succès !" });
       }
     } catch (error: any) {
-      Alert.alert("Erreur", error?.message || "Erreur lors de l'export.");
+      Toast.show({
+        type: "error",
+        text1: "Erreur",
+        text2: error?.message || "Erreur lors de l'export.",
+      });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      if (exportResult?.files && exportResult.files.length > 0) {
+        // Share the first file (simplified)
+        await Sharing.shareAsync(exportResult.files[0], {
+          dialogTitle: "Partager l'export",
+        });
+      }
+    } catch (error) {
+      Toast.show({ type: "error", text1: "Erreur lors du partage." });
     }
   };
 
@@ -303,6 +307,80 @@ export default function ExportScreen() {
           })}
         </View>
 
+        {/* Format selection */}
+        <ThemedText
+          variant="sm"
+          weight="semibold"
+          style={{ marginBottom: theme.spacing.sm }}
+        >
+          Format d'export
+        </ThemedText>
+        <View style={{ gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
+          {FORMAT_OPTIONS.map((opt) => {
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                onPress={() => setExportFormat(opt.key)}
+                activeOpacity={0.7}
+              >
+                <Card
+                  style={{
+                    padding: theme.spacing.md,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: theme.spacing.md,
+                    borderWidth: exportFormat === opt.key ? 2 : 1,
+                    borderColor:
+                      exportFormat === opt.key
+                        ? theme.colors.primary
+                        : theme.colors.border,
+                    backgroundColor:
+                      exportFormat === opt.key
+                        ? theme.colors.primary + "08"
+                        : theme.colors.card,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor:
+                        exportFormat === opt.key
+                          ? theme.colors.primary + "20"
+                          : theme.colors.muted,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name={opt.icon as any}
+                      size={22}
+                      color={
+                        exportFormat === opt.key
+                          ? theme.colors.primary
+                          : theme.colors.mutedForeground
+                      }
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText variant="base" weight="semibold">
+                      {opt.label}
+                    </ThemedText>
+                  </View>
+                  {exportFormat === opt.key && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={theme.colors.primary}
+                    />
+                  )}
+                </Card>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {/* Prévisualisation */}
         <Card
           style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}
@@ -368,70 +446,6 @@ export default function ExportScreen() {
             </ThemedText>
           </View>
         </Card>
-
-        {/* Structure d'export */}
-        <Card
-          style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}
-        >
-          <ThemedText
-            variant="sm"
-            weight="semibold"
-            style={{ marginBottom: theme.spacing.sm }}
-          >
-            📁 Structure d'export
-          </ThemedText>
-          <ThemedText
-            variant="xs"
-            color="mutedForeground"
-            style={{ lineHeight: 18 }}
-          >
-            Les fichiers seront organisés comme suit :{"\n"}
-            {"  📁 ajiyata/\n"}
-            {"    📁 transactions/\n"}
-            {"      📁 income/\n"}
-            {"      📁 expense/\n"}
-            {"      📁 transfer/\n"}
-            {"      📁 by_category/\n"}
-            {"    📁 budgets/\n"}
-            {"      📁 active/\n"}
-            {"      📁 completed/\n"}
-            {"      📁 exceeded/\n"}
-            {"    📁 goals/\n"}
-            {"      📁 active/\n"}
-            {"      📁 completed/\n"}
-            {"      📁 paused/\n"}
-            {"    📁 categories/\n"}
-            {"    📁 reports/\n"}
-          </ThemedText>
-        </Card>
-
-        {/* Stockage info */}
-        {storageInfo && (
-          <Card
-            style={{
-              padding: theme.spacing.md,
-              marginBottom: theme.spacing.lg,
-            }}
-          >
-            <ThemedText
-              variant="sm"
-              weight="semibold"
-              style={{ marginBottom: theme.spacing.sm }}
-            >
-              💾 Espace disponible
-            </ThemedText>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <ThemedText variant="xs" color="mutedForeground">
-                Espace libre
-              </ThemedText>
-              <ThemedText variant="xs" weight="bold">
-                {formatSize(storageInfo.freeSpace)}
-              </ThemedText>
-            </View>
-          </Card>
-        )}
       </ScrollView>
 
       {/* Footer */}
@@ -440,6 +454,7 @@ export default function ExportScreen() {
           padding: theme.spacing.lg,
           borderTopWidth: 1,
           borderTopColor: theme.colors.border,
+          gap: theme.spacing.sm,
         }}
       >
         <Button
@@ -463,11 +478,20 @@ export default function ExportScreen() {
               <Ionicons name="download-outline" size={20} color="#fff" />
               <ThemedText style={{ color: "#fff", fontWeight: "600" }}>
                 Exporter ({getSelectedCount()} élément
-                {getSelectedCount() > 1 ? "s" : ""})
+                {getSelectedCount() > 1 ? "s" : ""}
               </ThemedText>
             </View>
           )}
         </Button>
+
+        {exportResult?.success && (
+          <Button variant="secondary" size="lg" onPress={handleShare}>
+            <Ionicons name="share-outline" size={20} />
+            <ThemedText style={{ marginLeft: 8, fontWeight: "600" }}>
+              Partager
+            </ThemedText>
+          </Button>
+        )}
       </ThemedView>
     </SafeAreaView>
   );

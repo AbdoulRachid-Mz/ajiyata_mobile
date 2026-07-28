@@ -21,11 +21,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, View } from "react-native";
 // Ajouter l'import
-import { AttachmentPicker } from '@/features/attachments/components/AttachmentPicker';
-import { attachmentRepository } from '@/features/attachments/repositories';
+import { AttachmentPicker } from "@/features/attachments/components/AttachmentPicker";
+import { attachmentRepository } from "@/features/attachments/repositories";
 import { AttachmentType } from "@/features/attachments/types";
 import { Attachment } from "@/types";
 import { useState } from "react";
+import { useDevice } from "@/hooks/use-device";
 
 export default function TransactionCreate() {
   const { theme } = useTheme();
@@ -36,17 +37,15 @@ export default function TransactionCreate() {
   const { currentAccount } = useAppStore();
   const createTransaction = useCreateTransaction();
 
+  const { deviceId } = useDevice();
+
   const {
     control,
     handleSubmit,
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<
-    TransactionFormInput,
-    any,
-    TransactionFormData
-  >({
+  } = useForm<TransactionFormInput, any, TransactionFormData>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       type: initialType || "expense",
@@ -62,15 +61,15 @@ export default function TransactionCreate() {
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-// Ajouter les gestionnaires
-const handleAttachmentAdded = async (attachment: Attachment) => {
-  setAttachments(prev => [...prev, attachment]);
-};
+  // Ajouter les gestionnaires
+  const handleAttachmentAdded = async (attachment: Attachment) => {
+    setAttachments((prev) => [...prev, attachment]);
+  };
 
-const handleAttachmentRemoved = async (attachmentId: string) => {
-  await attachmentRepository.delete(attachmentId);
-  setAttachments(prev => prev.filter(a => a.id !== attachmentId));
-};
+  const handleAttachmentRemoved = async (attachmentId: string) => {
+    await attachmentRepository.delete(attachmentId);
+    setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+  };
 
   const onSubmit = async (data: TransactionFormData) => {
     if (!currentAccount) return;
@@ -88,10 +87,10 @@ const handleAttachmentRemoved = async (attachmentId: string) => {
         currency: currentAccount.currency,
         createdAt: getCurrentTimestamp(),
         updatedAt: getCurrentTimestamp(),
-        deviceId: "temp-device-id",
+        deviceId,
         version: 1,
         syncStatus: "pending",
-        metadata: {},
+        metadata: data.metadata || {},
         isSynced: false,
       });
       router.back();
@@ -117,12 +116,23 @@ const handleAttachmentRemoved = async (attachmentId: string) => {
             }}
           >
             <Button variant="ghost" size="sm" onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={20} color={theme.colors.foreground} />
+              <Ionicons
+                name="arrow-back"
+                size={20}
+                color={theme.colors.foreground}
+              />
             </Button>
             <ThemedText variant="xl" weight="bold">
               Nouvelle transaction
             </ThemedText>
-            <View style={{ width: 60 }} />
+            <Button
+              variant="ghost"
+              size="sm"
+              // @ts-ignore
+              onPress={() => router.push("/receipt-scanner")}
+            >
+              <Ionicons name="scan" size={20} color={theme.colors.primary} />
+            </Button>
           </ThemedView>
 
           {/* Type selection */}
@@ -276,6 +286,42 @@ const handleAttachmentRemoved = async (attachmentId: string) => {
 
           <Spacer height={theme.spacing.lg} />
 
+          {currentAccount?.type === "business" && (
+            <Controller
+              control={control}
+              name="metadata.client"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  label="Client / Fournisseur"
+                  placeholder="Ex: Entreprise XYZ"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={String(value || "")}
+                  style={{ marginBottom: theme.spacing.xs }}
+                />
+              )}
+            />
+          )}
+
+          {currentAccount?.type === "family" && (
+            <Controller
+              control={control}
+              name="metadata.paidBy"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  label="Payé par"
+                  placeholder="Ex: Jean"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={String(value || "")}
+                  style={{ marginBottom: theme.spacing.xs }}
+                />
+              )}
+            />
+          )}
+
+          <Spacer height={theme.spacing.lg} />
+
           {/* Note */}
           <Controller
             control={control}
@@ -296,20 +342,20 @@ const handleAttachmentRemoved = async (attachmentId: string) => {
           <View style={{ height: theme.spacing.xl * 2 }} />
 
           <ThemedText
-  variant="sm"
-  weight="medium"
-  style={{ marginBottom: theme.spacing.xs }}
->
-  Pièces jointes ({attachments.length}/5)
-</ThemedText>
-<AttachmentPicker
-  onAttachmentAdded={handleAttachmentAdded}
-  onAttachmentRemoved={handleAttachmentRemoved}
-  existingAttachments={attachments}
-  maxAttachments={5}
-/>
+            variant="sm"
+            weight="medium"
+            style={{ marginBottom: theme.spacing.xs }}
+          >
+            Pièces jointes ({attachments.length}/5)
+          </ThemedText>
+          <AttachmentPicker
+            onAttachmentAdded={handleAttachmentAdded}
+            onAttachmentRemoved={handleAttachmentRemoved}
+            existingAttachments={attachments}
+            maxAttachments={5}
+          />
 
-<Spacer height={theme.spacing.lg} />
+          <Spacer height={theme.spacing.lg} />
         </ScrollView>
 
         {/* Save button */}

@@ -4,9 +4,7 @@ import { useBudgets } from '@/features/budgets/hooks';
 import { useAppStore } from '@/stores/app-store';
 import { formatCurrency } from '@/lib/formatters/currency';
 import { useSavingGoals } from '@/features/saving-goals/hooks';
-import Constants from 'expo-constants';
-
-const isExpoGo = Constants.appOwnership === 'expo';
+import { isExpoGo } from '@/configs/notifications';
 
 export const useBudgetNotifications = () => {
   const { currentAccount } = useAppStore();
@@ -14,11 +12,9 @@ export const useBudgetNotifications = () => {
   const { sendNotification, isExpoGo: isExpoGoContext } = useNotifications();
 
   useEffect(() => {
-    // Ne pas exécuter dans Expo Go
     if (isExpoGo || isExpoGoContext) return;
     if (!budgets || budgets.length === 0) return;
 
-    // Vérifier les budgets dépassés
     budgets.forEach(budget => {
       const spent = budget.spent || 0;
       const limit = budget.limit || 0;
@@ -58,14 +54,9 @@ export const useSavingsNotifications = () => {
   const { scheduleNotification, isExpoGo: isExpoGoContext } = useNotifications();
 
   useEffect(() => {
-    // Ne pas exécuter dans Expo Go
     if (isExpoGo || isExpoGoContext) return;
     if (!goals || goals.length === 0) return;
 
-    // Annuler les anciennes notifications avant de recréer
-    // (À implémenter avec un stockage des IDs)
-
-    // Planifier des rappels d'épargne
     goals.forEach(goal => {
       if (goal.status === 'active') {
         scheduleNotification({
@@ -84,10 +75,5 @@ export const useSavingsNotifications = () => {
       }
     });
 
-    // Nettoyage à la destruction (idéalement avec un cleanup)
-    return () => {
-      // Annuler les notifications planifiées
-      // Stocker les IDs quelque part
-    };
   }, [goals, scheduleNotification, isExpoGoContext]);
 };

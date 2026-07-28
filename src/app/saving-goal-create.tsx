@@ -7,6 +7,7 @@ import TextInput from "@/components/ui/text-input";
 import ThemedView from "@/components/ui/view";
 import { useTheme } from "@/contexts/theme-context";
 import { useCreateSavingGoal } from "@/features/saving-goals/hooks";
+import { useDevice } from "@/hooks/use-device";
 import {
   SavingGoalFormData,
   SavingGoalFormInput,
@@ -25,6 +26,8 @@ export default function SavingGoalCreate() {
   const router = useRouter();
   const { currentAccount } = useAppStore();
   const createGoal = useCreateSavingGoal();
+
+  const { deviceId } = useDevice();
 
   const {
     control,
@@ -55,7 +58,7 @@ export default function SavingGoalCreate() {
         status: "active",
         createdAt: getCurrentTimestamp(),
         updatedAt: getCurrentTimestamp(),
-        deviceId: "temp-device-id",
+        deviceId,
         version: 1,
         syncStatus: "pending",
         metadata: {},

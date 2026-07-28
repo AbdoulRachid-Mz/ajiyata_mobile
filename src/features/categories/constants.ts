@@ -60,7 +60,7 @@ export const DEFAULT_INCOME_CATEGORIES = [
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   {
-    name: "Nourriture",
+    name: "Alimentation",
     type: "expense" as const,
     color: "#ef4444",
     icon: "restaurant-outline",
@@ -102,7 +102,7 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
     isDefault: true,
   },
   {
-    name: "Shopping",
+    name: "Courses",
     type: "expense" as const,
     color: "#f43f5e",
     icon: "bag-outline",
@@ -176,6 +176,158 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
     type: "expense" as const,
     color: "#dc2626",
     icon: "stats-chart-outline",
+    isDefault: true,
+  },
+  {
+    name: "Autres dépenses",
+    type: "expense" as const,
+    color: "#64748b",
+    icon: "create-outline",
+    isDefault: true,
+  },
+];
+
+export const BUSINESS_INCOME_CATEGORIES = [
+  {
+    name: "Ventes",
+    type: "income" as const,
+    color: "#22c55e",
+    icon: "cart-outline",
+    isDefault: true,
+  },
+  {
+    name: "Prestations de services",
+    type: "income" as const,
+    color: "#3b82f6",
+    icon: "briefcase-outline",
+    isDefault: true,
+  },
+  {
+    name: "Autres revenus",
+    type: "income" as const,
+    color: "#64748b",
+    icon: "wallet-outline",
+    isDefault: true,
+  },
+];
+
+export const BUSINESS_EXPENSE_CATEGORIES = [
+  {
+    name: "Achats marchandises",
+    type: "expense" as const,
+    color: "#f59e0b",
+    icon: "bag-outline",
+    isDefault: true,
+  },
+  {
+    name: "Loyer commercial",
+    type: "expense" as const,
+    color: "#3b82f6",
+    icon: "home-outline",
+    isDefault: true,
+  },
+  {
+    name: "Salaires",
+    type: "expense" as const,
+    color: "#ec4899",
+    icon: "people-outline",
+    isDefault: true,
+  },
+  {
+    name: "Marketing",
+    type: "expense" as const,
+    color: "#8b5cf6",
+    icon: "megaphone-outline",
+    isDefault: true,
+  },
+  {
+    name: "Impôts",
+    type: "expense" as const,
+    color: "#dc2626",
+    icon: "stats-chart-outline",
+    isDefault: true,
+  },
+  {
+    name: "Autres dépenses",
+    type: "expense" as const,
+    color: "#64748b",
+    icon: "create-outline",
+    isDefault: true,
+  },
+];
+
+export const FAMILY_INCOME_CATEGORIES = [
+  {
+    name: "Salaires combinés",
+    type: "income" as const,
+    color: "#22c55e",
+    icon: "cash-outline",
+    isDefault: true,
+  },
+  {
+    name: "Allocations",
+    type: "income" as const,
+    color: "#f59e0b",
+    icon: "people-outline",
+    isDefault: true,
+  },
+  {
+    name: "Autres revenus",
+    type: "income" as const,
+    color: "#64748b",
+    icon: "wallet-outline",
+    isDefault: true,
+  },
+];
+
+export const FAMILY_EXPENSE_CATEGORIES = [
+  {
+    name: "Épicerie",
+    type: "expense" as const,
+    color: "#ef4444",
+    icon: "restaurant-outline",
+    isDefault: true,
+  },
+  {
+    name: "Éducation/École",
+    type: "expense" as const,
+    color: "#10b981",
+    icon: "school-outline",
+    isDefault: true,
+  },
+  {
+    name: "Santé familiale",
+    type: "expense" as const,
+    color: "#ec4899",
+    icon: "medical-outline",
+    isDefault: true,
+  },
+  {
+    name: "Loyer/Maison",
+    type: "expense" as const,
+    color: "#3b82f6",
+    icon: "home-outline",
+    isDefault: true,
+  },
+  {
+    name: "Factures",
+    type: "expense" as const,
+    color: "#8b5cf6",
+    icon: "document-text-outline",
+    isDefault: true,
+  },
+  {
+    name: "Vacances",
+    type: "expense" as const,
+    color: "#0ea5e9",
+    icon: "airplane-outline",
+    isDefault: true,
+  },
+  {
+    name: "Animaux",
+    type: "expense" as const,
+    color: "#84cc16",
+    icon: "paw-outline",
     isDefault: true,
   },
   {

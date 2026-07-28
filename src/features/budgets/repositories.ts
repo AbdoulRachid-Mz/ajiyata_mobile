@@ -1,16 +1,43 @@
 import { db } from '@/db';
-import { budgets } from '@/db/schema';
-import type { NewBudget, Budget } from '@/types';
+import { accounts, budgets, categories } from '@/db/schema';
+import type { NewBudget, Budget, BudgetWithRelations, MiniAccount, MiniCategory } from '@/types';
 import { eq } from 'drizzle-orm';
 
 export const budgetRepository = {
   async create(newBudget: NewBudget): Promise<Budget> {
-    const results = await db.insert(budgets).values(newBudget as any).returning();
+    const results = await db.insert(budgets).values(newBudget).returning();
     return results[0] as Budget;
   },
 
-  async getAllForAccount(accountId: string): Promise<Budget[]> {
-    return (await db.select().from(budgets).where(eq(budgets.accountId, accountId))) as Budget[];
+  async getAllForAccount(accountId: string): Promise<BudgetWithRelations[]> {
+    return await db
+      .select({
+        budgets: budgets,
+        account: accounts,
+        category: categories
+      })
+      .from(budgets)
+      .innerJoin(accounts, eq(budgets.accountId, accounts.id))
+      .leftJoin(categories, eq(budgets.categoryId, categories.id))
+      .where(eq(budgets.accountId, accountId))
+      .then(results => results.map(row => ({
+        ...row.budgets,
+        account: {
+          id: row.account.id,
+          userId: row.account.userId,
+          name: row.account.name,
+          type: row.account.type,
+          currency: row.account.currency
+        } as MiniAccount,
+        category: row.category ? {
+          id: row.category.id,
+          accountId: row.category.accountId,
+          name: row.category.name,
+          type: row.category.type,
+          color: row.category.color,
+          icon: row.category.icon
+        } as MiniCategory : undefined
+      } as BudgetWithRelations)));
   },
 
   async update(budgetId: string, data: Partial<Budget>): Promise<Budget> {

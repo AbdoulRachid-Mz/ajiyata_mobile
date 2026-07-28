@@ -1,49 +1,69 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import Constants from 'expo-constants';
-import { notificationService } from '@/configs/notifications';
-import { useAppStore } from '@/stores/app-store';
-import type { NotificationData, ScheduledNotification } from '@/configs/notifications';
+// src/contexts/notification-context.tsx
 
-const isExpoGo = Constants.appOwnership === 'expo';
+import {
+  isExpoGo,
+  notificationService,
+  type INotificationService,
+  type NotificationData,
+  type ScheduledNotification,
+} from "@/configs/notifications";
+import { useAppStore } from "@/stores/app-store";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import { useRouter, usePathname } from "expo-router";
 
 interface NotificationContextType {
   isInitialized: boolean;
   isEnabled: boolean;
   isExpoGo: boolean;
   sendNotification: (notification: NotificationData) => Promise<void>;
-  scheduleNotification: (notification: ScheduledNotification) => Promise<string>;
+  scheduleNotification: (
+    notification: ScheduledNotification,
+  ) => Promise<string>;
   cancelNotification: (identifier: string) => Promise<void>;
   cancelAllNotifications: () => Promise<void>;
   setEnabled: (enabled: boolean) => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined,
+);
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new Error(
+      "useNotifications must be used within a NotificationProvider",
+    );
   }
   return context;
 };
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAppStore();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isEnabled, setIsEnabled] = useState(true);
+  const service: INotificationService = notificationService;
 
+  // Initialisation
   useEffect(() => {
     const init = async () => {
-      // Dans Expo Go, on initialise immédiatement (mock)
       if (isExpoGo) {
-        console.log('⚠️ Mode Expo Go - Notifications mockées');
+        console.log("⚠️ Mode Expo Go - Notifications mockées");
         setIsInitialized(true);
         return;
       }
 
-      // Mode Development Build
       if (currentUser) {
-        await notificationService.initialize();
+        await service.initialize();
         setIsInitialized(true);
       }
     };
@@ -51,37 +71,62 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     init();
 
     return () => {
-      if (!isExpoGo) {
-        notificationService.cleanup();
-      }
+      service.cleanup();
     };
   }, [currentUser]);
 
-  const setEnabled = (enabled: boolean) => {
+  // Gestion des clics sur les notifications
+  useEffect(() => {
+    if (isExpoGo) return;
+
+    // Écouter les événements de navigation depuis les notifications
+    const handler = (event: any) => {
+      const { route, params } = event.detail;
+      console.log('🧭 Navigation depuis notification:', route, params);
+      if (params) {
+        router.push({ pathname: route, params } as any);
+      } else {
+        router.push(route as any);
+      }
+    };
+
+    // @ts-ignore - CustomEvent support
+    global.addEventListener?.('notification-navigation', handler);
+
+    return () => {
+      // @ts-ignore
+      global.removeEventListener?.('notification-navigation', handler);
+    };
+  }, [router]);
+
+  // S'assurer que le handler est configuré au niveau racine
+  // Le handler est déjà configuré dans notifications.native.ts
+
+  const setEnabled = useCallback((enabled: boolean) => {
     setIsEnabled(enabled);
-    if (!enabled && !isExpoGo) {
-      notificationService.cancelAllNotifications();
+    if (!enabled) {
+      service.cancelAllNotifications();
     }
-  };
+  }, []);
 
   const value: NotificationContextType = {
     isInitialized,
     isEnabled,
     isExpoGo,
-    sendNotification: async (notification: NotificationData) => {
+    sendNotification: useCallback(async (notification: NotificationData) => {
       if (!isEnabled) return;
-      await notificationService.sendNotification(notification);
-    },
-    scheduleNotification: async (notification: ScheduledNotification) => {
-      if (!isEnabled) return '';
-      return await notificationService.scheduleNotification(notification);
-    },
-    cancelNotification: async (identifier: string) => {
-      await notificationService.cancelNotification(identifier);
-    },
-    cancelAllNotifications: async () => {
-      await notificationService.cancelAllNotifications();
-    },
+      await service.sendNotification(notification);
+    }, [isEnabled]),
+    scheduleNotification: useCallback(async (notification: ScheduledNotification) => {
+      if (!isEnabled) return "";
+      return await service.scheduleNotification(notification);
+    }, [isEnabled]),
+    cancelNotification: useCallback(async (identifier: string) => {
+      await service.cancelNotification(identifier);
+    }, []),
+    cancelAllNotifications: useCallback(async () => {
+      await service.cancelAllNotifications();
+    }, []),
     setEnabled,
   };
 

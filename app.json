@@ -4,7 +4,7 @@
     "slug": "ajiya",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/primary.png",
+    "icon": "./assets/images/primary-2.png",
     "scheme": "ajiya",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -13,15 +13,17 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/primary.png",
-        "backgroundImage": "./assets/images/primary.png",
-        "monochromeImage": "./assets/images/primary.png"
+        "foregroundImage": "./assets/images/primary-2.png",
+        "backgroundImage": "./assets/images/primary-2.png",
+        "monochromeImage": "./assets/images/primary-2.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.abdoulrachidmz.ajiya",
       "permissions": [
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
       ]
     },
     "web": {
@@ -47,10 +49,39 @@
           "faceIDPermission": "Autorisez Ajiya Ta à utiliser Face ID pour vous connecter."
         }
       ],
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.YOUR_CLIENT_ID"
+        }
+      ],
       "expo-sharing",
       "@react-native-community/datetimepicker"
     ],
+    "ios": {
+      "icon": "./assets/primary.png",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Ajiya Ta utilise la caméra pour scanner vos reçus et factures.",
+        "NSPhotoLibraryUsageDescription": "Ajiya Ta accède à votre galerie pour importer des reçus."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/primary-2.png",
+        "backgroundImage": "./assets/images/primary-2.png",
+        "monochromeImage": "./assets/images/primary-2.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.abdoulrachidmz.ajiya",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

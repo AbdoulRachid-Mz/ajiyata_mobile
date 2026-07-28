@@ -247,6 +247,11 @@ export class SyncService {
         const items = await db.select().from(table);
 
         for (const item of items) {
+          // Exclude default categories from being backed up to cloud
+          if (entity === "categories" && (item as any).isDefault) {
+            continue;
+          }
+
           const itemWithUserId = { ...item, userId };
           const isDuplicate = await this.checkDuplicate(
             entity,

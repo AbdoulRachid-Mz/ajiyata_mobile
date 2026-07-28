@@ -106,11 +106,11 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               <Ionicons name={iconName as any} size={24} color={color} />
             </View>
             <ThemedText
+              weight={isFocused ? "semibold" : "medium"}
               style={{
                 fontSize: 10,
                 color: color,
                 marginTop: 4,
-                fontWeight: isFocused ? "600" : "400",
               }}
             >
               {label as string}
@@ -176,7 +176,7 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
-    height: Platform.OS === "ios" ? 70 : 65,
+    height: Platform.OS === "ios" ? 90 : 85,
     paddingBottom: Platform.OS === "ios" ? 10 : 5,
     borderTopWidth: 0,
     elevation: 10,
@@ -184,10 +184,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-    borderRadius: 25,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   tabItem: {
     flex: 1,

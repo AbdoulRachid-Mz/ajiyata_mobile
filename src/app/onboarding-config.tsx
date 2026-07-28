@@ -3,7 +3,7 @@ import { initializeAccount } from "@/features/accounts/services";
 import { useAppStore } from "@/stores/app-store";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Platform, ScrollView, View } from "react-native";
+import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Composants UI
@@ -14,6 +14,7 @@ import ThemedText from "@/components/ui/text";
 import TextInput from "@/components/ui/text-input";
 import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import { ScrollView } from "@/components/ui";
 
 export default function OnboardingConfig() {
   const { theme } = useTheme();
@@ -23,8 +24,9 @@ export default function OnboardingConfig() {
   const [step, setStep] = useState(0);
   const [userName, setUserName] = useState("");
   const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState<"personal" | "business">(
-    "personal",
+  const [accountType, setAccountType] = useState<"personal" | "business" | "family">("personal");
+  const [phoneNumber, setPhoneNumber] = useState<string | number>(
+    "+22796021553",
   );
   const [currency, setCurrency] = useState<"XOF" | "EUR" | "USD">("XOF");
   const [initialBalance, setInitialBalance] = useState("");
@@ -53,6 +55,7 @@ export default function OnboardingConfig() {
       const { user, account } = await initializeAccount(
         userName,
         accountName,
+        phoneNumber.toString(),
         accountType,
         currency,
         parsedInitialBalance,
@@ -60,7 +63,7 @@ export default function OnboardingConfig() {
       setCurrentUser(user);
       setCurrentAccount(account);
       // Marquer l'onboarding comme terminé pour ne plus le revoir
-      await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+      await AsyncStorage.setItem("hasCompletedOnboarding", "true");
       router.replace("/(tabs)/dashboard");
     } catch (error) {
       console.error("Setup error:", error);
@@ -85,6 +88,20 @@ export default function OnboardingConfig() {
               leftIcon={
                 <Ionicons
                   name="person-outline"
+                  size={20}
+                  color={theme.colors.mutedForeground}
+                />
+              }
+            />
+            <TextInput
+              placeholder="Entrez votre numéro de téléphone"
+              value={phoneNumber.toString() || ""}
+              onChangeText={setPhoneNumber}
+              label="Numéro de téléphone"
+              keyboardType="phone-pad"
+              leftIcon={
+                <Ionicons
+                  name="call-outline"
                   size={20}
                   color={theme.colors.mutedForeground}
                 />
@@ -126,7 +143,13 @@ export default function OnboardingConfig() {
             >
               Type de compte
             </ThemedText>
-            <View style={{ flexDirection: "row", gap: theme.spacing.md }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: theme.spacing.md,
+              }}
+            >
               <TouchableOpacity
                 style={{
                   flex: 1,
@@ -192,6 +215,41 @@ export default function OnboardingConfig() {
                 </ThemedText>
                 <ThemedText variant="xs" color="mutedForeground">
                   Pour votre business
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  padding: theme.spacing.md,
+                  borderRadius: theme.borderRadius.md,
+                  borderWidth: 2,
+                  minWidth: "50%",
+                  borderColor:
+                    accountType === "family"
+                      ? theme.colors.primary
+                      : theme.colors.border,
+                  backgroundColor:
+                    accountType === "family"
+                      ? theme.colors.primary + "10"
+                      : "transparent",
+                }}
+                onPress={() => setAccountType("family")}
+              >
+                <Ionicons
+                  name="home"
+                  size={24}
+                  color={
+                    accountType === "family"
+                      ? theme.colors.primary
+                      : theme.colors.mutedForeground
+                  }
+                />
+                <ThemedText weight="semibold" style={{ marginTop: 4 }}>
+                  Famille
+                </ThemedText>
+                <ThemedText variant="xs" color="mutedForeground">
+                  Pour le foyer
                 </ThemedText>
               </TouchableOpacity>
             </View>

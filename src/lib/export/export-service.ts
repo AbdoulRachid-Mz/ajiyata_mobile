@@ -1,16 +1,16 @@
-import { Transaction, Category } from '@/types';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system/legacy';
+import { Transaction, Category, TransactionMetadata } from "@/types";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
+import { Paths, File } from "expo-file-system";
 
 // App branding from env
-const APP_NAME = process.env.EXPO_PUBLIC_APP_NAME || 'Ajiya Ta';
-const APP_EMAIL = process.env.EXPO_PUBLIC_APP_EMAIL || '';
-const APP_PHONE = process.env.EXPO_PUBLIC_APP_PHONE || '';
-const APP_ADDRESS = process.env.EXPO_PUBLIC_APP_ADDRESS || '';
+const APP_NAME = process.env.EXPO_PUBLIC_APP_NAME || "Ajiya Ta";
+const APP_EMAIL = process.env.EXPO_PUBLIC_APP_EMAIL || "";
+const APP_PHONE = process.env.EXPO_PUBLIC_APP_PHONE || "";
+const APP_ADDRESS = process.env.EXPO_PUBLIC_APP_ADDRESS || "";
 
 export interface ExportOptions {
-  format: 'pdf' | 'json' | 'excel';
+  format: "pdf" | "json" | "excel";
   transactions: Transaction[];
   period?: { start: Date; end: Date };
   accountName?: string;
@@ -18,38 +18,42 @@ export interface ExportOptions {
   categories?: Category[];
 }
 
-const fileUri =
-  FileSystem.documentDirectory +
-  `ajiyata_export_${Date.now()}.xlsx`;
-
-function formatCurrency(amount: number, currency = 'XOF') {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
+function formatCurrency(amount: number, currency = "XOF") {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
     currency,
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
 function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 function getTypeLabel(type: string): string {
   switch (type) {
-    case 'income': return 'Revenu';
-    case 'expense': return 'Dépense';
-    case 'transfer': return 'Virement';
-    default: return type;
+    case "income":
+      return "Revenu";
+    case "expense":
+      return "Dépense";
+    case "transfer":
+      return "Virement";
+    default:
+      return type;
   }
 }
 
 function computeTotals(transactions: Transaction[]) {
   let totalIncome = 0;
   let totalExpense = 0;
-  transactions.forEach(tx => {
-    if (tx.type === 'income') totalIncome += Number(tx.amount);
-    else if (tx.type === 'expense') totalExpense += Number(tx.amount);
+  transactions.forEach((tx) => {
+    if (tx.type === "income") totalIncome += Number(tx.amount);
+    else if (tx.type === "expense") totalExpense += Number(tx.amount);
   });
   return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
 }
@@ -59,42 +63,60 @@ function buildAppHeader(): string {
   if (APP_EMAIL) parts.push(APP_EMAIL);
   if (APP_PHONE) parts.push(APP_PHONE);
   if (APP_ADDRESS) parts.push(APP_ADDRESS);
-  return parts.join(' • ');
+  return parts.join(" • ");
 }
 
 // ── PDF ──
 
 async function generatePDF(options: ExportOptions): Promise<void> {
-  const { transactions, period, accountName, currency = 'XOF', categories = [] } = options;
+  const {
+    transactions,
+    period,
+    accountName,
+    currency = "XOF",
+    categories = [],
+  } = options;
   const totals = computeTotals(transactions);
 
-  const safeAccount = (accountName ?? 'Compte')
-  .replace(/[\\/:*?"<>|]/g, '_')
-  .replace(/\s+/g, '_');
+  const safeAccount = (accountName ?? "Compte")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_");
 
-const filename =
-  `AjiyaTa_${safeAccount}_${new Date()
+  const filename = `AjiyaTa_${safeAccount}_${new Date()
     .toISOString()
     .slice(0, 10)}.pdf`;
 
   const periodStr = period
     ? `Du ${formatDate(period.start)} au ${formatDate(period.end)}`
-    : 'Toutes les périodes';
+    : "Toutes les périodes";
 
   const rows = transactions
-    .map(tx => {
-      const categoryName = categories.find(c => c.id === tx.categoryId)?.name || tx.categoryId || '-';
+    .map((tx) => {
+      const categoryName =
+        categories.find((c) => c.id === tx.categoryId)?.name ||
+        tx.categoryId ||
+        "-";
+      let metadataStr = "";
+      // if ((tx.metadata as any)?.client) metadataStr = `<br><span style="font-size:10px;color:#666;">🏢 Client/Fournisseur : ${(tx.metadata as any).client}</span>`;
+      // if ((tx.metadata as any)?.paidBy) metadataStr = `<br><span style="font-size:10px;color:#666;">👤 Payé par : ${(tx.metadata as any).paidBy}</span>`;
+
+      const metadata = tx.metadata as TransactionMetadata | undefined;
+      if (metadata?.client)
+        metadataStr = `<br><span style="font-size:10px;color:#666;">🏢 Client/Fournisseur : ${metadata.client}</span>`;
+      if (metadata?.paidBy)
+        metadataStr = `<br><span style="font-size:10px;color:#666;">👤 Payé par : ${metadata.paidBy}</span>`;
+
       return `
       <tr>
         <td>${formatDate(tx.date)}</td>
-        <td>${tx.title || '-'}</td>
+        <td>${tx.title || "-"}${metadataStr}</td>
         <td>${getTypeLabel(tx.type)}</td>
         <td>${categoryName}</td>
-        <td style="text-align:right;color:${tx.type === 'expense' ? '#dc2626' : '#16a34a'}">${formatCurrency(Number(tx.amount), currency)}</td>
+        <td style="text-align:right;color:${tx.type === "expense" ? "#dc2626" : "#16a34a"}">${formatCurrency(Number(tx.amount), currency)}</td>
       </tr>
       `;
     })
-    .join('');
+    .join("");
 
   const html = `
     <html>
@@ -119,7 +141,7 @@ const filename =
           <h1>${APP_NAME}</h1>
           <p>${buildAppHeader()}</p>
         </div>
-        <h2 style="font-size:16px;">Rapport des Transactions${accountName ? ` — ${accountName}` : ''}</h2>
+        <h2 style="font-size:16px;">Rapport des Transactions${accountName ? ` — ${accountName}` : ""}</h2>
         <p style="font-size:12px;color:#666;">${periodStr} • ${transactions.length} transaction(s)</p>
         <table>
           <thead>
@@ -151,21 +173,23 @@ const filename =
     throw new Error("Le partage n'est pas disponible sur cet appareil.");
   }
 
-  await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Exporter le rapport PDF' });
+  await Sharing.shareAsync(uri, {
+    mimeType: "application/pdf",
+    dialogTitle: "Exporter le rapport PDF",
+  });
 }
 
 // ── JSON ──
 
 async function generateJSON(options: ExportOptions): Promise<void> {
-  const { transactions, period, accountName, currency = 'XOF' } = options;
+  const { transactions, period, accountName, currency = "XOF" } = options;
   const totals = computeTotals(transactions);
 
-  const safeAccount = (accountName ?? 'Compte')
-  .replace(/[\\/:*?"<>|]/g, '_')
-  .replace(/\s+/g, '_');
+  const safeAccount = (accountName ?? "Compte")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_");
 
-const filename =
-  `AjiyaTa_${safeAccount}_${new Date()
+  const filename = `AjiyaTa_${safeAccount}_${new Date()
     .toISOString()
     .slice(0, 10)}.json`;
 
@@ -176,7 +200,7 @@ const filename =
       phone: APP_PHONE,
       address: APP_ADDRESS,
     },
-    account: accountName || 'N/A',
+    account: accountName || "N/A",
     period: period
       ? { start: period.start.toISOString(), end: period.end.toISOString() }
       : null,
@@ -187,7 +211,7 @@ const filename =
       balance: totals.balance,
       currency,
     },
-    transactions: transactions.map(tx => ({
+    transactions: transactions.map((tx) => ({
       id: tx.id,
       date: tx.date,
       title: tx.title,
@@ -195,37 +219,48 @@ const filename =
       amount: tx.amount,
       categoryId: tx.categoryId,
       note: tx.note,
+      metadata: tx.metadata,
     })),
     exportedAt: new Date().toISOString(),
   };
 
   const jsonStr = JSON.stringify(exportObj, null, 2);
-  const fileUri = FileSystem.documentDirectory + filename;
-  await FileSystem.writeAsStringAsync(fileUri, jsonStr, { encoding: FileSystem.EncodingType.UTF8 });
-  await Sharing.shareAsync(fileUri, { mimeType: 'application/json', dialogTitle: 'Exporter les données JSON' });
+  const file = new File(Paths.document, filename);
+  await file.write(jsonStr);
+  await Sharing.shareAsync(file.uri, {
+    mimeType: "application/json",
+    dialogTitle: "Exporter les données JSON",
+  });
 }
 
 // ── Excel ──
 
 async function generateExcel(options: ExportOptions): Promise<void> {
-  const { transactions, period, accountName, currency = 'XOF', categories = [] } = options;
+  const {
+    transactions,
+    period,
+    accountName,
+    currency = "XOF",
+    categories = [],
+  } = options;
   const totals = computeTotals(transactions);
 
-  const safeAccount = (accountName ?? 'Compte')
-  .replace(/[\\/:*?"<>|]/g, '_')
-  .replace(/\s+/g, '_');
+  const safeAccount = (accountName ?? "Compte")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_");
 
-const filename =
-  `AjiyaTa_${safeAccount}_${new Date()
+  const filename = `AjiyaTa_${safeAccount}_${new Date()
     .toISOString()
     .slice(0, 10)}.xlsx`;
 
   // Dynamic import to avoid bundling issues if xlsx is missing
   let XLSX: any;
   try {
-    XLSX = require('xlsx');
+    XLSX = require("xlsx");
   } catch {
-    throw new Error('Le module xlsx n\'est pas installé. Installez-le avec: pnpm add xlsx');
+    throw new Error(
+      "Le module xlsx n'est pas installé. Installez-le avec: pnpm add xlsx",
+    );
   }
 
   const wsData: any[][] = [];
@@ -234,22 +269,33 @@ const filename =
   wsData.push([APP_NAME]);
   wsData.push([buildAppHeader()]);
   wsData.push([]);
-  wsData.push([`Compte: ${accountName || 'N/A'}`]);
+  wsData.push([`Compte: ${accountName || "N/A"}`]);
   if (period) {
-    wsData.push([`Période: ${formatDate(period.start)} - ${formatDate(period.end)}`]);
+    wsData.push([
+      `Période: ${formatDate(period.start)} - ${formatDate(period.end)}`,
+    ]);
   }
   wsData.push([`Exporté le: ${formatDate(new Date())}`]);
   wsData.push([]);
 
   // Headers
-  wsData.push(['Date', 'Titre', 'Type', 'Catégorie', 'Montant']);
+  wsData.push(["Date", "Titre", "Type", "Catégorie", "Montant"]);
 
   // Data rows
-  transactions.forEach(tx => {
-    const categoryName = categories.find(c => c.id === tx.categoryId)?.name || tx.categoryId || '-';
+  transactions.forEach((tx) => {
+    const categoryName =
+      categories.find((c) => c.id === tx.categoryId)?.name ||
+      tx.categoryId ||
+      "-";
+    let metadataStr = "";
+    if ((tx.metadata as any)?.client)
+      metadataStr = ` (🏢 Client: ${(tx.metadata as any).client})`;
+    if ((tx.metadata as any)?.paidBy)
+      metadataStr = ` (👤 Payé par: ${(tx.metadata as any).paidBy})`;
+
     wsData.push([
       formatDate(tx.date),
-      tx.title || '-',
+      (tx.title || "-") + metadataStr,
       getTypeLabel(tx.type),
       categoryName,
       Number(tx.amount),
@@ -258,15 +304,15 @@ const filename =
 
   // Totals
   wsData.push([]);
-  wsData.push(['Total Revenus', '', '', '', totals.totalIncome]);
-  wsData.push(['Total Dépenses', '', '', '', totals.totalExpense]);
-  wsData.push(['Solde', '', '', '', totals.balance]);
+  wsData.push(["Total Revenus", "", "", "", totals.totalIncome]);
+  wsData.push(["Total Dépenses", "", "", "", totals.totalExpense]);
+  wsData.push(["Solde", "", "", "", totals.balance]);
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
   // Column widths
-  ws['!cols'] = [
+  ws["!cols"] = [
     { wch: 12 }, // Date
     { wch: 30 }, // Titre
     { wch: 12 }, // Type
@@ -274,14 +320,15 @@ const filename =
     { wch: 15 }, // Montant
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+  XLSX.utils.book_append_sheet(wb, ws, "Transactions");
 
-  const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-  const fileUri = FileSystem.documentDirectory + filename;
-  await FileSystem.writeAsStringAsync(fileUri, wbout, { encoding: FileSystem.EncodingType.Base64 });
-  await Sharing.shareAsync(fileUri, {
-    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    dialogTitle: 'Exporter les données Excel',
+  const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+  const file = new File(Paths.document, filename);
+  await file.write(wbout, { encoding: "base64" });
+  await Sharing.shareAsync(file.uri, {
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    dialogTitle: "Exporter les données Excel",
   });
 }
 
@@ -289,11 +336,11 @@ const filename =
 
 export async function exportData(options: ExportOptions): Promise<void> {
   switch (options.format) {
-    case 'pdf':
+    case "pdf":
       return generatePDF(options);
-    case 'json':
+    case "json":
       return generateJSON(options);
-    case 'excel':
+    case "excel":
       return generateExcel(options);
     default:
       throw new Error(`Format non supporté: ${options.format}`);

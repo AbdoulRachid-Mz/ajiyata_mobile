@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { InferModel } from "drizzle-orm";
+import * as Device from 'expo-device';
+import * as Application from 'expo-application';
 import { 
   users, accounts, categories, transactions, attachments, 
   budgets, savingGoals, exchangeRates, devices, syncLogs, settings 
@@ -14,7 +16,6 @@ export type Attachment = InferModel<typeof attachments>;
 export type Budget = InferModel<typeof budgets>;
 export type SavingGoal = InferModel<typeof savingGoals>;
 export type ExchangeRate = InferModel<typeof exchangeRates>;
-export type Device = InferModel<typeof devices>;
 export type SyncLog = InferModel<typeof syncLogs>;
 export type Setting = InferModel<typeof settings>;
 
@@ -23,7 +24,7 @@ const STORAGE_KEYS = {
   SESSION: "@finance_app:session",
   IS_FIRST_VISIT: "@finance_app:first_visit",
   PENDING_SYNC: "@finance_app:pending_sync",
-  CURRENT_DEVICE_ID: "@finance_app:current_device_id",
+  DEVICE_ID: "@finance_app:device_id",
 } as const;
 
 
@@ -85,8 +86,34 @@ export const Storage = {
   },
 
   // Current device ID management for multi-device sync
-  getCurrentDeviceId: () => getStorageItem<string>(STORAGE_KEYS.CURRENT_DEVICE_ID),
-  setCurrentDeviceId: (deviceId: string) => setStorageItem(STORAGE_KEYS.CURRENT_DEVICE_ID, deviceId),
+  async getCurrentDeviceId(): Promise<string> {
+    try {
+      // Vérifier si un device ID est déjà stocké
+      let deviceId = await this.getItem<string>(STORAGE_KEYS.DEVICE_ID);
+      
+      if (!deviceId) {
+        // Générer un nouvel ID
+        if (Device.osName === 'Android') {
+          const androidId = await Application.getAndroidId();
+          deviceId = androidId || 'unknown-device';
+        } else if (Device.osName === 'iOS') {
+          const iosId = await Application.getIosIdForVendorAsync();
+          deviceId = iosId || 'unknown-device';
+        } else {
+          deviceId = 'unknown-device';
+        }
+        
+        // Stocker l'ID
+        await this.setItem(STORAGE_KEYS.DEVICE_ID, deviceId);
+      }
+      
+      return deviceId;
+    } catch (error) {
+      console.error('Error getting device ID:', error);
+      return 'unknown-device';
+    }
+  },
+  setCurrentDeviceId: (deviceId: string) => setStorageItem(STORAGE_KEYS.DEVICE_ID, deviceId),
   
   // Pending sync queue management for offline-first operations
   getPendingSyncOperations: () => getStorageItem<PendingSyncOperation[]>(STORAGE_KEYS.PENDING_SYNC).then(ops => ops ?? []),

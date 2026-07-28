@@ -7,9 +7,11 @@ export const formatCurrency = (
   currency: string = "XOF",
   locale: string = "fr-FR"
 ): string => {
+  // Validate ISO 4217 currency code to prevent Hermes intl errors
+  const validCurrency = /^[A-Z]{3}$/.test(currency) ? currency : "XOF";
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: currency,
+    currency: validCurrency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);

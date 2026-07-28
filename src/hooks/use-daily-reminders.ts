@@ -1,8 +1,9 @@
+// src/hooks/use-daily-reminders.ts
+
 import { useEffect, useRef } from 'react';
 import { useNotifications } from '@/contexts/notification-context';
 import { useAppStore } from '@/stores/app-store';
 
-// Identifiant unique pour notre notification quotidienne
 const DAILY_REMINDER_ID = 'daily_reminder';
 
 export const useDailyReminders = () => {
@@ -40,7 +41,7 @@ export const useDailyReminders = () => {
           return;
         }
 
-        // Planifier la nouvelle notification
+        // Planifier la nouvelle notification avec catégorie
         const id = await scheduleNotification({
           title: '💰 Ajiya Ta - Point Quotidien',
           body: "C'est l'heure de faire le point ! Vérifiez vos budgets, objectifs et transactions du jour.",

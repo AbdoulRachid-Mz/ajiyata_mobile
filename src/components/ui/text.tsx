@@ -35,6 +35,7 @@ interface TextProps {
   onPress?: () => void;
   animateColorChange?: boolean;
   animationDuration?: number;
+  adjustsFontSizeToFit?: boolean;
 }
 
 const ThemedText = forwardRef<RNText, TextProps>(
@@ -50,6 +51,7 @@ const ThemedText = forwardRef<RNText, TextProps>(
       onPress,
       animateColorChange = true,
       animationDuration = 200,
+      adjustsFontSizeToFit,
     },
     ref,
   ) => {
@@ -98,6 +100,7 @@ const ThemedText = forwardRef<RNText, TextProps>(
         numberOfLines={numberOfLines}
         selectable={selectable}
         onPress={onPress}
+        adjustsFontSizeToFit={adjustsFontSizeToFit}
       >
         {children}
       </Animated.Text>

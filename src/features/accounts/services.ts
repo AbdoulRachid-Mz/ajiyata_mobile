@@ -3,7 +3,12 @@ import { accounts, categories, users } from "@/db/schema";
 import {
   DEFAULT_EXPENSE_CATEGORIES,
   DEFAULT_INCOME_CATEGORIES,
+  BUSINESS_EXPENSE_CATEGORIES,
+  BUSINESS_INCOME_CATEGORIES,
+  FAMILY_EXPENSE_CATEGORIES,
+  FAMILY_INCOME_CATEGORIES,
 } from "@/features/categories/constants";
+import { Storage } from "@/lib/storage";
 import type {
   Account,
   Category,
@@ -23,15 +28,15 @@ export type InitializeAccountResult = {
 export async function initializeAccount(
   userName: string,
   accountName: string,
-  accountType: "personal" | "business",
+  phoneNumber: string,  
+  accountType: "personal" | "business" | "family",
   currency: string,
   initialBalance: number = 0,
 ): Promise<InitializeAccountResult> {
   const userId = generateUUID();
   const accountId = generateUUID();
-  const deviceId = "temp-device-id";
   const now = getCurrentTimestamp();
-
+  const deviceId = await Storage.getCurrentDeviceId() || 'temp-device-id';
   console.log('Initializing account for:', userName, 'Account:', accountName, 'Initial balance:', initialBalance);
 
   try {
@@ -39,7 +44,7 @@ export async function initializeAccount(
     const userData: NewUser = {
       id: userId,
       name: userName,
-      phoneNumber: "0000000000",
+      phoneNumber: phoneNumber.trim(),
       defaultCurrency: currency,
       accountType: accountType,
       createdAt: now,
@@ -87,10 +92,23 @@ export async function initializeAccount(
     if (!insertedAccount) throw new Error("Failed to insert account");
 
     // Create default categories
-    const allDefaultCategories = [
-      ...DEFAULT_INCOME_CATEGORIES,
-      ...DEFAULT_EXPENSE_CATEGORIES,
-    ];
+    let allDefaultCategories: any[] = [];
+    if (accountType === "business") {
+      allDefaultCategories = [
+        ...BUSINESS_INCOME_CATEGORIES,
+        ...BUSINESS_EXPENSE_CATEGORIES,
+      ];
+    } else if (accountType === "family") {
+      allDefaultCategories = [
+        ...FAMILY_INCOME_CATEGORIES,
+        ...FAMILY_EXPENSE_CATEGORIES,
+      ];
+    } else {
+      allDefaultCategories = [
+        ...DEFAULT_INCOME_CATEGORIES,
+        ...DEFAULT_EXPENSE_CATEGORIES,
+      ];
+    }
 
     console.log('Creating categories...');
     const newCategories: NewCategory[] = allDefaultCategories.map((cat) => ({

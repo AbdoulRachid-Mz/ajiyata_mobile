@@ -1,7 +1,14 @@
-import React, { useMemo, useRef, useState } from "react";
+// Fichier: src/app/(tabs)/budgets.tsx
+
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   View,
-  ScrollView,
   TouchableOpacity,
   Alert,
   NativeSyntheticEvent,
@@ -9,6 +16,7 @@ import {
   StyleSheet,
   TextInput,
   SectionList,
+  RefreshControl,
 } from "react-native";
 import {
   startOfDay,
@@ -22,6 +30,7 @@ import {
   isYesterday,
   format,
   parseISO,
+  differenceInDays,
 } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useRouter } from "expo-router";
@@ -38,15 +47,23 @@ import { useAppStore } from "@/stores/app-store";
 import { useUIStore } from "@/stores/ui-store";
 import { generateUUID, getCurrentTimestamp } from "@/utils/uuid";
 import {
-  useBudgets,
+  useBudgetsWithPeriod,
   useCreateBudget,
   useDeleteBudget,
+  useExpiredBudgets,
 } from "@/features/budgets/hooks";
 import { useCategories } from "@/features/categories/hooks";
 import { useTransactions } from "@/features/transactions/hooks";
 import { BudgetCard } from "@/components/finance/budget-card";
 import { ScreenSkeleton } from "@/components/ui/screen-skeleton";
-import { Budget } from "@/types";
+import { BudgetWithRelations } from "@/types";
+import Toast from "react-native-toast-message";
+import { Storage } from "@/lib/storage";
+import {
+  budgetIntelligence,
+  BudgetSuggestion,
+} from "@/services/budget-intelligence.service";
+import { ScrollView } from "@/components/ui";
 
 // ---- Helpers ----
 
@@ -73,27 +90,239 @@ export default function BudgetsScreen() {
   const [statusFilter, setStatusFilter] = useState<BudgetStatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: budgets, isLoading } = useBudgets(accountId);
+  // Données
+  const { data: budgets, isLoading, refetch } = useBudgetsWithPeriod(accountId);
   const { data: categories } = useCategories(accountId);
   const { data: transactions } = useTransactions(accountId);
   const deleteBudget = useDeleteBudget(accountId);
   const createBudget = useCreateBudget();
 
-  const { setTabBarVisible: setTabBarVisibleGlobal } = useUIStore();
+  // Suggestions
+  const [suggestions, setSuggestions] = useState<BudgetSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
+  // Charger les suggestions
+  // const loadSuggestions = useCallback(async () => {
+  //   if (!accountId) return;
+  //   setIsLoadingSuggestions(true);
+  //   try {
+  //     const result = await budgetIntelligence.suggestBudgets(accountId);
+  //     // Filtrer les suggestions qui n'ont pas déjà un budget
+  //     const filtered = result.filter((s) => !s.hasExistingBudget);
+  //     setSuggestions(filtered);
+  //     setShowSuggestions(filtered.length > 0);
+  //     console.log(`📊 Suggestions chargées: ${filtered.length}`);
+  //   } catch (error) {
+  //     console.error("Error loading suggestions:", error);
+  //   } finally {
+  //     setIsLoadingSuggestions(false);
+  //   }
+  // }, [accountId]);
+
+  const loadSuggestions = useCallback(async () => {
+  if (!accountId) return;
+  setIsLoadingSuggestions(true);
+  try {
+    const result = await budgetIntelligence.suggestBudgets(accountId);
+    const filtered = result.filter((s) => !s.hasExistingBudget);
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  } catch (error) {
+    console.error("Error loading suggestions:", error);
+  } finally {
+    setIsLoadingSuggestions(false);
+  }
+}, [accountId, transactions]);
+
+  // Charger les suggestions au montage
+  useEffect(() => {
+    // refresh suggestions
+    loadSuggestions();
+  }, [loadSuggestions]);
+
+  // Pull to Refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+      await loadSuggestions();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error("Refresh error:", error);
+      Toast.show({
+        type: "error",
+        text1: "Erreur",
+        text2: "Impossible de rafraîchir",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch, loadSuggestions]);
+
+  // Créer un budget depuis une suggestion
+  const handleCreateFromSuggestion = useCallback(
+    async (suggestion: BudgetSuggestion) => {
+      if (!currentAccount) return;
+
+      const deviceId = (await Storage.getCurrentDeviceId()) || "unknown-device";
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date;
+
+      switch (suggestion.period) {
+        case "daily":
+          startDate = startOfDay(now);
+          endDate = endOfDay(now);
+          break;
+        case "weekly":
+          startDate = startOfWeek(now, { weekStartsOn: 1 });
+          endDate = endOfWeek(now, { weekStartsOn: 1 });
+          break;
+        case "monthly":
+          startDate = startOfMonth(now);
+          endDate = endOfMonth(now);
+          break;
+        default:
+          startDate = startOfMonth(now);
+          endDate = endOfMonth(now);
+      }
+
+      try {
+        await createBudget.mutateAsync({
+          id: generateUUID(),
+          accountId: currentAccount.id,
+          categoryId: suggestion.categoryId,
+          limit: suggestion.suggestedLimit,
+          spent: 0,
+          period: suggestion.period,
+          startDate,
+          endDate,
+          status: "active",
+          createdAt: getCurrentTimestamp(),
+          updatedAt: getCurrentTimestamp(),
+          deviceId,
+          version: 1,
+          syncStatus: "pending",
+          metadata: {},
+        });
+
+        Toast.show({ type: "success", text1: "Budget créé avec succès" });
+
+        // Retirer la suggestion de la liste
+        setSuggestions((prev) =>
+          prev.filter((s) => s.categoryId !== suggestion.categoryId),
+        );
+        if (suggestions.length <= 1) {
+          setShowSuggestions(false);
+        }
+
+        // Rafraîchir la liste
+        refetch();
+      } catch (error) {
+        console.error("Error creating budget from suggestion:", error);
+        Toast.show({ type: "error", text1: "Erreur lors de la création" });
+      }
+    },
+    [currentAccount, createBudget, refetch],
+  );
+
+  // Gestionnaires CRUD
+  const handleDelete = useCallback(
+    (budgetId: string) => {
+      Alert.alert(
+        "Supprimer le budget",
+        "Êtes-vous sûr de vouloir supprimer ce budget ?",
+        [
+          { text: "Annuler", style: "cancel" },
+          {
+            text: "Supprimer",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteBudget.mutateAsync(budgetId);
+                Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Success,
+                );
+                refetch();
+              } catch (e) {
+                console.error("Delete error", e);
+                Alert.alert("Erreur", "Impossible de supprimer le budget.");
+              }
+            },
+          },
+        ],
+      );
+    },
+    [deleteBudget, refetch],
+  );
+
+  const handleDuplicate = useCallback(
+    async (budget: BudgetWithRelations) => {
+      try {
+        const deviceId =
+          (await Storage.getCurrentDeviceId()) || "unknown-device";
+        const accountId = budget.accountId || currentAccount?.id;
+
+        if (!accountId) {
+          Toast.show({
+            type: "error",
+            text1: "Erreur",
+            text2: "Compte manquant",
+          });
+          return;
+        }
+
+        const newBudget = {
+          id: generateUUID(),
+          accountId: accountId,
+          categoryId: budget.categoryId,
+          limit: budget.limit,
+          spent: 0,
+          period: budget.period,
+          startDate: new Date(budget.startDate),
+          endDate: new Date(budget.endDate),
+          status: "active" as const,
+          createdAt: getCurrentTimestamp(),
+          updatedAt: getCurrentTimestamp(),
+          deviceId: deviceId,
+          version: 1,
+          syncStatus: "pending" as const,
+          metadata: {},
+        };
+
+        await createBudget.mutateAsync(newBudget);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Toast.show({ type: "success", text1: "Budget dupliqué avec succès" });
+        refetch();
+      } catch (e) {
+        console.error("Duplication error:", e);
+        Toast.show({ type: "error", text1: "Erreur lors de la duplication" });
+      }
+    },
+    [currentAccount, createBudget, refetch],
+  );
+
+  // UI - Gestion du scroll
   const lastScrollY = useRef(0);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const currentScrollY = event.nativeEvent.contentOffset.y;
-    if (currentScrollY < 0) return;
-    if (currentScrollY > lastScrollY.current + 10) {
-      setTabBarVisibleGlobal(false);
-    } else if (currentScrollY < lastScrollY.current - 10) {
-      setTabBarVisibleGlobal(true);
-    }
-    lastScrollY.current = currentScrollY;
-  };
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const currentScrollY = event.nativeEvent.contentOffset.y;
+      if (currentScrollY < 0) return;
+      if (currentScrollY > lastScrollY.current + 10) {
+        setTabBarVisible(false);
+      } else if (currentScrollY < lastScrollY.current - 10) {
+        setTabBarVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    },
+    [setTabBarVisible],
+  );
 
+  // Mapping des catégories
   const categoryMap = useMemo(() => {
     const map: Record<string, any> = {};
     if (!categories) return map;
@@ -103,13 +332,14 @@ export default function BudgetsScreen() {
     return map;
   }, [categories]);
 
-  // Calcul des dépenses par budget
+  // Calcul des dépenses par budget et tri
   const budgetsWithSpent = useMemo(() => {
     if (!budgets) return [];
 
-    return budgets.map((budget) => {
+    const now = new Date();
+
+    const processed = budgets.map((budget) => {
       let start, end;
-      const now = new Date();
       if (budget.period === "daily") {
         start = startOfDay(now);
         end = endOfDay(now);
@@ -133,31 +363,57 @@ export default function BudgetsScreen() {
         }
       }
 
-      // Déterminer le statut réel
       let status = budget.status;
       if (status === "active" && spent > budget.limit) {
         status = "exceeded";
       }
+
+      // Calculer le nombre de jours restants
+      const daysUntilEnd = differenceInDays(end, now);
+      const daysUntilStart = differenceInDays(start, now);
+      const totalDays = differenceInDays(end, start);
+
+      // Score pour le tri : priorité aux budgets actifs les plus proches
+      const priorityScore =
+        status === "active" ? 0 : status === "exceeded" ? 1 : 2;
 
       return {
         ...budget,
         spent,
         status,
         category: categoryMap[budget.categoryId],
+        periodStart: start,
+        periodEnd: end,
+        daysUntilEnd,
+        daysUntilStart,
+        totalDays,
+        progress: totalDays > 0 ? daysUntilStart / totalDays : 0,
+        priorityScore,
       };
+    });
+
+    // Tri par date de début la plus proche d'aujourd'hui
+    return processed.sort((a, b) => {
+      // D'abord par statut (active > exceeded > completed)
+      if (a.priorityScore !== b.priorityScore) {
+        return a.priorityScore - b.priorityScore;
+      }
+
+      // Ensuite par date de début la plus proche (ascendant)
+      const aStart = new Date(a.startDate).getTime();
+      const bStart = new Date(b.startDate).getTime();
+      return aStart - bStart;
     });
   }, [budgets, transactions, categoryMap]);
 
-  // Filtrage par statut et recherche
+  // Filtrage et recherche
   const filteredBudgets = useMemo(() => {
     let result = budgetsWithSpent;
 
-    // Filtre par statut
     if (statusFilter !== "all") {
       result = result.filter((b) => b.status === statusFilter);
     }
 
-    // Filtre par recherche
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       result = result.filter((b) => {
@@ -175,17 +431,14 @@ export default function BudgetsScreen() {
   // Groupement par date
   const groupedBudgets = useMemo(() => {
     const groups: { [key: string]: any[] } = {};
-    const now = new Date();
 
     filteredBudgets.forEach((budget) => {
-      // Utiliser la date de début du budget pour le groupement
       const dateObj =
         typeof budget.startDate === "string"
           ? parseISO(budget.startDate)
           : new Date(budget.startDate);
 
       let dateKey = "";
-
       if (isToday(dateObj)) {
         dateKey = "Aujourd'hui";
       } else if (isYesterday(dateObj)) {
@@ -200,7 +453,6 @@ export default function BudgetsScreen() {
       groups[dateKey].push(budget);
     });
 
-    // Trier les groupes par date (du plus récent au plus ancien)
     const sortedKeys = Object.keys(groups).sort((a, b) => {
       if (a === "Aujourd'hui") return -1;
       if (b === "Aujourd'hui") return 1;
@@ -226,7 +478,6 @@ export default function BudgetsScreen() {
     const completed = budgetsWithSpent.filter(
       (b) => b.status === "completed",
     ).length;
-
     const totalLimit = budgetsWithSpent.reduce(
       (sum, b) => sum + Number(b.limit || 0),
       0,
@@ -239,59 +490,13 @@ export default function BudgetsScreen() {
     return { total, active, exceeded, completed, totalLimit, totalSpent };
   }, [budgetsWithSpent]);
 
-  const currency = currentAccount?.currency || "XOF";
-
-  // Gestionnaires
-  const handleDelete = (budgetId: string) => {
-    Alert.alert(
-      "Supprimer le budget",
-      "Êtes-vous sûr de vouloir supprimer ce budget ?",
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteBudget.mutateAsync(budgetId);
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-              );
-            } catch (e) {
-              console.error("Delete error", e);
-              Alert.alert("Erreur", "Impossible de supprimer le budget.");
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const handleDuplicate = async (budget: any) => {
-    try {
-      await createBudget.mutateAsync({
-        ...budget,
-        id: generateUUID(),
-        spent: 0,
-        status: "active",
-        createdAt: getCurrentTimestamp(),
-        updatedAt: getCurrentTimestamp(),
-        syncStatus: "pending",
-      } as any);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
-      console.error("Duplication error", e);
-      Alert.alert("Erreur", "Impossible de dupliquer le budget.");
-    }
-  };
-
-  const statusTabs: {
-    label: string;
-    value: BudgetStatusFilter;
-    icon: string;
-    count: number;
-  }[] = [
-    { label: "Tous", value: "all", icon: "apps-outline", count: stats.total },
+  const statusTabs = [
+    {
+      label: "Tous",
+      value: "all" as BudgetStatusFilter,
+      icon: "apps-outline",
+      count: stats.total,
+    },
     {
       label: "Actifs",
       value: "active",
@@ -311,6 +516,8 @@ export default function BudgetsScreen() {
       count: stats.completed,
     },
   ];
+
+  const currency = currentAccount?.currency || "XOF";
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -368,7 +575,7 @@ export default function BudgetsScreen() {
           </View>
         </ThemedView>
 
-        {/* Barre de recherche */}
+        {/* Search Bar */}
         {showSearch && (
           <View
             style={{
@@ -420,7 +627,7 @@ export default function BudgetsScreen() {
           </View>
         )}
 
-        {/* Tabs de filtrage */}
+        {/* Status Filter Tabs */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -438,7 +645,7 @@ export default function BudgetsScreen() {
               key={tab.value}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setStatusFilter(tab.value);
+                setStatusFilter(tab.value as BudgetStatusFilter);
               }}
               style={[
                 {
@@ -513,7 +720,114 @@ export default function BudgetsScreen() {
           ))}
         </ScrollView>
 
-        {/* Contenu */}
+        {/* Budget Suggestions */}
+        {showSuggestions && suggestions.length > 0 && (
+          <View
+            style={{
+              paddingHorizontal: theme.spacing.lg,
+              paddingVertical: theme.spacing.sm,
+            }}
+          >
+            <Card
+              style={{
+                padding: theme.spacing.md,
+                backgroundColor: theme.colors.primary + "10",
+                borderWidth: 1,
+                borderColor: theme.colors.primary + "30",
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: theme.spacing.sm,
+                }}
+              >
+                <ThemedText
+                  variant="sm"
+                  weight="bold"
+                  style={{ color: theme.colors.primary }}
+                >
+                  💡 Suggestions de budgets
+                </ThemedText>
+                <TouchableOpacity onPress={() => setShowSuggestions(false)}>
+                  <Ionicons
+                    name="close"
+                    size={20}
+                    color={theme.colors.mutedForeground}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {suggestions.slice(0, 3).map((suggestion) => (
+                <View
+                  key={suggestion.categoryId}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingVertical: theme.spacing.xs,
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.colors.border + "50",
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <ThemedText variant="sm" weight="semibold">
+                      {suggestion.categoryName}
+                    </ThemedText>
+                    <ThemedText variant="xs" color="mutedForeground">
+                      {formatCurrency(suggestion.suggestedLimit)} /{" "}
+                      {suggestion.period === "daily"
+                        ? "jour"
+                        : suggestion.period === "weekly"
+                          ? "semaine"
+                          : "mois"}
+                      {" · "}
+                      {Math.round(suggestion.confidence * 100)}% confiance
+                    </ThemedText>
+                    <ThemedText variant="xs" color="mutedForeground">
+                      {suggestion.reason}
+                    </ThemedText>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleCreateFromSuggestion(suggestion)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      backgroundColor: theme.colors.primary,
+                      borderRadius: theme.borderRadius.sm,
+                    }}
+                  >
+                    <ThemedText
+                      variant="xs"
+                      style={{ color: "#fff", fontWeight: "600" }}
+                    >
+                      Créer
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {suggestions.length > 3 && (
+                <TouchableOpacity
+                  onPress={() => setShowSuggestions(false)}
+                  style={{ marginTop: theme.spacing.sm }}
+                >
+                  <ThemedText
+                    variant="xs"
+                    color="mutedForeground"
+                    style={{ textAlign: "center" }}
+                  >
+                    Voir toutes les suggestions ({suggestions.length})
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+            </Card>
+          </View>
+        )}
+
+        {/* Content */}
         {isLoading ? (
           <ScreenSkeleton type="budgets" />
         ) : groupedBudgets.length === 0 ? (
@@ -558,23 +872,51 @@ export default function BudgetsScreen() {
                 : "Créez votre premier budget pour mieux contrôler vos dépenses par catégorie."}
             </ThemedText>
             {!searchQuery && (
-              <TouchableOpacity
-                onPress={() => router.push("/budget-create")}
+              <ThemedView
                 style={{
+                  display: "flex",
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 8,
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
-                  backgroundColor: theme.colors.primary,
-                  borderRadius: theme.borderRadius.lg,
+                  gap: 10,
                 }}
               >
-                <Ionicons name="add" size={20} color="#fff" />
-                <ThemedText weight="semibold" style={{ color: "#fff" }}>
-                  Créer un budget
-                </ThemedText>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push("/budget-create")}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    paddingHorizontal: 20,
+                    paddingVertical: 8,
+                    backgroundColor: theme.colors.primary,
+                    borderRadius: theme.borderRadius.lg,
+                  }}
+                >
+                  <Ionicons name="add" size={20} color="#fff" />
+                  <ThemedText weight="semibold" style={{ color: "#fff" }}>
+                    Créer un budget
+                  </ThemedText>
+                </TouchableOpacity>
+
+                {/* refresh data */}
+                <TouchableOpacity
+                  onPress={() => onRefresh()}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    paddingHorizontal: 20,
+                    paddingVertical: 8,
+                    backgroundColor: theme.colors.primary,
+                    borderRadius: theme.borderRadius.lg,
+                  }}
+                >
+                  <Ionicons name="refresh" size={20} color="#fff" />
+                  <ThemedText weight="semibold" style={{ color: "#fff" }}>
+                    Actualiser
+                  </ThemedText>
+                </TouchableOpacity>
+              </ThemedView>
             )}
           </View>
         ) : (
@@ -607,7 +949,7 @@ export default function BudgetsScreen() {
                   category={item.category}
                   onEdit={(b) => router.push(`/budget-edit?id=${b.id}`)}
                   onDelete={(budget) => handleDelete(budget.id)}
-                  onDuplicate={(budget) => handleDuplicate(budget.id)}
+                  onDuplicate={(budget) => handleDuplicate(budget)}
                 />
               </View>
             )}
@@ -615,6 +957,14 @@ export default function BudgetsScreen() {
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[theme.colors.primary]}
+                tintColor={theme.colors.primary}
+              />
+            }
           />
         )}
       </ThemedView>

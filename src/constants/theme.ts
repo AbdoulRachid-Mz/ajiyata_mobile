@@ -1,3 +1,4 @@
+// @/constants/theme.ts
 
 // Mobile-first theme colors - extracted from your base HSL values
 export const lightTheme = {

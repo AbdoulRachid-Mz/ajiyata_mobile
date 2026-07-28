@@ -7,6 +7,7 @@ import { useCategories } from '../hooks';
 import { useCreateCategory } from '../hooks';
 import { Category } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
+import { useDevice } from '@/hooks/use-device';
 
 interface CategoryPickerProps {
   accountId: string;
@@ -22,6 +23,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newCategoryIcon, setNewCategoryIcon] = useState('wallet-outline');
   const [newCategoryColor, setNewCategoryColor] = useState('#16a34a');
+  const { deviceId } = useDevice();
   
   const { data: categories, isLoading } = useCategories(accountId);
   const createCategory = useCreateCategory();
@@ -77,7 +79,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
         color: newCategoryColor,
         icon: validIcon,
         id: '', // Sera généré par le repository
-        deviceId: '',
+        deviceId,
         createdAt: new Date(),
         updatedAt: new Date(),
         isDefault: false,

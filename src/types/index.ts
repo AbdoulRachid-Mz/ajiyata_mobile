@@ -6,6 +6,13 @@ export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 export type MiniUser = Pick<User, 'id' | 'name' | 'email'>;
 
+// Type pour les métadonnées des transactions
+export interface TransactionMetadata {
+  client?: string;      // Pour les comptes business
+  paidBy?: string;      // Pour les comptes family
+  [key: string]: any;   // Pour extensibilité future
+}
+
 export type MiniAccount = Pick<Account, 'id' | 'userId' | 'name' | 'type' | 'currency'>;
 
 export type MiniCategory = Pick<Category, 'id' | 'accountId' | 'name' | 'type' | 'color' | 'icon'>;
@@ -32,7 +39,11 @@ export type NewAccount = InferInsertModel<typeof accounts>;
 export type Category = InferSelectModel<typeof categories>;
 export type NewCategory = InferInsertModel<typeof categories>;
 
-export type Transaction = InferSelectModel<typeof transactions>;
+// Mettre à jour le type Transaction
+export type Transaction = InferSelectModel<typeof transactions> & {
+  metadata?: TransactionMetadata | null;
+};
+
 export type NewTransaction = InferInsertModel<typeof transactions>;
 
 export type Attachment = InferSelectModel<typeof attachments>;
@@ -86,6 +97,7 @@ export type AttachmentWithRelations = Attachment & {
 export type BudgetWithRelations = Budget & {
   account: MiniAccount;
   category: MiniCategory;
+  accountId?: string;
 };
 
 export type SavingGoalWithRelations = SavingGoal & {

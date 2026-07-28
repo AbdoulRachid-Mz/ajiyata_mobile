@@ -1,72 +1,32 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, AppState, AppStateStatus, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useAppStore } from '@/stores/app-store';
-import { useBiometricAuth } from '@/hooks/use-biometric-auth';
 import { useTheme } from '@/contexts/theme-context';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '@/components/ui/text';
 import Button from '@/components/ui/button';
+import { useAppLock } from '@/hooks/use-app-lock';
 
 export function AppLock() {
   const { theme } = useTheme();
   const { 
     isAppLockEnabled, 
-    lastBackgroundTime, 
-    setLastBackgroundTime,
     lockTimeoutMinutes,
+    lastBackgroundTime,
+    setIsLocked,
   } = useAppStore();
-  const { authenticate, isBiometricAvailable } = useBiometricAuth();
-  const [isLocked, setIsLocked] = useState(false);
-  const appState = useRef(AppState.currentState);
 
-  // Convertir les minutes en millisecondes
-  const lockTimeoutMs = lockTimeoutMinutes * 60 * 1000;
+  const { isLocked, unlock: handleUnlock } = useAppLock();
 
+  // Vérification au montage (Démarrage à froid)
   useEffect(() => {
-    // Si la sécurité n'est pas activée ou la biométrie non disponible, on ne fait rien
-    if (!isAppLockEnabled || !isBiometricAvailable) return;
-
-    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      // Passage en arrière-plan
-      if (
-        appState.current.match(/active/) &&
-        nextAppState.match(/inactive|background/)
-      ) {
-        setLastBackgroundTime(Date.now());
+    if (isAppLockEnabled && lastBackgroundTime) {
+      const elapsedMinutes = (Date.now() - lastBackgroundTime) / (1000 * 60);
+      if (elapsedMinutes >= lockTimeoutMinutes) {
+        setIsLocked(true);
       }
-
-      // Retour au premier plan
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        const now = Date.now();
-        const backgroundTime = useAppStore.getState().lastBackgroundTime;
-        
-        // Si l'application a été en arrière-plan plus que le temps défini
-        if (backgroundTime && (now - backgroundTime) >= lockTimeoutMs) {
-          setIsLocked(true);
-          await handleUnlock();
-        }
-        
-        // Reset the background time once we process the active state
-        setLastBackgroundTime(null);
-      }
-
-      appState.current = nextAppState;
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [isAppLockEnabled, isBiometricAvailable, setLastBackgroundTime, lockTimeoutMs]);
-
-  const handleUnlock = async () => {
-    const success = await authenticate('Veuillez vous authentifier pour déverrouiller Ajiya Ta');
-    if (success) {
-      setIsLocked(false);
     }
-  };
+  }, [isAppLockEnabled, lastBackgroundTime, lockTimeoutMinutes]);
 
   if (!isLocked) return null;
 

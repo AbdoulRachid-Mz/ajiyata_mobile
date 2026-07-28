@@ -21,6 +21,7 @@ export const transactionFormSchema = z.object({
   categoryId: z.string().optional().nullable(),
   note: z.string().max(200, "La note est trop longue").optional().nullable(),
   date: z.date().default(() => new Date()),
+  metadata: z.record(z.string(), z.any()).optional().nullable(),
 });
 
 export type TransactionFormInput = z.input<typeof transactionFormSchema>;
@@ -30,6 +31,7 @@ export const budgetFormSchema = z.object({
   categoryId: z.string().min(1, "Catégorie requise"),
   limit: amountSchema,
   period: z.enum(["daily", "weekly", "monthly"]),
+  count: z.number().min(1, "Nombre de fois requise"),
 });
 
 export type BudgetFormInput = z.input<typeof budgetFormSchema>;

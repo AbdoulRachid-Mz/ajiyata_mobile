@@ -20,7 +20,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import {
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  isWithinInterval,
+} from "date-fns";
+import { useState } from "react";
+import Toast from "react-native-toast-message";
+import { budgetRepository } from "@/features/budgets/repositories";
+import { useDevice } from "@/hooks/use-device";
+import Slider from "@react-native-community/slider";
 
 export default function BudgetCreate() {
   const { theme } = useTheme();
@@ -31,16 +44,97 @@ export default function BudgetCreate() {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
+    watch,
   } = useForm<BudgetFormInput, any, BudgetFormData>({
     resolver: zodResolver(budgetFormSchema),
     defaultValues: {
       categoryId: "",
       limit: "",
-      period: "monthly",
+      period: "monthly" as "monthly" | "weekly" | "daily",
+      count: 1,
     },
   });
+  // Dans le formulaire, ajouter un sélecteur de nombre
+  const [budgetCount, setBudgetCount] = useState(1);
+  // Ajouter watch pour count
+  const count = watch("count");
 
   const { data: existingBudgets } = useBudgets(currentAccount?.id || "");
+  const { deviceId } = useDevice();
+
+  // Fonction de création multiple
+const createMultipleBudgets = async (data: BudgetFormData) => {
+  if (!currentAccount) {
+    Toast.show({ type: 'error', text1: 'Erreur', text2: 'Compte non trouvé' });
+    return;
+  }
+
+  const now = new Date();
+  const budgetsToCreate = [];
+
+  for (let i = 0; i < data.count; i++) {
+    let startDate: Date;
+    let endDate: Date;
+
+    const offset = i * getPeriodDays(data.period);
+    startDate = new Date(now);
+    startDate.setDate(startDate.getDate() + offset);
+    endDate = new Date(startDate);
+
+    switch (data.period) {
+      case "daily":
+        endDate.setDate(endDate.getDate() + 1);
+        break;
+      case "weekly":
+        endDate.setDate(endDate.getDate() + 7);
+        break;
+      case "monthly":
+        endDate.setMonth(endDate.getMonth() + 1);
+        break;
+    }
+
+    budgetsToCreate.push({
+      id: generateUUID(),
+      accountId: currentAccount.id,  // ⚠️ S'assurer que accountId est présent
+      categoryId: data.categoryId,
+      limit: data.limit,
+      spent: 0,
+      period: data.period,
+      startDate: startDate,
+      endDate: endDate,
+      status: "active" as const,
+      createdAt: getCurrentTimestamp(),
+      updatedAt: getCurrentTimestamp(),
+      deviceId: deviceId,
+      version: 1,
+      syncStatus: "pending" as const,
+      metadata: {},
+    });
+  }
+
+  // Créer tous les budgets en parallèle
+  await Promise.all(budgetsToCreate.map((b) => budgetRepository.create(b)));
+
+  Toast.show({
+    type: "success",
+    text1: `${budgetsToCreate.length} budgets créés avec succès`,
+  });
+  router.back();
+};
+
+  // Helper function to get the number of days in a period type
+  const getPeriodDays = (period: string): number => {
+    switch (period) {
+      case "daily":
+        return 1;
+      case "weekly":
+        return 7;
+      case "monthly":
+        return 30;
+      default:
+        return 1;
+    }
+  };
 
   /**
    * Vérifier si un budget existe déjà pour la même période
@@ -55,15 +149,15 @@ export default function BudgetCreate() {
 
     // Déterminer la période actuelle
     switch (period) {
-      case 'daily':
+      case "daily":
         periodStart = startOfDay(now);
         periodEnd = endOfDay(now);
         break;
-      case 'weekly':
+      case "weekly":
         periodStart = startOfWeek(now, { weekStartsOn: 1 });
         periodEnd = endOfWeek(now, { weekStartsOn: 1 });
         break;
-      case 'monthly':
+      case "monthly":
         periodStart = startOfMonth(now);
         periodEnd = endOfMonth(now);
         break;
@@ -72,94 +166,106 @@ export default function BudgetCreate() {
     }
 
     // Vérifier si un budget actif existe pour cette catégorie et période
-    return existingBudgets.some(budget => {
+    return existingBudgets.some((budget) => {
       // Vérifier si le budget est actif
-      if (budget.status !== 'active') return false;
-      
+      if (budget.status !== "active") return false;
+
       // Vérifier si c'est la même catégorie
       if (budget.categoryId !== categoryId) return false;
-      
+
       // Vérifier si c'est la même période
       if (budget.period !== period) return false;
 
       // Vérifier si les dates se chevauchent
       const budgetStart = new Date(budget.startDate);
       const budgetEnd = new Date(budget.endDate);
-      
+
       // Vérifier si la période actuelle est dans la période du budget existant
-      return isWithinInterval(periodStart, { start: budgetStart, end: budgetEnd }) ||
-             isWithinInterval(periodEnd, { start: budgetStart, end: budgetEnd });
+      return (
+        isWithinInterval(periodStart, { start: budgetStart, end: budgetEnd }) ||
+        isWithinInterval(periodEnd, { start: budgetStart, end: budgetEnd })
+      );
     });
   };
 
-  const onSubmit = async (data: BudgetFormData) => {
-    if (!currentAccount) return;
+ const onSubmit = async (data: BudgetFormData) => {
+  if (!currentAccount) {
+    Alert.alert("Erreur", "Compte non trouvé.");
+    return;
+  }
 
-    // Vérifier si un doublon existe dans la même période
-    const hasDuplicate = isDuplicateBudget(data.categoryId, data.period);
+  // Si plus d'un budget, utiliser la création multiple
+  if (data.count > 1) {
+    await createMultipleBudgets(data);
+    return;
+  }
 
-    const performCreation = async () => {
-      try {
-        // Calculer la période correcte
-        const now = new Date();
-        let startDate: Date;
-        let endDate: Date;
+  // Vérifier si un doublon existe dans la même période
+  const hasDuplicate = isDuplicateBudget(data.categoryId, data.period);
 
-        switch (data.period) {
-          case 'daily':
-            startDate = startOfDay(now);
-            endDate = endOfDay(now);
-            break;
-          case 'weekly':
-            startDate = startOfWeek(now, { weekStartsOn: 1 });
-            endDate = endOfWeek(now, { weekStartsOn: 1 });
-            break;
-          case 'monthly':
-            startDate = startOfMonth(now);
-            endDate = endOfMonth(now);
-            break;
-          default:
-            startDate = now;
-            endDate = now;
-        }
+  const performCreation = async () => {
+    try {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date;
 
-        await createBudget.mutateAsync({
-          id: generateUUID(),
-          accountId: currentAccount.id,
-          categoryId: data.categoryId,
-          limit: data.limit,
-          spent: 0,
-          period: data.period,
-          startDate: startDate,
-          endDate: endDate,
-          status: "active",
-          createdAt: getCurrentTimestamp(),
-          updatedAt: getCurrentTimestamp(),
-          deviceId: "temp-device-id",
-          version: 1,
-          syncStatus: "pending",
-          metadata: {},
-        });
-        router.back();
-      } catch (error) {
-        console.error("Failed to create budget:", error);
-        Alert.alert("Erreur", "Impossible de créer le budget.");
+      switch (data.period) {
+        case "daily":
+          startDate = startOfDay(now);
+          endDate = endOfDay(now);
+          break;
+        case "weekly":
+          startDate = startOfWeek(now, { weekStartsOn: 1 });
+          endDate = endOfWeek(now, { weekStartsOn: 1 });
+          break;
+        case "monthly":
+          startDate = startOfMonth(now);
+          endDate = endOfMonth(now);
+          break;
+        default:
+          startDate = now;
+          endDate = now;
       }
-    };
 
-    if (hasDuplicate) {
-      Alert.alert(
-        "Budget existant",
-        "Un budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment en créer un autre ?",
-        [
-          { text: "Annuler", style: "cancel" },
-          { text: "Créer quand même", onPress: performCreation }
-        ]
-      );
-    } else {
-      await performCreation();
+      const newBudget = {
+        id: generateUUID(),
+        accountId: currentAccount.id,  // ⚠️ S'assurer que accountId est présent
+        categoryId: data.categoryId,
+        limit: data.limit,
+        spent: 0,
+        period: data.period,
+        startDate: startDate,
+        endDate: endDate,
+        status: "active" as const,
+        createdAt: getCurrentTimestamp(),
+        updatedAt: getCurrentTimestamp(),
+        deviceId: deviceId,
+        version: 1,
+        syncStatus: "pending" as const,
+        metadata: {},
+      };
+
+      await createBudget.mutateAsync(newBudget);
+      router.back();
+    } catch (error) {
+      console.error("Failed to create budget:", error);
+      Alert.alert("Erreur", "Impossible de créer le budget.");
     }
   };
+
+  if (hasDuplicate) {
+    Alert.alert(
+      "Budget existant",
+      "Un budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment en créer un autre ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        { text: "Créer quand même", onPress: performCreation },
+      ],
+    );
+  } else {
+    await performCreation();
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -283,6 +389,87 @@ export default function BudgetCreate() {
                         : "Mois"}
                   </Button>
                 ))}
+              </View>
+            )}
+          />
+
+          {/* Nombre de budgets à créer */}
+          <ThemedText
+            variant="sm"
+            weight="medium"
+            style={{ marginBottom: theme.spacing.xs, marginTop: 30 }}
+          >
+            Nombre de budgets à créer
+          </ThemedText>
+          <Controller
+            control={control}
+            name="count"
+            render={({ field: { onChange, value } }) => (
+              <View style={{ gap: theme.spacing.sm }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: theme.spacing.md,
+                    marginTop: 20,
+                    justifyContent: "space-around",
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => onChange(Math.max(1, (value || 1) - 1))}
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 30,
+                      backgroundColor: theme.colors.destructive + "20",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="remove"
+                      size={40}
+                      color={theme.colors.destructive}
+                    />
+                  </TouchableOpacity>
+
+                  <ThemedText
+                    variant="3xl"
+                    weight="bold"
+                    style={{ minWidth: 40, textAlign: "center" }}
+                  >
+                    {value || 1}
+                  </ThemedText>
+
+                  <TouchableOpacity
+                    onPress={() => onChange((value || 1) + 1)}
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 30,
+                      backgroundColor: theme.colors.primary + "20",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="add"
+                      size={40}
+                      color={theme.colors.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Info sur l'intervalle */}
+                <ThemedText
+                  variant="xs"
+                  color="mutedForeground"
+                  style={{ textAlign: "center" }}
+                >
+                  {value > 1
+                    ? `${value} budgets espacés de ${getPeriodDays(watch("period"))} jours chacun`
+                    : "Budget unique"}
+                </ThemedText>
               </View>
             )}
           />

@@ -1,13 +1,22 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet, Animated, TouchableOpacity, ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
+import React, { useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  Animated,
+  TouchableOpacity,
+  ViewStyle,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from "react-native-gesture-handler";
+import * as Haptics from "expo-haptics";
 
-import ThemedText from '@/components/ui/text';
-import { useTheme } from '@/contexts/theme-context';
-import { Transaction } from '@/types';
-import { formatAmountWithSign } from '@/lib/formatters/currency';
+import ThemedText from "@/components/ui/text";
+import { useTheme } from "@/contexts/theme-context";
+import { Transaction } from "@/types";
+import { formatAmountWithSign } from "@/lib/formatters/currency";
 
 // Types pour les actions
 interface TransactionItemProps {
@@ -39,8 +48,8 @@ export const TransactionItem = ({
   const swipeableRef = useRef<Swipeable>(null);
   const lastTap = useRef<number>(0);
 
-  const isIncome = transaction.type === 'income';
-  const isExpense = transaction.type === 'expense';
+  const isIncome = transaction.type === "income";
+  const isExpense = transaction.type === "expense";
 
   // Gestion du double tap
   const handlePress = () => {
@@ -77,7 +86,9 @@ export const TransactionItem = ({
   };
 
   // Render des actions de swipe
-  const renderLeftActions = (progress: Animated.AnimatedInterpolation<number>) => {
+  const renderLeftActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+  ) => {
     const translateX = progress.interpolate({
       inputRange: [0, 1],
       outputRange: [-100, 0],
@@ -109,7 +120,9 @@ export const TransactionItem = ({
     );
   };
 
-  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>) => {
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+  ) => {
     const translateX = progress.interpolate({
       inputRange: [0, 1],
       outputRange: [100, 0],
@@ -205,8 +218,8 @@ export const TransactionItem = ({
                   backgroundColor: isIncome
                     ? theme.financialColors.income
                     : isExpense
-                    ? theme.financialColors.expense
-                    : theme.financialColors.budget,
+                      ? theme.financialColors.expense
+                      : theme.financialColors.budget,
                 },
               ]}
             />
@@ -217,28 +230,28 @@ export const TransactionItem = ({
                 styles.iconContainer,
                 {
                   backgroundColor: isIncome
-                    ? theme.financialColors.income + '20'
+                    ? theme.financialColors.income + "20"
                     : isExpense
-                    ? theme.financialColors.expense + '20'
-                    : theme.financialColors.budget + '20',
+                      ? theme.financialColors.expense + "20"
+                      : theme.financialColors.budget + "20",
                 },
               ]}
             >
               <Ionicons
                 name={
                   isIncome
-                    ? 'arrow-up'
+                    ? "arrow-up"
                     : isExpense
-                    ? 'arrow-down'
-                    : 'swap-horizontal'
+                      ? "arrow-down"
+                      : "swap-horizontal"
                 }
                 size={20}
                 color={
                   isIncome
                     ? theme.financialColors.income
                     : isExpense
-                    ? theme.financialColors.expense
-                    : theme.financialColors.budget
+                      ? theme.financialColors.expense
+                      : theme.financialColors.budget
                 }
               />
             </View>
@@ -248,12 +261,22 @@ export const TransactionItem = ({
               <ThemedText weight="semibold" numberOfLines={1}>
                 {transaction.title}
               </ThemedText>
+              {transaction.metadata?.client && (
+                <ThemedText variant="xs" color="primary" numberOfLines={1}>
+                  🏢 Client/Fournisseur : {transaction.metadata.client}
+                </ThemedText>
+              )}
+              {transaction.metadata?.paidBy && (
+                <ThemedText variant="xs" color="primary" numberOfLines={1}>
+                  👤 Payé par : {transaction.metadata.paidBy}
+                </ThemedText>
+              )}
               <View style={styles.metaContainer}>
                 <ThemedText variant="sm" color="mutedForeground">
-                  {new Date(transaction.date).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
+                  {new Date(transaction.date).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
                   })}
                 </ThemedText>
                 {transaction.categoryId && (
@@ -274,15 +297,15 @@ export const TransactionItem = ({
                 color: isIncome
                   ? theme.financialColors.income
                   : isExpense
-                  ? theme.financialColors.expense
-                  : theme.financialColors.budget,
+                    ? theme.financialColors.expense
+                    : theme.financialColors.budget,
                 fontSize: 16,
               }}
             >
               {formatAmountWithSign(
                 transaction.amount,
                 transaction.type,
-                transaction.currency
+                transaction.currency,
               )}
             </ThemedText>
           </View>
@@ -294,16 +317,16 @@ export const TransactionItem = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
-    position: 'relative',
+    position: "relative",
   },
   typeIndicator: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
-    top: '10%',
-    bottom: '10%',
+    top: "10%",
+    bottom: "10%",
     width: 4,
     borderTopRightRadius: 4,
     borderBottomRightRadius: 4,
@@ -312,8 +335,8 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   content: {
@@ -321,46 +344,46 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metaContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   dot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#94a3b8',
+    backgroundColor: "#94a3b8",
   },
   swipeAction: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
   },
   swipeRightAction: {
-    backgroundColor: '#22c55e',
+    backgroundColor: "#22c55e",
     paddingHorizontal: 16,
   },
   swipeLeftActions: {
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
+    flexDirection: "row",
+    backgroundColor: "transparent",
   },
   swipeActionButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 16,
-    height: '100%',
+    height: "100%",
     minWidth: 80,
   },
   editAction: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: "#3b82f6",
   },
   deleteAction: {
-    backgroundColor: '#ef4444',
+    backgroundColor: "#ef4444",
   },
   swipeActionText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 10,
     marginTop: 2,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

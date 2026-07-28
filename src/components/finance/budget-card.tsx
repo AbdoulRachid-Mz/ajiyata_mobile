@@ -13,10 +13,10 @@ import { Budget, BudgetWithRelations, Category } from '@/types';
 interface BudgetCardProps {
   budget: BudgetWithRelations;
   category?: Category;
-  onPress?: (budget: Budget) => void;
-  onEdit?: (budget: Budget) => void;
-  onDelete?: (budget: Budget) => void;
-  onDuplicate?: (budget: Budget) => void;
+  onPress?: (budget: BudgetWithRelations) => void;
+  onEdit?: (budget: BudgetWithRelations) => void;
+  onDelete?: (budget: BudgetWithRelations) => void;
+  onDuplicate?: (budget: BudgetWithRelations) => void;
   showActions?: boolean;
 }
 

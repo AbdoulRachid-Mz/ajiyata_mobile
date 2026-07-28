@@ -17,6 +17,9 @@ export const useCreateSavingGoal = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['saving-goals', variables.accountId] });
     },
+    onError: (error) => {
+      console.error('Error creating saving goal:', error);
+    },
   });
 };
 

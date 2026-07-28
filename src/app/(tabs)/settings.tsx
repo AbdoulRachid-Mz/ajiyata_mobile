@@ -5,6 +5,7 @@ import SafeAreaView from "@/components/ui/safe-area-view";
 import ScrollView from "@/components/ui/scroll-view";
 import ThemedText from "@/components/ui/text";
 import TextInput from "@/components/ui/text-input";
+import { TimePicker } from "@/components/ui/time-picker";
 import ThemedView from "@/components/ui/view";
 import { useAuth } from "@/contexts/auth-context";
 import { useSync } from "@/contexts/sync-context";
@@ -16,9 +17,9 @@ import { countries, getDefaultCountry } from "@/lib/countries";
 import { useAppStore } from "@/stores/app-store";
 import { useUIStore } from "@/stores/ui-store";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { TimePicker } from "@/components/ui/time-picker";
 import {
   ActivityIndicator,
   Alert,
@@ -28,19 +29,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Constants from "expo-constants";
-import { useNotifications } from "@/contexts/notification-context";
 
 // Importer conditionnellement expo-notifications uniquement si ce n'est pas Expo Go
-const isExpoGo = Constants.appOwnership === 'expo';
+const isExpoGo = Constants.appOwnership === "expo";
 let Notifications: any = null;
 
 if (!isExpoGo) {
   try {
     // @ts-ignore - Import dynamique
-    Notifications = require('expo-notifications');
+    Notifications = require("expo-notifications");
   } catch (e) {
-    console.log('expo-notifications non disponible');
+    console.log("expo-notifications non disponible");
   }
 }
 
@@ -89,7 +88,7 @@ export default function SettingsScreen() {
     };
     checkBiometrics();
   }, [isBiometricAvailable]);
-  
+
   const updateUser = useUpdateUser();
   const updateAccount = useUpdateAccount();
   const { setTabBarVisible } = useUIStore();
@@ -132,9 +131,9 @@ export default function SettingsScreen() {
   const [selectedCurrency, setSelectedCurrency] = useState(
     currentUser?.defaultCurrency || "XOF",
   );
-  const [selectedAccountType, setSelectedAccountType] = useState<(
-    "personal" | "business"
-  )>(currentAccount?.type || "personal");
+  const [selectedAccountType, setSelectedAccountType] = useState<
+    "personal" | "business" | "family"
+  >(currentAccount?.type || "personal");
 
   useEffect(() => {
     if (currentUser) {
@@ -298,6 +297,7 @@ export default function SettingsScreen() {
       label: "Professionnel",
       icon: "briefcase-outline",
     },
+    { type: "family" as const, label: "Famille", icon: "home-outline" },
   ];
 
   // Fonction pour gérer les permissions de notifications
@@ -329,7 +329,8 @@ export default function SettingsScreen() {
 
       const { status } = await Notifications.getPermissionsAsync();
       if (status !== "granted") {
-        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        const { status: newStatus } =
+          await Notifications.requestPermissionsAsync();
         if (newStatus !== "granted") {
           Alert.alert(
             "Permission refusée",
@@ -748,7 +749,9 @@ export default function SettingsScreen() {
               <ThemedText color="mutedForeground">
                 {currentAccount?.type === "personal"
                   ? "Personnel"
-                  : "Professionnel"}
+                  : currentAccount?.type === "business"
+                    ? "Professionnel"
+                    : "Famille"}
               </ThemedText>
               <Ionicons
                 name="chevron-forward-outline"
@@ -850,6 +853,7 @@ export default function SettingsScreen() {
 
               {isBiometricEnabled && (
                 <>
+                  {/* Switch to enable/disable app lock */}
                   <View
                     style={{
                       flexDirection: "row",
@@ -866,47 +870,97 @@ export default function SettingsScreen() {
                       }}
                     >
                       <Ionicons
-                        name="lock-closed-outline"
+                        name="lock-open-outline"
                         size={20}
                         color={theme.colors.foreground}
                       />
-                      <ThemedText>Verrouiller après</ThemedText>
+                      <ThemedText>Activer le verrouillage</ThemedText>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => setIsLockTimeoutPickerOpen(true)}
+                    <Switch
+                      value={isAppLockEnabled}
+                      onValueChange={(value) => {
+                        console.log("📱 Settings - AppLock toggled:", value);
+                        setAppLockEnabled(value);
+                        // Force re-render of the store
+                        setTimeout(() => {
+                          const current =
+                            useAppStore.getState().isAppLockEnabled;
+                          console.log(
+                            "📱 Settings - AppLock value after update:",
+                            current,
+                          );
+                        }, 100);
+                      }}
+                      trackColor={{
+                        false: theme.colors.border,
+                        true: theme.colors.primary,
+                      }}
+                    />
+                  </View>
+                  {/* Lock timeout selector - only show when app lock is enabled */}
+                  {isAppLockEnabled && (
+                    <View
                       style={{
                         flexDirection: "row",
+                        justifyContent: "space-between",
                         alignItems: "center",
-                        gap: theme.spacing.sm,
-                        paddingVertical: 4,
-                        paddingHorizontal: 12,
-                        borderRadius: 8,
-                        backgroundColor: theme.colors.muted,
+                        marginTop: theme.spacing.md,
                       }}
                     >
-                      <ThemedText
-                        weight="bold"
-                        style={{ color: theme.colors.primary, fontSize: 16 }}
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: theme.spacing.sm,
+                        }}
                       >
-                        {lockTimeoutMinutes} min
-                      </ThemedText>
-                      <Ionicons
-                        name="chevron-down"
-                        size={16}
-                        color={theme.colors.mutedForeground}
-                      />
-                    </TouchableOpacity>
-                  </View>
+                        <Ionicons
+                          name="lock-closed-outline"
+                          size={20}
+                          color={theme.colors.foreground}
+                        />
+                        <ThemedText>Verrouiller après</ThemedText>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => setIsLockTimeoutPickerOpen(true)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: theme.spacing.sm,
+                          paddingVertical: 4,
+                          paddingHorizontal: 12,
+                          borderRadius: 8,
+                          backgroundColor: theme.colors.muted,
+                        }}
+                      >
+                        <ThemedText
+                          weight="bold"
+                          style={{ color: theme.colors.primary, fontSize: 16 }}
+                        >
+                          {lockTimeoutMinutes} min
+                        </ThemedText>
+                        <Ionicons
+                          name="chevron-down"
+                          size={16}
+                          color={theme.colors.mutedForeground}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
-                  {/* Sélecteur de temps pour le verrouillage */}
+                  {/* Time picker for lock timeout */}
                   <TimePicker
                     visible={isLockTimeoutPickerOpen}
                     value={`${String(lockTimeoutMinutes).padStart(2, "0")}:00`}
                     onConfirm={(time) => {
                       const minutes = parseInt(time.split(":")[0], 10);
                       if (!isNaN(minutes) && minutes > 0) {
+                        console.log(
+                          "📱 Settings - Setting lockTimeoutMinutes to:",
+                          minutes,
+                        );
+                        // Utiliser la fonction du store directement
                         setLockTimeoutMinutes(minutes);
-                        // setAppLockTimeout(minutes);
                       }
                       setIsLockTimeoutPickerOpen(false);
                     }}
@@ -1018,14 +1072,23 @@ export default function SettingsScreen() {
             }}
             onClose={() => setIsTimePickerOpen(false)}
           />
-          // Dans la section des rappels, après le sélecteur d'heure
+          {/* Dans la section des rappels, après le sélecteur d'heure */}
           {reminderEnabled && (
             <Button
               variant="outline"
               size="sm"
               onPress={async () => {
-                const { sendNotification } = useNotifications();
-                await sendNotification({
+                // Get notification service directly
+                const { notificationService, isExpoGo } =
+                  await import("@/configs/notifications");
+                if (isExpoGo) {
+                  Alert.alert(
+                    "⚠️ Non disponible",
+                    "Les notifications ne sont pas disponibles dans Expo Go.",
+                  );
+                  return;
+                }
+                await notificationService.sendNotification({
                   title: "🔔 Test de rappel",
                   body: "Cette notification fonctionne correctement !",
                   data: { type: "test" },
@@ -1042,12 +1105,26 @@ export default function SettingsScreen() {
         <Card
           style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
         >
+          <ThemedText
+            variant="lg"
+            weight="bold"
+            style={{ marginBottom: theme.spacing.md }}
+          >
+            Exporter les données
+          </ThemedText>
+          <ThemedText
+            variant="sm"
+            color="mutedForeground"
+            style={{ marginBottom: theme.spacing.md }}
+          >
+            Exporter vos données et votre compte
+          </ThemedText>
           <Button
-            variant="outline"
             style={{
               marginBottom: theme.spacing.md,
               borderRadius: theme.borderRadius.xl,
               paddingVertical: theme.spacing.md,
+              backgroundColor: theme.colors.primary,
             }}
             onPress={() => router.push("/export")}
           >
@@ -1057,7 +1134,11 @@ export default function SettingsScreen() {
               color={theme.colors.foreground}
             />
             <ThemedText
-              style={{ marginLeft: theme.spacing.sm, fontWeight: "600" }}
+              style={{
+                marginLeft: theme.spacing.sm,
+                fontWeight: "600",
+                color: theme.colors.foreground,
+              }}
             >
               Exporter les données
             </ThemedText>
