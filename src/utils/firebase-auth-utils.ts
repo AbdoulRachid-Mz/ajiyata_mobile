@@ -1,15 +1,30 @@
+// @/utils/firebase-auth-utils.ts
 import { auth } from "@/configs/firebase/config";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   sendPasswordResetEmail,
+  signInWithCredential,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signOut,
   User,
 } from "firebase/auth";
 import { getFirebaseErrorMessage } from "./getFirebaseErrorMessage";
-// import { getFirebaseErrorMessage } from './getFirebaseErrorMessage';
+import { Platform } from "react-native";
+
+// Import dynamique sécurisé du module natif
+let GoogleSignin: any = null;
+try {
+  GoogleSignin = require("@react-native-google-signin/google-signin").GoogleSignin;
+  
+  if (GoogleSignin) {
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    });
+  }
+} catch (e) {
+  console.warn("GoogleSignin natif non disponible dans cet environnement.");
+}
 
 export interface AuthResponse {
   data?: any;
@@ -21,10 +36,10 @@ export interface AuthResponse {
 
 const handleFirebaseError = (
   error: unknown,
-  method: string = "unknown"
+  method: string = "unknown",
 ): { code: string; message: string } => {
   if (error instanceof Error) {
-    const errorCode = error.message.split(' ')[0]; // Extraire le code d'erreur
+    const errorCode = error.message.split(" ")[0]; // Extraire le code d'erreur
     return {
       code: errorCode,
       message: getFirebaseErrorMessage(method, errorCode),
@@ -39,59 +54,86 @@ const handleFirebaseError = (
 
 export const firebaseSignUpWithEmail = async (
   email: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> => {
   try {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
-      password
+      password,
     );
     return { data: userCredential.user };
   } catch (error) {
-    return { error: handleFirebaseError(error, 'createUserWithEmailAndPassword') };
+    return {
+      error: handleFirebaseError(error, "createUserWithEmailAndPassword"),
+    };
   }
 };
 
 export const firebaseSignInWithEmail = async (
   email: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> => {
   try {
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
-      password
+      password,
     );
     return { data: userCredential.user };
   } catch (error) {
-    return { error: handleFirebaseError(error, 'signInWithEmailAndPassword') };
+    return { error: handleFirebaseError(error, "signInWithEmailAndPassword") };
   }
 };
 
 export const firebaseSendPasswordResetEmail = async (
-  email: string
+  email: string,
 ): Promise<AuthResponse> => {
   try {
     await sendPasswordResetEmail(auth, email);
     return { data: true };
   } catch (error) {
-    return { error: handleFirebaseError(error, 'sendPasswordResetEmail') };
+    return { error: handleFirebaseError(error, "sendPasswordResetEmail") };
   }
 };
 
-export const firebaseSignInWithGoogle = async (): Promise<AuthResponse> => {
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
+export const firebaseSignInWithGoogle = async () => {
+  if (!GoogleSignin) {
+    return {
+      data: null,
+      error: {
+        code: "auth/native-module-missing",
+        message: "Module natif Google Sign-In introuvable. Veuillez exécuter 'npx expo run:android'.",
+      },
+    };
+  }
 
-    if (!result.user) {
-      throw new Error("No user returned from Google sign in");
+  try {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const response = await GoogleSignin.signIn();
+
+    const idToken = response.data?.idToken || (response as any).idToken;
+
+    if (!idToken) {
+      throw new Error("Impossible de récupérer l'idToken Google");
     }
 
-    return { data: result.user };
-  } catch (error) {
-    return { error: handleFirebaseError(error, 'signInWithPopup') };
+    const credential = GoogleAuthProvider.credential(idToken);
+    const userCredential = await signInWithCredential(auth, credential);
+
+    return {
+      data: userCredential.user,
+      error: null,
+    };
+  } catch (error: any) {
+    console.error("Erreur Google Auth:", error);
+    return {
+      data: null,
+      error: {
+        code: error.code || "unknown",
+        message: error.message || "Erreur de connexion Google",
+      },
+    };
   }
 };
 
@@ -100,6 +142,6 @@ export const firebaseSignOut = async (): Promise<AuthResponse> => {
     await signOut(auth);
     return { data: true };
   } catch (error) {
-    return { error: handleFirebaseError(error, 'signOut') };
+    return { error: handleFirebaseError(error, "signOut") };
   }
 };

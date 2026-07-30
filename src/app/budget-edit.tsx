@@ -311,6 +311,7 @@ export default function BudgetEdit() {
           <Button
             size="lg"
             disabled={isSubmitting}
+            isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
             {isSubmitting ? "Enregistrement..." : "Enregistrer"}

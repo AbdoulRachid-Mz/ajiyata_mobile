@@ -434,6 +434,7 @@ export default function ExportScreen() {
       >
         <Button
           size="lg"
+          isFullWidth
           disabled={isExporting || getSelectedCount() === 0}
           onPress={handleExport}
         >

@@ -40,8 +40,8 @@ export default function LoginScreen() {
   const { login, loginWithGoogle, loginWithBiometric, isLoading } = useAuth();
   const { setCurrentUser } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
-  const { 
-    isBiometricAvailable, 
+  const {
+    isBiometricAvailable,
     isBiometricEnabled,
     authenticate,
     toggleBiometric,
@@ -63,34 +63,30 @@ export default function LoginScreen() {
   const onSubmit = async (data: LoginFormData) => {
     const response = await login(data);
     if (response.success) {
-      await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
-      
+      await AsyncStorage.setItem("hasCompletedOnboarding", "true");
+
       if (response.data) {
         setCurrentUser(response.data as any);
       }
-      
+
       if (isBiometricAvailable && !isBiometricEnabled) {
-        Alert.alert(
-          t('auth.secure_account'),
-          t('auth.biometric_prompt'),
-          [
-            { text: t('common.later'), style: 'cancel' },
-            { 
-              text: t('auth.enable'), 
-              onPress: async () => {
-                const success = await toggleBiometric(true);
-                if (!success) {
-                  Alert.alert(t('common.error'), t('common.error'));
-                }
+        Alert.alert(t("auth.secure_account"), t("auth.biometric_prompt"), [
+          { text: t("common.later"), style: "cancel" },
+          {
+            text: t("auth.enable"),
+            onPress: async () => {
+              const success = await toggleBiometric(true);
+              if (!success) {
+                Alert.alert(t("common.error"), t("common.error"));
               }
             },
-          ]
-        );
+          },
+        ]);
       }
-      
+
       router.replace("/(tabs)/dashboard");
     } else {
-      Alert.alert(t('common.error'), response.error || t('auth.login_failed'));
+      Alert.alert(t("common.error"), response.error || t("auth.login_failed"));
     }
   };
 
@@ -99,50 +95,56 @@ export default function LoginScreen() {
     if (response.success) {
       router.replace("/(tabs)/dashboard");
     } else {
-      Alert.alert(t('common.error'), response.error || t('auth.google_login_failed'));
+      Alert.alert(
+        t("common.error"),
+        response.error || t("auth.google_login_failed"),
+      );
     }
   };
 
   const handleBiometricLogin = async () => {
     if (isBiometricLoading) return;
-    
+
     setIsBiometricLoading(true);
     try {
       if (!isBiometricAvailable) {
-        Alert.alert(t('common.not_available'), t('common.not_available'));
+        Alert.alert(t("common.not_available"), t("common.not_available"));
         return;
       }
-      
+
       if (!isBiometricEnabled) {
         Alert.alert(
-          t('auth.biometric_disabled'),
-          t('auth.enable_in_settings'),
+          t("auth.biometric_disabled"),
+          t("auth.enable_in_settings"),
           [
-            { text: 'OK', style: 'cancel' },
-            { 
-              text: t('tabs.settings'), 
-              onPress: () => router.push('/(tabs)/settings') 
+            { text: "OK", style: "cancel" },
+            {
+              text: t("tabs.settings"),
+              onPress: () => router.push("/(tabs)/settings"),
             },
-          ]
+          ],
         );
         return;
       }
 
-      const success = await authenticate(t('auth.biometric_login'));
-      
+      const success = await authenticate(t("auth.biometric_login"));
+
       if (success) {
         const response = await loginWithBiometric();
         if (response.success) {
           router.replace("/(tabs)/dashboard");
         } else {
-          Alert.alert(t('common.error'), response.error || t('auth.login_failed'));
+          Alert.alert(
+            t("common.error"),
+            response.error || t("auth.login_failed"),
+          );
         }
       } else {
-        Alert.alert(t('common.canceled'), t('auth.biometric_canceled'));
+        Alert.alert(t("common.canceled"), t("auth.biometric_canceled"));
       }
     } catch (error) {
-      console.error('Erreur biométrique:', error);
-      Alert.alert(t('common.error'), t('common.error'));
+      console.error("Erreur biométrique:", error);
+      Alert.alert(t("common.error"), t("common.error"));
     } finally {
       setIsBiometricLoading(false);
     }
@@ -159,23 +161,34 @@ export default function LoginScreen() {
           contentContainerStyle={{ flexGrow: 1, padding: theme.spacing.lg }}
           showsVerticalScrollIndicator={false}
         >
-          <View style={{ marginBottom: theme.spacing.xl, marginTop: theme.spacing.xl }}>
-            <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg }}>
-              <Ionicons name="log-in-outline" size={80} color={theme.colors.primary} />
+          <View
+            style={{
+              marginBottom: theme.spacing.xl,
+              marginTop: theme.spacing.xl,
+            }}
+          >
+            <View
+              style={{ alignItems: "center", marginBottom: theme.spacing.lg }}
+            >
+              <Ionicons
+                name="log-in-outline"
+                size={80}
+                color={theme.colors.primary}
+              />
             </View>
             <ThemedText
               variant="3xl"
               weight="bold"
               style={{ textAlign: "center" }}
             >
-              {t('auth.login_title')}
+              {t("auth.login_title")}
             </ThemedText>
             <ThemedText
               variant="base"
               color="mutedForeground"
               style={{ textAlign: "center", marginTop: 8 }}
             >
-              {t('auth.login_subtitle')}
+              {t("auth.login_subtitle")}
             </ThemedText>
           </View>
 
@@ -185,8 +198,8 @@ export default function LoginScreen() {
               name="email"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label={t('auth.email')}
-                  placeholder={t('auth.email_placeholder')}
+                  label={t("auth.email")}
+                  placeholder={t("auth.email_placeholder")}
                   value={value}
                   onChangeText={onChange}
                   keyboardType="email-address"
@@ -220,8 +233,8 @@ export default function LoginScreen() {
               name="password"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label={t('auth.password')}
-                  placeholder={t('auth.password_placeholder')}
+                  label={t("auth.password")}
+                  placeholder={t("auth.password_placeholder")}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showPassword}
@@ -265,7 +278,7 @@ export default function LoginScreen() {
               style={{ alignSelf: "flex-end", marginBottom: theme.spacing.lg }}
             >
               <ThemedText variant="sm" color="primary" weight="semibold">
-                {t('auth.forgot_password')}
+                {t("auth.forgot_password")}
               </ThemedText>
             </TouchableOpacity>
 
@@ -276,64 +289,74 @@ export default function LoginScreen() {
               style={{
                 marginBottom: theme.spacing.md,
                 borderRadius: theme.borderRadius.xl,
+                flex: 1,
               }}
+              isFullWidth
             >
-              {isLoading ? t('common.loading') : t('auth.sign_in')}
+              {isLoading ? t("common.loading") : t("auth.sign_in")}
             </Button>
 
-            {isBiometricAvailable && (
+            {/* {isBiometricAvailable && (
               <TouchableOpacity
                 onPress={handleBiometricLogin}
                 disabled={isBiometricLoading || isLoading}
                 style={{
+                  width: "100%",
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
                   paddingVertical: theme.spacing.md,
                   paddingHorizontal: theme.spacing.lg,
                   borderRadius: theme.borderRadius.md,
-                  backgroundColor: isBiometricEnabled 
-                    ? theme.colors.primary + '20' 
+                  backgroundColor: isBiometricEnabled
+                    ? theme.colors.primary + "20"
                     : theme.colors.muted,
                   borderWidth: 1,
-                  borderColor: isBiometricEnabled 
-                    ? theme.colors.primary 
+                  borderColor: isBiometricEnabled
+                    ? theme.colors.primary
                     : theme.colors.border,
                   marginBottom: theme.spacing.lg,
                   opacity: isBiometricLoading || isLoading ? 0.5 : 1,
                 }}
               >
                 {isBiometricLoading ? (
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary}
+                  />
                 ) : (
                   <>
                     <Ionicons
                       name="finger-print-outline"
                       size={24}
-                      color={isBiometricEnabled ? theme.colors.primary : theme.colors.mutedForeground}
+                      color={
+                        isBiometricEnabled
+                          ? theme.colors.primary
+                          : theme.colors.mutedForeground
+                      }
                     />
                     <ThemedText
                       style={{ marginLeft: 8 }}
                       color={isBiometricEnabled ? "primary" : "mutedForeground"}
                       weight={isBiometricEnabled ? "semibold" : "normal"}
                     >
-                      {isBiometricEnabled 
-                        ? t('auth.biometric_login')
-                        : t('auth.biometric_disabled')}
+                      {isBiometricEnabled
+                        ? t("auth.biometric_login")
+                        : t("auth.biometric_disabled")}
                     </ThemedText>
                     {!isBiometricEnabled && (
-                      <ThemedText 
-                        variant="xs" 
-                        color="mutedForeground" 
+                      <ThemedText
+                        variant="xs"
+                        color="mutedForeground"
                         style={{ marginLeft: 2 }}
                       >
-                        {t('auth.enable_in_settings')}
+                        {t("auth.enable_in_settings")}
                       </ThemedText>
                     )}
                   </>
                 )}
               </TouchableOpacity>
-            )}
+            )} */}
 
             <View
               style={{
@@ -354,7 +377,7 @@ export default function LoginScreen() {
                 color="mutedForeground"
                 style={{ marginHorizontal: theme.spacing.md }}
               >
-                {t('auth.or_continue_with')}
+                {t("auth.or_continue_with")}
               </ThemedText>
               <View
                 style={{
@@ -369,7 +392,7 @@ export default function LoginScreen() {
               variant="outline"
               onPress={handleGoogleLogin}
               disabled={isLoading}
-              style={{ borderRadius: theme.borderRadius.xl }}
+              style={{ borderRadius: theme.borderRadius.xl, flex: 1, width: "100%" }}
             >
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
@@ -379,7 +402,7 @@ export default function LoginScreen() {
                   size={24}
                   color={theme.colors.foreground}
                 />
-                <ThemedText weight="semibold">{t('auth.google')}</ThemedText>
+                <ThemedText weight="semibold">{t("auth.google")}</ThemedText>
               </View>
             </Button>
           </View>
@@ -392,11 +415,11 @@ export default function LoginScreen() {
             }}
           >
             <ThemedText color="mutedForeground">
-              {t('auth.no_account')}{" "}
+              {t("auth.no_account")}{" "}
             </ThemedText>
             <TouchableOpacity onPress={() => router.push("/auth/register")}>
               <ThemedText color="primary" weight="bold">
-                {t('auth.create_account')}
+                {t("auth.create_account")}
               </ThemedText>
             </TouchableOpacity>
           </View>

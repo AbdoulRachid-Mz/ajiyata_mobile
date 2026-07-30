@@ -585,6 +585,7 @@ export default function ReceiptScanner() {
         backgroundColor: theme.colors.card 
       }}>
         <Button 
+          isFullWidth
           onPress={handleCreate} 
           disabled={isSubmitting || isProcessing} 
           style={{ paddingVertical: theme.spacing.md }}

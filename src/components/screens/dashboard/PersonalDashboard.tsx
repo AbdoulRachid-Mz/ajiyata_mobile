@@ -597,6 +597,7 @@ export function PersonalDashboard() {
               <>
                 <Spacer height={theme.spacing.md} />
                 <Button
+                  isFullWidth
                   variant="outline"
                   onPress={() => router.push("/transaction-create")}
                 >

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "49737860733",
+    "project_id": "ajiya-ta",
+    "storage_bucket": "ajiya-ta.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49737860733:android:129ff636e69c90b3321314",
+        "android_client_info": {
+          "package_name": "ajiyata.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "49737860733-8cgrp0aj4rvtbd236sb0q2sim909kj27.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ajiyata.com",
+            "certificate_hash": "cd81c48d0af201d8ce683e8e914e54dfce5fd01f"
+          }
+        },
+        {
+          "client_id": "49737860733-epboqiv7tvpgq5c0lqji8obdtfkguaj7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGrDOu75WjQkh5p7HHLZOiR5oEBQHq5p4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "49737860733-epboqiv7tvpgq5c0lqji8obdtfkguaj7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

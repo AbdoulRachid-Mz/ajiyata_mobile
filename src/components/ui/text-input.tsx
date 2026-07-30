@@ -7,7 +7,9 @@ import {
   TextInputProps as RNTextInputProps,
   StyleSheet,
   ViewStyle,
+  TextStyle,
   View,
+  StyleProp,
 } from "react-native";
 import Animated, {
   Easing,
@@ -18,10 +20,10 @@ import Animated, {
 
 import ThemedText from "./text";
 
-interface TextInputProps extends Omit<RNTextInputProps, "style"> {
+interface TextInputProps extends RNTextInputProps {
   className?: string;
-  style?: any;
-  containerStyle?: ViewStyle;
+  style?: StyleProp<TextStyle>;
+  containerStyle?: StyleProp<ViewStyle>;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   error?: boolean;
@@ -30,7 +32,7 @@ interface TextInputProps extends Omit<RNTextInputProps, "style"> {
 
 const AnimatedTextInput = Animated.createAnimatedComponent(RNTextInput);
 
-const TextInput = forwardRef(
+const TextInput = forwardRef<RNTextInput, TextInputProps>(
   (
     {
       style,
@@ -42,8 +44,8 @@ const TextInput = forwardRef(
       onBlur,
       label,
       ...props
-    }: TextInputProps,
-    ref: any,
+    },
+    ref
   ) => {
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
@@ -92,34 +94,34 @@ const TextInput = forwardRef(
       borderColor: borderColor.value,
     }));
 
-    const styles = useMemo(
-      () =>
-        StyleSheet.create({
-          wrapper: {
-            gap: theme.spacing.xs,
-          },
-          container: {
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: theme.colors.input,
-            borderRadius: theme.borderRadius.md,
-            paddingVertical: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.md,
-            gap: theme.spacing.sm,
-          },
-          input: {
-            flex: 1,
-            color: theme.colors.foreground,
-            fontSize: theme.typography.base,
-            ...(Platform.OS === "web" && {
-              outlineStyle: "none",
-              outlineWidth: 0,
-              borderWidth: 0,
-            }),
-          },
-        }),
-      [theme],
-    );
+    const styles = useMemo(() => {
+      return StyleSheet.create({
+        wrapper: {
+          gap: theme.spacing.xs,
+          width: "100%",
+        },
+        container: {
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: theme.colors.input,
+          borderRadius: theme.borderRadius.md,
+          paddingHorizontal: theme.spacing.md,
+          minHeight: 44, // Hauteur standard fixée
+          gap: theme.spacing.sm,
+        },
+        input: {
+          flex: 1,
+          color: theme.colors.foreground,
+          fontSize: theme.typography.base,
+          paddingVertical: theme.spacing.sm,
+          ...(Platform.OS === "web" && {
+            outlineStyle: "none",
+            outlineWidth: 0,
+            borderWidth: 0,
+          }),
+        },
+      });
+    }, [theme]);
 
     return (
       <View style={[styles.wrapper, containerStyle]}>
@@ -132,7 +134,7 @@ const TextInput = forwardRef(
           {leftIcon}
           <AnimatedTextInput
             ref={ref}
-            style={[styles.input, style]}
+            style={[styles.input, style] as StyleProp<TextStyle>} // Les props style passées prennent la priorité
             placeholderTextColor={theme.colors.mutedForeground}
             onFocus={handleFocus}
             onBlur={handleBlur}
@@ -142,7 +144,7 @@ const TextInput = forwardRef(
         </Animated.View>
       </View>
     );
-  },
+  }
 );
 
 TextInput.displayName = "TextInput";

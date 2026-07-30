@@ -192,6 +192,7 @@ export default function SavingGoalEdit() {
           <Button
             size="lg"
             disabled={isSubmitting}
+            isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
             {isSubmitting ? "Mise à jour..." : "Enregistrer les modifications"}

@@ -511,6 +511,7 @@ export default function SettingsScreen() {
               </ThemedText>
               <Button
                 variant="default"
+                isFullWidth
                 onPress={() => router.push("/auth/login")}
               >
                 {t("auth.login")}
@@ -647,7 +648,7 @@ export default function SettingsScreen() {
             </View>
           </TouchableOpacity>
 
-          <Button onPress={handleSaveProfile} disabled={updateUser.isPending}>
+          <Button onPress={handleSaveProfile} isFullWidth disabled={updateUser.isPending}>
             {updateUser.isPending
               ? t("common.loading")
               : t("settings.save_profile")}
@@ -1059,6 +1060,7 @@ export default function SettingsScreen() {
             {t("settings.export_description") || "Exporter vos données et votre compte"}
           </ThemedText>
           <Button
+            isFullWidth
             style={{
               marginBottom: theme.spacing.md,
               borderRadius: theme.borderRadius.xl,
@@ -1104,6 +1106,7 @@ export default function SettingsScreen() {
           </ThemedText>
           <Button
             variant="destructive"
+            isFullWidth
             onPress={() => setIsDeleteModalOpen(true)}
           >
             <Ionicons

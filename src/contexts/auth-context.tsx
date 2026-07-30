@@ -1,4 +1,4 @@
-// src/contexts/auth-context.tsx
+// @/contexts/auth-context.tsx
 
 import {
   AuthCredentials,
@@ -7,6 +7,8 @@ import {
   AuthUser,
 } from "@/features/auth/types";
 import { authService } from "@/services/auth/AuthService";
+import { firebaseSignInWithGoogle } from "@/utils/firebase-auth-utils";
+import { getFirebaseErrorMessage } from "@/utils/getFirebaseErrorMessage";
 import {
   createContext,
   ReactNode,
@@ -160,9 +162,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return await authService.resetPassword(email);
   };
 
-  const loginWithGoogle = async (): Promise<AuthResponse> => {
-    return { success: false, error: t('auth.google_not_implemented') };
-  };
+const loginWithGoogle = async (): Promise<AuthResponse> => {
+  setIsLoading(true);
+  try {
+    const res = await firebaseSignInWithGoogle();
+    
+    if (res.data) {
+      const authUser: AuthUser = {
+        uid: res.data.uid,
+        email: res.data.email,
+        displayName: res.data.displayName,
+        photoURL: res.data.photoURL,
+        phoneNumber: res.data.phoneNumber,
+        emailVerified: res.data.emailVerified,
+        isAnonymous: res.data.isAnonymous,
+      };
+      setUser(authUser);
+      return { success: true, data: authUser };
+    }
+
+    // Extraction correcte du vrai code d'erreur Firebase/Google
+    const errorCode = res.error?.code || "unknown";
+    console.error("Code erreur Google Auth:", errorCode);
+
+    return {
+      success: false,
+      error: getFirebaseErrorMessage("signInWithPopup", errorCode),
+    };
+  } catch (err: any) {
+    console.error("Exception attrapée dans loginWithGoogle:", err);
+    const errorCode = err?.code || "unknown";
+    
+    return {
+      success: false,
+      error: getFirebaseErrorMessage("signInWithPopup", errorCode),
+    };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const loginWithBiometric = async (): Promise<AuthResponse> => {
     const success = await authService.authenticateBiometric();

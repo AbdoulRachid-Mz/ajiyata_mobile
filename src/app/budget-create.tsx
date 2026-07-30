@@ -492,6 +492,7 @@ export default function BudgetCreate() {
           <Button
             size="lg"
             disabled={isSubmitting}
+            isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
             {isSubmitting ? "Création..." : "Créer le budget"}

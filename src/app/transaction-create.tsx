@@ -372,6 +372,7 @@ export default function TransactionCreate() {
           <Button
             size="lg"
             disabled={isSubmitting}
+            isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
             {isSubmitting ? "Enregistrement..." : "Enregistrer"}

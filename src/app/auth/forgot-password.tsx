@@ -22,6 +22,7 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
+import { Spacer } from "@/components/ui";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("auth.invalid_email"),
@@ -153,12 +154,16 @@ export default function ForgotPasswordScreen() {
                   {t(errors.email.message as string)}
                 </ThemedText>
               )}
-
+              {/* spacer */}
+              <Spacer height={theme.spacing.lg} />
+              
+              {/* button */}
               <Button
                 size="lg"
                 onPress={handleSubmit(onSubmit)}
                 disabled={isLoading}
-                style={{ borderRadius: theme.borderRadius.xl }}
+                isFullWidth
+                style={{ borderRadius: theme.borderRadius.xl, flex: 1 }}
               >
                 {isLoading ? t('common.loading') : t('auth.send_reset_link')}
               </Button>

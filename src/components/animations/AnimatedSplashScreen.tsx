@@ -195,7 +195,7 @@ export function AnimatedSplashScreen({ onAnimationComplete }: AnimatedSplashScre
             }}
           >
             <Image
-              source={require("@/assets/images/primary-2.png")}
+              source={require("@/assets/images/primary-3.png")}
               style={[styles.logo, { width: width * 0.4, height: width * 0.4 }]}
               resizeMode="contain"
             />

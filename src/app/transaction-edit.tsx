@@ -367,6 +367,7 @@ export default function TransactionEdit() {
           <Button
             style={{ flex: 2 }}
             disabled={isSubmitting}
+            isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer les modifications'}

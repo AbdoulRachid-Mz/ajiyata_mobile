@@ -2,10 +2,10 @@
   "expo": {
     "name": "Ajiya Ta",
     "slug": "ajiya",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/primary-3.png",
-    "scheme": "ajiya",
+    "scheme": "ajiyata",
     "userInterfaceStyle": "automatic",
     "web": {
       "output": "static",
@@ -17,17 +17,17 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FAF7EE",
-          "image": "./assets/images/primary-2.png",
-          "imageWidth": 400,
+          "image": "./assets/primary-640.png",
+          "imageWidth": 640,
           "resizeMode": "contain",
           "android": {
-            "image": "./assets/images/primary-2.png",
-            "imageWidth": 400,
+            "image": "./assets/primary-640.png",
+            "imageWidth": 640,
             "backgroundColor": "#FAF7EE"
           },
           "ios": {
-            "image": "./assets/images/primary-2.png",
-            "imageWidth": 400,
+            "image": "./assets/primary-640.png",
+            "imageWidth": 640,
             "backgroundColor": "#FAF7EE"
           }
         }
@@ -50,13 +50,14 @@
       "expo-localization"
     ],
     "ios": {
+      "bundleIdentifier": "ajiyata.com",
       "icon": "./assets/images/primary-3.png",
       "infoPlist": {
         "NSCameraUsageDescription": "Ajiya Ta utilise la caméra pour scanner vos reçus et factures.",
         "NSPhotoLibraryUsageDescription": "Ajiya Ta accède à votre galerie pour importer des reçus."
       },
       "splash": {
-        "image": "./assets/images/primary-2.png",
+        "image": "./assets/primary-640.png",
         "resizeMode": "contain",
         "backgroundColor": "#FAF7EE"
       }
@@ -67,7 +68,8 @@
         "foregroundImage": "./assets/images/primary-3.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.abdoulrachidmz.ajiya",
+      "package": "ajiyata.com",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
@@ -76,7 +78,7 @@
         "WRITE_EXTERNAL_STORAGE"
       ],
       "splash": {
-        "image": "./assets/images/primary-2.png",
+        "image": "./assets/images/primary-3.png",
         "resizeMode": "contain",
         "backgroundColor": "#FAF7EE"
       }
@@ -89,19 +91,6 @@
       "router": {},
       "eas": {
         "projectId": "085c8a36-5f57-4cfb-904e-bc990cdd55d0"
-      }
-    },
-    "build": {
-      "preview": {
-        "distribution": "internal",
-        "android": {
-          "buildType": "apk"
-        }
-      },
-      "production": {
-        "android": {
-          "buildType": "apk"
-        }
       }
     }
   }

@@ -168,6 +168,7 @@ export default function SavingGoalCreate() {
           <Button
             size="lg"
             disabled={isSubmitting}
+            isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
             {isSubmitting ? "Création..." : "Créer l'objectif"}

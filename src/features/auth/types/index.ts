@@ -1,3 +1,5 @@
+// @/features/auth/types/index.ts
+
 import { User } from 'firebase/auth';
 
 export interface AuthUser {

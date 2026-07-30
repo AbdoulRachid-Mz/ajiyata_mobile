@@ -1,13 +1,15 @@
 // @/components/ui/button.tsx
 import { useTheme } from "@/contexts/theme-context";
 import { ReactNode, forwardRef, useMemo } from "react";
-import { Pressable, PressableProps, ViewStyle } from "react-native";
+import { Pressable, PressableProps, StyleProp, ViewStyle, TextStyle } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring
+  withSpring,
 } from "react-native-reanimated";
 import ThemedText from "./text";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type ButtonVariant =
   | "default"
@@ -17,17 +19,17 @@ type ButtonVariant =
   | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
 
-interface ButtonProps extends PressableProps {
+interface ButtonProps extends Omit<PressableProps, "style"> {
   children: ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   isFullWidth?: boolean;
 }
 
-const Button = forwardRef(
+const Button = forwardRef<any, ButtonProps>(
   (
     {
       children,
@@ -36,15 +38,16 @@ const Button = forwardRef(
       disabled = false,
       isFullWidth = false,
       style,
+      onPressIn,
+      onPressOut,
       ...props
-    }: ButtonProps,
-    ref: any,
+    },
+    ref
   ) => {
     const { theme } = useTheme();
     const scale = useSharedValue(1);
-    const opacity = useSharedValue(disabled ? 0.5 : 1);
 
-    const getButtonColors = () => {
+    const colors = useMemo(() => {
       switch (variant) {
         case "default":
           return {
@@ -83,126 +86,115 @@ const Button = forwardRef(
             borderColor: "transparent",
           };
       }
-    };
+    }, [variant, theme]);
 
-    const getButtonSize = () => {
+    const sizeStyles = useMemo(() => {
       switch (size) {
         case "sm":
           return {
             paddingVertical: theme.spacing.xs,
             paddingHorizontal: theme.spacing.md,
             borderRadius: theme.borderRadius.sm,
+            minHeight: 36,
           };
         case "md":
           return {
             paddingVertical: theme.spacing.sm,
             paddingHorizontal: theme.spacing.lg,
             borderRadius: theme.borderRadius.md,
+            minHeight: 44,
           };
         case "lg":
           return {
             paddingVertical: theme.spacing.md,
             paddingHorizontal: theme.spacing.xl,
             borderRadius: theme.borderRadius.lg,
+            minHeight: 52,
           };
         default:
           return {
             paddingVertical: theme.spacing.sm,
             paddingHorizontal: theme.spacing.lg,
             borderRadius: theme.borderRadius.md,
+            minHeight: 44,
           };
       }
-    };
+    }, [size, theme]);
 
-    const colors = getButtonColors();
-    const sizeStyles = getButtonSize();
-
-    const handlePressIn = () => {
+    const handlePressIn = (e: any) => {
       if (!disabled) {
-        scale.value = withSpring(0.95, { damping: 20, stiffness: 300 });
+        scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
       }
+      onPressIn?.(e);
     };
 
-    const handlePressOut = () => {
-      scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+    const handlePressOut = (e: any) => {
+      if (!disabled) {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }
+      onPressOut?.(e);
     };
 
     const animatedStyle = useAnimatedStyle(() => ({
       transform: [{ scale: scale.value }],
-      opacity: opacity.value,
+      opacity: disabled ? 0.5 : 1,
     }));
 
-    const buttonStyles = useMemo(
+    const baseContainerStyle: ViewStyle = useMemo(
       () => ({
-        container: {
-          backgroundColor: colors.backgroundColor,
-          borderWidth: variant === "outline" ? 1 : 0,
-          borderColor: colors.borderColor,
-          ...sizeStyles,
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: theme.spacing.sm,
-        },
+        backgroundColor: colors.backgroundColor,
+        borderWidth: variant === "outline" ? 1 : 0,
+        borderColor: colors.borderColor,
+        ...sizeStyles,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: theme.spacing.sm,
+        width: isFullWidth ? "100%" : undefined,
+        alignSelf: isFullWidth ? "stretch" : "flex-start",
       }),
-      [colors, sizeStyles, variant, theme],
+      [colors, variant, sizeStyles, isFullWidth, theme]
     );
 
+    const renderChild = (child: ReactNode, index?: number) => {
+      if (typeof child === "string" || typeof child === "number") {
+        return (
+          <ThemedText
+            key={index}
+            style={{
+              color: colors.textColor,
+              fontWeight: "600",
+              fontSize:
+                size === "sm"
+                  ? theme.typography.sm
+                  : size === "lg"
+                  ? theme.typography.lg
+                  : theme.typography.base,
+              opacity: 1, // Garantit que le texte reste à 100% d'opacité
+            }}
+          >
+            {child}
+          </ThemedText>
+        );
+      }
+      return child;
+    };
+
     return (
-      <Animated.View style={[buttonStyles.container, style, animatedStyle] as any}>
-        <Pressable
-          ref={ref}
-          disabled={disabled}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          style={{ width: isFullWidth ? '100%' : 'auto', height: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm }}
-          {...props}
-        >
-          {Array.isArray(children) ? (
-            children.map((child, index) => {
-              if (typeof child === "string") {
-                return (
-                  <ThemedText
-                    key={index}
-                    style={{
-                      color: colors.textColor,
-                      fontWeight: "600",
-                      fontSize:
-                        size === "sm"
-                          ? theme.typography.sm
-                          : size === "lg"
-                            ? theme.typography.lg
-                            : theme.typography.base,
-                    }}
-                  >
-                    {child}
-                  </ThemedText>
-                );
-              }
-              return child;
-            })
-          ) : typeof children === "string" ? (
-            <ThemedText
-              style={{
-                color: colors.textColor,
-                fontWeight: "600",
-                fontSize:
-                  size === "sm"
-                    ? theme.typography.sm
-                    : size === "lg"
-                      ? theme.typography.lg
-                      : theme.typography.base,
-              }}
-            >
-              {children}
-            </ThemedText>
-          ) : (
-            children
-          )}
-        </Pressable>
-      </Animated.View>
+      <AnimatedPressable
+        ref={ref}
+        disabled={disabled}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[baseContainerStyle, animatedStyle, style]}
+        {...props}
+      >
+        {Array.isArray(children)
+          ? children.map((child, index) => renderChild(child, index))
+          : renderChild(children)}
+      </AnimatedPressable>
     );
-  },
+  }
 );
 
 Button.displayName = "Button";

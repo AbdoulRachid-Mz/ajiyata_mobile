@@ -24,10 +24,13 @@
     "auth/invalid-credential": "L'email ou le mot de passe est incorrect."
   },
   "signInWithPopup": {
-    "auth/popup-closed-by-user": "La fenêtre de connexion a été fermée avant la fin de l'opération.",
-    "auth/cancelled-popup-request": "L'opération a été annulée car une seule fenêtre de connexion doit être ouverte à la fois.",
-    "auth/account-exists-with-different-credential": "Un compte existe déjà avec la même adresse e-mail mais avec un mode de connexion différent."
-  },
+  "auth/popup-closed-by-user": "La fenêtre de connexion a été fermée avant la fin de l'opération.",
+  "auth/cancelled-popup-request": "L'opération a été annulée car une seule fenêtre de connexion doit être ouverte à la fois.",
+  "auth/account-exists-with-different-credential": "Un compte existe déjà avec la même adresse e-mail mais avec un mode de connexion différent.",
+  "auth/popup-blocked": "La fenêtre surgissante a été bloquée par le navigateur.",
+  "auth/unauthorized-domain": "Ce domaine n'est pas autorisé pour la connexion Google dans la console Firebase.",
+  "auth/operation-not-allowed": "La connexion avec Google n'est pas activée dans Firebase Console."
+},
   "sendPasswordResetEmail": {
     "auth/invalid-email": "L'adresse e-mail n'est pas valide.",
     "auth/user-not-found": "Aucun utilisateur trouvé avec cette adresse e-mail.",

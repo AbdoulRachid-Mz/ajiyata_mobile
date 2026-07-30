@@ -295,9 +295,11 @@ export default function RegisterScreen() {
               onPress={handleSubmit(onSubmit)}
               disabled={isLoading}
               style={{
+                flex: 1,
                 borderRadius: theme.borderRadius.xl,
                 marginTop: theme.spacing.lg,
               }}
+              isFullWidth
             >
               {isLoading ? t('common.loading') : t('auth.sign_up')}
             </Button>
