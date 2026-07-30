@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import {
-  View,
   ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -76,168 +75,110 @@ export default function PrivacyScreen() {
         {/* Date de mise à jour */}
         <Card style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="sm" color="mutedForeground">
-            Dernière mise à jour : 1er janvier 2025
+            Dernière mise à jour : 1er mars 2026
           </ThemedText>
         </Card>
 
-        {/* Introduction */}
+        {/* Cadre Légal et Introduction */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Introduction
+            Cadre Légal & Introduction
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Ajiya Ta ("nous", "notre", "nos") s'engage à protéger votre vie privée. 
-            Cette politique de confidentialité explique comment nous collectons, utilisons, 
-            divulguons et protégeons vos informations lorsque vous utilisez notre application 
-            mobile et nos services.
+            Ajiya Ta ("nous", "notre", "nos") s'engage à protéger la vie privée de ses utilisateurs. 
+            La présente politique est établie conformément à la **Loi n° 2017-28 du 3 mai 2017** 
+            relative à la protection des données à caractère personnel en République du Niger ainsi 
+            qu'à l'**Acte Additionnel A/SA.1/01/10 de la CEDEAO**.
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText style={{ lineHeight: 22 }}>
-            En utilisant Ajiya Ta, vous acceptez les pratiques décrites dans cette politique. 
-            Si vous n'êtes pas d'accord avec cette politique, veuillez ne pas utiliser notre application.
+            En utilisant Ajiya Ta, vous consentez à la collecte et au traitement de vos informations 
+            selon les modalités définies ci-après.
           </ThemedText>
         </Card>
 
         {/* Informations collectées */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Informations que nous collectons
+            Données collectées
           </ThemedText>
 
           <ThemedText variant="base" weight="semibold" style={{ marginBottom: 4 }}>
-            Informations que vous nous fournissez
+            Informations d'identification
           </ThemedText>
           <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.md }}>
-            • Nom et prénom
-            {'\n'}• Adresse email
-            {'\n'}• Numéro de téléphone
-            {'\n'}• Informations de compte et préférences
+            • Nom, prénom et pseudo
+            {'\n'}• Adresse email et/ou numéro de téléphone
+            {'\n'}• Préférences de compte et devises (XOF, USD, etc.)
           </ThemedText>
 
           <ThemedText variant="base" weight="semibold" style={{ marginBottom: 4 }}>
-            Informations financières
+            Données financières et de gestion
           </ThemedText>
           <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.md }}>
-            • Transactions (revenus, dépenses, virements)
-            {'\n'}• Catégories de dépenses
-            {'\n'}• Budgets et objectifs d'épargne
-            {'\n'}• Devises utilisées
+            • Relevé des transactions (revenus, dépenses, transferts)
+            {'\n'}• Budgets, objectifs d'épargne et catégories
+            {'\n'}• Photos/scans de reçus ou factures (si autorisés)
           </ThemedText>
 
           <ThemedText variant="base" weight="semibold" style={{ marginBottom: 4 }}>
             Informations techniques
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            • Type d'appareil et modèle
-            {'\n'}• Système d'exploitation
-            {'\n'}• Version de l'application
-            {'\n'}• Identifiant unique de l'appareil
-            {'\n'}• Adresse IP
+            • Modèle de l'appareil et version du système Android/iOS
+            {'\n'}• Identifiants uniques d'installation de l'application
           </ThemedText>
         </Card>
 
-        {/* Utilisation des informations */}
+        {/* Principes de Traitement et Sécurité */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Utilisation de vos informations
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            Nous utilisons vos informations pour :
-          </ThemedText>
-          <Spacer height={theme.spacing.sm} />
-          <ThemedText style={{ lineHeight: 22 }}>
-            • Fournir et maintenir nos services
-            {'\n'}• Gérer vos transactions et budgets
-            {'\n'}• Vous envoyer des notifications et rappels
-            {'\n'}• Améliorer notre application et nos services
-            {'\n'}• Analyser l'utilisation de l'application
-            {'\n'}• Assurer la sécurité de vos données
-          </ThemedText>
-        </Card>
-
-        {/* Stockage des données */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Stockage et sécurité des données
+            Stockage et Sécurité des Données
           </ThemedText>
           <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Vos données sont stockées localement sur votre appareil et, si vous le souhaitez, 
-            synchronisées de manière sécurisée avec nos serveurs cloud.
+            Conformément au principe d'architecture "Offline-First", l'ensemble de vos registres 
+            financiers est stocké en priorité localement sur votre appareil.
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Nous utilisons des mesures de sécurité conformes aux normes de l'industrie pour 
-            protéger vos données contre tout accès non autorisé, modification ou destruction.
+            En cas de synchronisation en ligne, vos données sont chiffrées selon les standards 
+            de sécurité recommandés par les réglementations en matière de cybersécurité.
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText variant="sm" color="mutedForeground">
-            ⚠️ Note : Ajiya Ta utilise le chiffrement pour protéger vos données en transit et au repos.
+            🔒 Vos identifiants biométriques (empreinte digitale, Face ID) sont traités exclusivement par le système sécurisé de votre téléphone et ne nous sont jamais transmis.
           </ThemedText>
         </Card>
 
-        {/* Partage des données */}
+        {/* Vos Droits selon la Loi du Niger */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Partage des données
+            Vos Droits
           </ThemedText>
           <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Nous ne vendons, n'échangeons ni ne louons vos informations personnelles à des tiers. 
-            Nous pouvons partager vos informations dans les cas suivants :
+            Conformément à la réglementation nigérienne et communautaire, vous bénéficiez des droits suivants :
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            • Avec votre consentement explicite
-            {'\n'}• Pour respecter une obligation légale
-            {'\n'}• Avec nos prestataires de services (hébergement, notifications, etc.)
-            {'\n'}• En cas de fusion ou d'acquisition
-          </ThemedText>
-        </Card>
-
-        {/* Vos droits */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Vos droits
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Conformément au RGPD, vous disposez des droits suivants :
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            • Droit d'accès à vos données
-            {'\n'}• Droit de rectification
-            {'\n'}• Droit à l'effacement
-            {'\n'}• Droit à la limitation du traitement
-            {'\n'}• Droit à la portabilité des données
-            {'\n'}• Droit d'opposition
+            • **Droit d'accès :** Obtenir la confirmation que vos données sont traitées.
+            {'\n'}• **Droit de rectification :** Exiger la correction d'informations inexactes.
+            {'\n'}• **Droit de suppression :** Demander l'effacement définitif de vos données.
+            {'\n'}• **Droit d'opposition :** S'opposer au traitement de vos données pour motifs légitimes.
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <TouchableOpacity onPress={handleEmailPress}>
             <ThemedText color="primary" weight="semibold">
-              Contactez-nous pour exercer vos droits
+              Exercer mes droits : support@ajiyata.com
             </ThemedText>
           </TouchableOpacity>
         </Card>
 
-        {/* Cookies */}
+        {/* Autorité de Contrôle */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Cookies et technologies similaires
+            Recours et Autorité de Régulation
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Ajiya Ta n'utilise pas de cookies tiers. Nous utilisons des technologies de stockage 
-            local pour améliorer votre expérience et mémoriser vos préférences.
-          </ThemedText>
-        </Card>
-
-        {/* Modifications */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Modifications de la politique
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            Nous pouvons modifier cette politique de temps à autre. Nous vous informerons de 
-            tout changement majeur par une notification dans l'application ou par email.
-          </ThemedText>
-          <Spacer height={theme.spacing.sm} />
-          <ThemedText variant="sm" color="mutedForeground">
-            La date de la dernière mise à jour est indiquée en haut de cette page.
+            En cas de litige relatif à la protection de vos données personnelles non résolu par notre support, 
+            vous avez le droit de saisir la **Haute Autorité de Protection des Données à caractère Personnel (HAPDP)** de la République du Niger.
           </ThemedText>
         </Card>
 
@@ -247,7 +188,7 @@ export default function PrivacyScreen() {
             Contact
           </ThemedText>
           <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Pour toute question concernant cette politique de confidentialité, veuillez nous contacter :
+            Pour toute question concernant cette politique :
           </ThemedText>
           <TouchableOpacity onPress={handleEmailPress}>
             <ThemedText color="primary" weight="semibold">

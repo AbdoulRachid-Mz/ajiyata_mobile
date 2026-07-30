@@ -34,8 +34,10 @@ import Card from "@/components/ui/card";
 import { transactionIntelligence, TransactionInsight } from "@/services/transaction-intelligence.service";
 import Toast from "react-native-toast-message";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 
 export default function TransactionsScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -73,6 +75,7 @@ export default function TransactionsScreen() {
       const result = await transactionIntelligence.generateInsights(accountId);
       setInsights(result);
       setShowInsights(result.length > 0);
+      console.log(`📊 Insights chargés: ${result.length}`);
     } catch (error) {
       console.error('Error loading insights:', error);
     } finally {
@@ -92,14 +95,22 @@ export default function TransactionsScreen() {
       await refetch();
       await loadInsights();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show({ type: 'success', text1: 'Rafraîchi', text2: 'Transactions mises à jour' });
+      Toast.show({ 
+        type: 'success', 
+        text1: t('common.refresh_success'), 
+        text2: t('transactions.refresh_success') 
+      });
     } catch (error) {
       console.error('Refresh error:', error);
-      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de rafraîchir' });
+      Toast.show({ 
+        type: 'error', 
+        text1: t('common.error'), 
+        text2: t('errors.refresh_failed') 
+      });
     } finally {
       setRefreshing(false);
     }
-  }, [refetch, loadInsights]);
+  }, [refetch, loadInsights, t]);
 
   // Appliquer automatiquement les catégories
   const handleAutoCategorize = useCallback(async () => {
@@ -109,23 +120,27 @@ export default function TransactionsScreen() {
       if (result.applied > 0) {
         Toast.show({ 
           type: 'success', 
-          text1: `${result.applied} transactions catégorisées`,
-          text2: result.failed > 0 ? `${result.failed} échecs` : undefined
+          text1: t('transactions.auto_categorized_title', { count: result.applied }),
+          text2: result.failed > 0 ? t('transactions.auto_categorized_failed', { count: result.failed }) : undefined
         });
         refetch();
         loadInsights();
       } else {
         Toast.show({ 
           type: 'info', 
-          text1: 'Aucune catégorisation automatique',
-          text2: 'Aucune transaction ne peut être catégorisée automatiquement'
+          text1: t('transactions.no_auto_categorize'),
+          text2: t('transactions.no_auto_categorize_desc')
         });
       }
     } catch (error) {
       console.error('Error auto-categorizing:', error);
-      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de catégoriser' });
+      Toast.show({ 
+        type: 'error', 
+        text1: t('common.error'), 
+        text2: t('errors.categorize_failed') 
+      });
     }
-  }, [accountId, refetch, loadInsights]);
+  }, [accountId, refetch, loadInsights, t]);
 
   const handlePress = (transaction: Transaction) => {
     router.push({
@@ -163,9 +178,9 @@ export default function TransactionsScreen() {
       let dateKey = "";
 
       if (isToday(dateObj)) {
-        dateKey = "Aujourd'hui";
+        dateKey = t("periods.today");
       } else if (isYesterday(dateObj)) {
-        dateKey = "Hier";
+        dateKey = t("periods.yesterday");
       } else {
         dateKey = format(dateObj, "d MMMM yyyy", { locale: fr });
       }
@@ -176,11 +191,22 @@ export default function TransactionsScreen() {
       groups[dateKey].push(tx);
     });
 
-    return Object.keys(groups).map((key) => ({
+    // Trier les clés pour que "Aujourd'hui" et "Hier" soient en premier
+    const todayKey = t("periods.today");
+    const yesterdayKey = t("periods.yesterday");
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+      if (a === todayKey) return -1;
+      if (b === todayKey) return 1;
+      if (a === yesterdayKey) return -1;
+      if (b === yesterdayKey) return 1;
+      return a.localeCompare(b);
+    });
+
+    return sortedKeys.map((key) => ({
       title: key,
       data: groups[key],
     }));
-  }, [filteredTransactions]);
+  }, [filteredTransactions, t]);
 
   // Statistiques
   const stats = useMemo(() => {
@@ -194,12 +220,12 @@ export default function TransactionsScreen() {
   // Gestionnaires d'actions
   const handleDeleteTransaction = (transaction: Transaction) => {
     Alert.alert(
-      "Supprimer la transaction",
-      `Voulez-vous vraiment supprimer "${transaction.title}" ?`,
+      t("transactions.delete_title"),
+      t("transactions.delete_confirm", { title: transaction.title }),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("common.delete"),
           style: "destructive",
           onPress: () => {
             deleteTransaction.mutate(transaction.id, {
@@ -292,7 +318,7 @@ export default function TransactionsScreen() {
           }}
         >
           <ThemedText variant="xl" weight="bold">
-            Transactions
+            {t("transactions.title")}
           </ThemedText>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TouchableOpacity
@@ -332,23 +358,23 @@ export default function TransactionsScreen() {
             }}
           >
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">Total</ThemedText>
+              <ThemedText variant="xs" color="mutedForeground">{t('common.total')}</ThemedText>
               <ThemedText variant="sm" weight="bold">{stats.total}</ThemedText>
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">Revenus</ThemedText>
+              <ThemedText variant="xs" color="mutedForeground">{t('finance.income')}</ThemedText>
               <ThemedText variant="sm" weight="bold" style={{ color: theme.financialColors.income }}>
                 {stats.income}
               </ThemedText>
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">Dépenses</ThemedText>
+              <ThemedText variant="xs" color="mutedForeground">{t('finance.expense')}</ThemedText>
               <ThemedText variant="sm" weight="bold" style={{ color: theme.financialColors.expense }}>
                 {stats.expense}
               </ThemedText>
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">Virements</ThemedText>
+              <ThemedText variant="xs" color="mutedForeground">{t('finance.transfer')}</ThemedText>
               <ThemedText variant="sm" weight="bold" style={{ color: theme.financialColors.budget }}>
                 {stats.transfer}
               </ThemedText>
@@ -389,7 +415,7 @@ export default function TransactionsScreen() {
           <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm }}>
               <ThemedText variant="sm" weight="bold" style={{ color: theme.colors.primary }}>
-                💡 Insights
+                💡 {t('transactions.insights')}
               </ThemedText>
               <TouchableOpacity onPress={() => setShowInsights(false)}>
                 <Ionicons name="close" size={20} color={theme.colors.mutedForeground} />
@@ -401,7 +427,7 @@ export default function TransactionsScreen() {
             {insights.length > 3 && (
               <TouchableOpacity onPress={() => setShowInsights(false)}>
                 <ThemedText variant="xs" color="mutedForeground" style={{ textAlign: 'center', marginTop: 4 }}>
-                  + {insights.length - 3} autres insights
+                  + {insights.length - 3} {t('common.others')}
                 </ThemedText>
               </TouchableOpacity>
             )}
@@ -426,7 +452,7 @@ export default function TransactionsScreen() {
             >
               <Ionicons name="sparkles" size={16} color={theme.colors.primary} />
               <ThemedText variant="xs" style={{ color: theme.colors.primary, marginLeft: 6 }}>
-                Catégoriser automatiquement les transactions
+                {t('transactions.auto_categorize')}
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -488,13 +514,13 @@ export default function TransactionsScreen() {
                 </View>
                 <ThemedText variant="xl" weight="bold" style={{ marginBottom: 8, textAlign: 'center' }}>
                   {hasActiveFilters
-                    ? "Aucune transaction ne correspond aux filtres"
-                    : "Aucune transaction"}
+                    ? t("transactions.no_matching")
+                    : t("transactions.no_transactions")}
                 </ThemedText>
                 <ThemedText color="mutedForeground" style={{ textAlign: 'center', lineHeight: 22, marginBottom: 24 }}>
                   {hasActiveFilters
-                    ? `Aucune transaction ne correspond à vos critères de recherche.`
-                    : 'Commencez par enregistrer votre première transaction.'}
+                    ? t("transactions.no_matching_desc")
+                    : t("transactions.no_transactions_desc")}
                 </ThemedText>
                 {!hasActiveFilters && (
                   <TouchableOpacity
@@ -511,7 +537,7 @@ export default function TransactionsScreen() {
                   >
                     <Ionicons name="add" size={20} color="#fff" />
                     <ThemedText weight="semibold" style={{ color: '#fff' }}>
-                      Ajouter une transaction
+                      {t("transactions.create")}
                     </ThemedText>
                   </TouchableOpacity>
                 )}
@@ -531,7 +557,7 @@ export default function TransactionsScreen() {
                     }
                     style={{ marginTop: 8 }}
                   >
-                    Réinitialiser les filtres
+                    {t("common.reset")}
                   </Button>
                 )}
               </View>

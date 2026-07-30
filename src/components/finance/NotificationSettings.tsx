@@ -8,10 +8,12 @@ import ThemedText from '@/components/ui/text';
 import Card from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import { useAppStore } from '@/stores/app-store';
+import { useTranslation } from 'react-i18next';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
 export const NotificationSettings = () => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { isEnabled, setEnabled, sendNotification } = useNotifications();
   const { currentUser } = useAppStore();
@@ -29,8 +31,8 @@ export const NotificationSettings = () => {
 
   const handleTestNotification = async () => {
     await sendNotification({
-      title: '🔔 Test de notification',
-      body: 'Cette notification fonctionne correctement !',
+      title: t('notifications.test.title'),
+      body: t('notifications.test.body'),
       data: { type: 'test' },
     });
   };
@@ -40,8 +42,7 @@ export const NotificationSettings = () => {
     return (
       <Card style={styles.card}>
         <ThemedText color="mutedForeground" style={{ textAlign: 'center' }}>
-          ⚠️ Les notifications ne sont pas disponibles dans Expo Go.
-          {'\n'}Utilisez un build de développement pour les tester.
+          {t('notifications.expo_go_warning')}
         </ThemedText>
       </Card>
     );
@@ -51,7 +52,7 @@ export const NotificationSettings = () => {
     return (
       <Card style={styles.card}>
         <ThemedText color="mutedForeground" style={{ textAlign: 'center' }}>
-          Connectez-vous pour gérer vos notifications
+          {t('notifications.login_required')}
         </ThemedText>
       </Card>
     );
@@ -65,9 +66,9 @@ export const NotificationSettings = () => {
           <View style={styles.settingInfo}>
             <Ionicons name="notifications" size={24} color={theme.colors.primary} />
             <View style={styles.settingText}>
-              <ThemedText weight="medium">Notifications</ThemedText>
+              <ThemedText weight="medium">{t('notifications.title')}</ThemedText>
               <ThemedText variant="xs" color="mutedForeground">
-                Activer ou désactiver toutes les notifications
+                {t('notifications.enable_all')}
               </ThemedText>
             </View>
           </View>
@@ -90,9 +91,9 @@ export const NotificationSettings = () => {
                   <Ionicons name="wallet-outline" size={20} color={theme.financialColors.budget} />
                 </View>
                 <View style={styles.settingText}>
-                  <ThemedText weight="medium">Alertes de budget</ThemedText>
+                  <ThemedText weight="medium">{t('notifications.budget_alerts_label')}</ThemedText>
                   <ThemedText variant="xs" color="mutedForeground">
-                    Notifications quand un budget est dépassé
+                    {t('notifications.budget_alerts_desc')}
                   </ThemedText>
                 </View>
               </View>
@@ -112,9 +113,9 @@ export const NotificationSettings = () => {
                   <Ionicons name="trending-up-outline" size={20} color={theme.financialColors.saving} />
                 </View>
                 <View style={styles.settingText}>
-                  <ThemedText weight="medium">Rappels d'épargne</ThemedText>
+                  <ThemedText weight="medium">{t('notifications.savings_reminders_label')}</ThemedText>
                   <ThemedText variant="xs" color="mutedForeground">
-                    Rappels quotidiens pour vos objectifs d'épargne
+                    {t('notifications.savings_reminders_desc')}
                   </ThemedText>
                 </View>
               </View>
@@ -134,9 +135,9 @@ export const NotificationSettings = () => {
                   <Ionicons name="sync-outline" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.settingText}>
-                  <ThemedText weight="medium">Synchronisation</ThemedText>
+                  <ThemedText weight="medium">{t('notifications.sync_label')}</ThemedText>
                   <ThemedText variant="xs" color="mutedForeground">
-                    Notifications sur l'état de synchronisation
+                    {t('notifications.sync_desc')}
                   </ThemedText>
                 </View>
               </View>
@@ -156,9 +157,9 @@ export const NotificationSettings = () => {
                   <Ionicons name="bulb-outline" size={20} color={theme.colors.accent} />
                 </View>
                 <View style={styles.settingText}>
-                  <ThemedText weight="medium">Conseils financiers</ThemedText>
+                  <ThemedText weight="medium">{t('notifications.tips_label')}</ThemedText>
                   <ThemedText variant="xs" color="mutedForeground">
-                    Conseils pour mieux gérer votre argent
+                    {t('notifications.tips_desc')}
                   </ThemedText>
                 </View>
               </View>
@@ -176,7 +177,7 @@ export const NotificationSettings = () => {
       {/* Test */}
       {isEnabled && (
         <Button variant="outline" onPress={handleTestNotification} style={styles.testButton}>
-          Tester les notifications
+          {t('notifications.test_button')}
         </Button>
       )}
     </View>

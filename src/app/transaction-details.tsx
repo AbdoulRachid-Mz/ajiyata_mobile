@@ -1,9 +1,12 @@
+// src/app/transaction-details.tsx
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { View, ScrollView, Alert, Share, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 // Hooks et contextes
 import { useTheme } from '@/contexts/theme-context';
@@ -31,6 +34,7 @@ import { formatCurrency } from '@/lib/formatters/currency';
 import { Attachment, Transaction } from '@/types';
 
 export default function TransactionDetails() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -60,8 +64,10 @@ export default function TransactionDetails() {
   const sameCategoryTransactions = useMemo(() => {
     if (!transactions || !transaction?.categoryId) return [];
     return transactions.filter(tx => 
-      tx.categoryId === transaction.categoryId && tx.id !== transaction.id).sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime());
+      tx.categoryId === transaction.categoryId && tx.id !== transaction.id
+    ).sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }, [transactions, transaction]);
 
   // États
@@ -70,12 +76,12 @@ export default function TransactionDetails() {
   // Gestionnaires
   const handleDelete = () => {
     Alert.alert(
-      'Supprimer la transaction',
-      `Voulez-vous vraiment supprimer "${transaction?.title}" ? Cette action est irréversible.`,
+      t('transactions.delete_title'),
+      t('transactions.delete_confirm_details', { title: transaction?.title || '' }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             setIsDeleting(true);
@@ -84,7 +90,7 @@ export default function TransactionDetails() {
               router.back();
             } catch (error) {
               console.error('Erreur lors de la suppression:', error);
-              Alert.alert('Erreur', 'Impossible de supprimer la transaction.');
+              Alert.alert(t('common.error'), t('errors.delete_failed'));
             } finally {
               setIsDeleting(false);
             }
@@ -118,20 +124,24 @@ export default function TransactionDetails() {
     if (!transaction) return;
     try {
       const isIncome = transaction.type === 'income';
-      const transactionType = transaction.type === 'income' ? 'Revenu' : transaction.type === 'expense' ? 'Dépense' : 'Virement';
+      const transactionType = transaction.type === 'income' 
+        ? t('finance.income') 
+        : transaction.type === 'expense' 
+          ? t('finance.expense') 
+          : t('finance.transfer');
       const amountLabel = `${isIncome ? '+' : '-'} ${formatCurrency(transaction.amount, transaction.currency)}`;
       
       const lines = [
-        '📊 *Transaction Ajiya Ta*',
+        '📊 *Ajiya Ta - Transaction*',
         '',
         `📌 *${transaction.title}*`,
-        `💰 Montant: ${amountLabel}`,
-        `📅 Date: ${format(new Date(transaction.date), 'dd MMMM yyyy', { locale: fr })}`,
-        `📂 Type: ${transactionType}`,
+        `💰 ${t('finance.amount')}: ${amountLabel}`,
+        `📅 ${t('finance.date')}: ${format(new Date(transaction.date), 'dd MMMM yyyy', { locale: fr })}`,
+        `📂 ${t('transactions.type')}: ${transactionType}`,
       ];
 
-      if (category) lines.push(`🏷️ Catégorie: ${category.name}`);
-      if (transaction.note) lines.push(`📝 Note: ${transaction.note}`);
+      if (category) lines.push(`🏷️ ${t('finance.category')}: ${category.name}`);
+      if (transaction.note) lines.push(`📝 ${t('finance.note')}: ${transaction.note}`);
       
       lines.push('');
       lines.push('---');
@@ -141,7 +151,7 @@ export default function TransactionDetails() {
 
       await Share.share({
         message,
-        title: 'Détails de la transaction',
+        title: t('transactions.share_title'),
       });
     } catch (error) {
       console.error('Erreur de partage:', error);
@@ -155,7 +165,7 @@ export default function TransactionDetails() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <ThemedText style={{ marginTop: 16 }} color="mutedForeground">
-            Chargement des détails...
+            {t('common.loading')}
           </ThemedText>
         </View>
       </SafeAreaView>
@@ -185,7 +195,7 @@ export default function TransactionDetails() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
           </Button>
           <ThemedText variant="xl" weight="bold">
-            Détails
+            {t('transactions.details')}
           </ThemedText>
           <View style={{ width: 44 }} />
         </ThemedView>
@@ -231,7 +241,7 @@ export default function TransactionDetails() {
               variant={isIncome ? 'success' : isExpense ? 'destructive' : 'warning'}
               style={{ marginTop: 4, paddingHorizontal: 16 }}
             >
-              {isIncome ? 'Revenu' : isExpense ? 'Dépense' : 'Virement'}
+              {isIncome ? t('finance.income') : isExpense ? t('finance.expense') : t('finance.transfer')}
             </Badge>
           </View>
 
@@ -274,14 +284,14 @@ export default function TransactionDetails() {
         {/* Informations détaillées */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg, borderRadius: theme.borderRadius.xl }}>
           <ThemedText variant="lg" weight="semibold" style={{ marginBottom: theme.spacing.md }}>
-            Informations
+            {t('transactions.information')}
           </ThemedText>
 
           {/* Date */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="calendar-outline" size={18} color={theme.colors.mutedForeground} />
-              <ThemedText color="mutedForeground">Date</ThemedText>
+              <ThemedText color="mutedForeground">{t('finance.date')}</ThemedText>
             </View>
             <ThemedText weight="medium">
               {format(new Date(transaction.date), 'dd MMMM yyyy à HH:mm', { locale: fr })}
@@ -293,7 +303,7 @@ export default function TransactionDetails() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="pricetag-outline" size={18} color={theme.colors.mutedForeground} />
-                <ThemedText color="mutedForeground">Catégorie</ThemedText>
+                <ThemedText color="mutedForeground">{t('finance.category')}</ThemedText>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <View
@@ -313,7 +323,7 @@ export default function TransactionDetails() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="cash-outline" size={18} color={theme.colors.mutedForeground} />
-              <ThemedText color="mutedForeground">Devise</ThemedText>
+              <ThemedText color="mutedForeground">{t('settings.currency')}</ThemedText>
             </View>
             <ThemedText weight="medium">{transaction.currency}</ThemedText>
           </View>
@@ -323,7 +333,7 @@ export default function TransactionDetails() {
             <View style={{ marginTop: theme.spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <Ionicons name="document-text-outline" size={18} color={theme.colors.mutedForeground} />
-                <ThemedText color="mutedForeground">Note</ThemedText>
+                <ThemedText color="mutedForeground">{t('finance.note')}</ThemedText>
               </View>
               <Card style={{ padding: theme.spacing.md, backgroundColor: theme.colors.muted }}>
                 <ThemedText>{transaction.note}</ThemedText>
@@ -336,7 +346,7 @@ export default function TransactionDetails() {
         {attachments.length > 0 && (
           <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg, borderRadius: theme.borderRadius.xl }}>
             <ThemedText variant="lg" weight="semibold" style={{ marginBottom: theme.spacing.md }}>
-              Pièces jointes
+              {t('transactions.attachments')}
             </ThemedText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -372,7 +382,7 @@ export default function TransactionDetails() {
           <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg, borderRadius: theme.borderRadius.xl }}>
             <ThemedView style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
               <ThemedText variant="lg" weight="semibold">
-                Opérations récentes ({category?.name})
+                {t('transactions.same_category', { category: category?.name || '' })}
               </ThemedText>
               <Ionicons name="repeat-outline" size={18} color={theme.colors.mutedForeground} />
             </ThemedView>
@@ -389,7 +399,10 @@ export default function TransactionDetails() {
                 onEdit={() => router.push({ pathname: '/transaction-edit', params: { id: tx.id } })}
                 onDelete={() => {}}
                 onDoubleTap={() => router.push({ pathname: '/transaction-edit', params: { id: tx.id } })}
-                style={{ borderBottomWidth: sameCategoryTransactions.slice(0, 5).indexOf(tx) !== sameCategoryTransactions.slice(0, 5).length - 1 ? 1 : 0, borderBottomColor: theme.colors.border }}
+                style={{ 
+                  borderBottomWidth: sameCategoryTransactions.slice(0, 5).indexOf(tx) !== sameCategoryTransactions.slice(0, 5).length - 1 ? 1 : 0, 
+                  borderBottomColor: theme.colors.border 
+                }}
               />
             ))}
           </Card>
@@ -404,7 +417,7 @@ export default function TransactionDetails() {
               onPress={handleShare}
             >
               <Ionicons name="share-outline" size={20} color={theme.colors.foreground} />
-              <ThemedText style={{ marginLeft: 6, fontWeight: '600' }}>Partager</ThemedText>
+              <ThemedText style={{ marginLeft: 6, fontWeight: '600' }}>{t('transactions.share')}</ThemedText>
             </Button>
             <Button
               variant="default"
@@ -412,7 +425,9 @@ export default function TransactionDetails() {
               onPress={handleEdit}
             >
               <Ionicons name="create-outline" size={20} color={theme.colors.primaryForeground} />
-              <ThemedText style={{ marginLeft: 6, fontWeight: '600', color: theme.colors.primaryForeground }}>Modifier</ThemedText>
+              <ThemedText style={{ marginLeft: 6, fontWeight: '600', color: theme.colors.primaryForeground }}>
+                {t('common.edit')}
+              </ThemedText>
             </Button>
           </View>
           <Spacer height={theme.spacing.sm} />
@@ -422,7 +437,7 @@ export default function TransactionDetails() {
             disabled={isDeleting}
             style={{ borderRadius: theme.borderRadius.xl }}
           >
-            {isDeleting ? 'Suppression...' : 'Supprimer la transaction'}
+            {isDeleting ? t('common.loading') : t('common.delete')}
           </Button>
         </Card>
       </ScrollView>

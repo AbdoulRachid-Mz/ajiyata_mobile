@@ -1,3 +1,5 @@
+// src/app/receipt-scanner.tsx
+
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
@@ -26,8 +28,10 @@ import { attachmentRepository } from '@/features/attachments/repositories';
 import { ocrService } from '@/services/ocr/ocr.service';
 import { useDevice } from '@/hooks/use-device';
 import { OCRProgress } from '@/services/ocr/providers/ocr-provider.interface';
+import { useTranslation } from 'react-i18next';
 
 export default function ReceiptScanner() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -76,8 +80,8 @@ export default function ReceiptScanner() {
         if (status !== 'granted') {
           Toast.show({ 
             type: 'error', 
-            text1: 'Permission requise', 
-            text2: 'Autorisez l\'accès à la caméra pour scanner.' 
+            text1: t('common.error'), 
+            text2: t('receipt_scanner.camera_permission_denied')
           });
           return;
         }
@@ -87,8 +91,8 @@ export default function ReceiptScanner() {
         if (status !== 'granted') {
           Toast.show({ 
             type: 'error', 
-            text1: 'Permission requise', 
-            text2: 'Autorisez l\'accès à la galerie pour scanner.' 
+            text1: t('common.error'), 
+            text2: t('receipt_scanner.gallery_permission_denied')
           });
           return;
         }
@@ -98,26 +102,23 @@ export default function ReceiptScanner() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const uri = result.assets[0].uri;
         setImageUri(uri);
-        
-        // Démarrer l'OCR automatiquement
         await processReceipt(uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);
       Toast.show({ 
         type: 'error', 
-        text1: 'Erreur', 
-        text2: 'Impossible de sélectionner l\'image.' 
+        text1: t('common.error'), 
+        text2: t('receipt_scanner.image_selection_error')
       });
     }
   };
 
   const processReceipt = async (uri: string) => {
     setIsProcessing(true);
-    setOcrProgress({ status: 'loading', message: 'Préparation de l\'image...' });
+    setOcrProgress({ status: 'loading', message: t('receipt_scanner.preparing_image') });
     
     try {
-      // Extraire les données du reçu avec Tesseract
       const result = await ocrService.extractReceiptData(uri, (progress) => {
         setOcrProgress(progress);
       });
@@ -125,41 +126,38 @@ export default function ReceiptScanner() {
       if (result.confidence > 0.2) {
         setExtractedData(result);
         
-        // Auto-remplir le formulaire
         if (result.title) setTitle(result.title);
         if (result.amount && result.amount > 0) {
           setAmount(result.amount.toString());
         }
         if (result.date) setDate(result.date);
         
-        // Proposer une catégorie si détectée
         if (result.category) {
-          // La catégorie sera sélectionnée par l'utilisateur
           Toast.show({
             type: 'success',
-            text1: '📄 Données extraites',
-            text2: `Catégorie suggérée: ${result.category}`,
+            text1: t('receipt_scanner.data_extracted'),
+            text2: t('receipt_scanner.category_suggested', { category: result.category }),
           });
         } else {
           Toast.show({
             type: 'success',
-            text1: '📄 Données extraites',
-            text2: 'Vérifiez et complétez les informations ci-dessous.',
+            text1: t('receipt_scanner.data_extracted'),
+            text2: t('receipt_scanner.verify_information'),
           });
         }
       } else {
         Toast.show({
           type: 'info',
-          text1: 'ℹ️ Aucune donnée extraite',
-          text2: 'L\'image ne semble pas être un reçu. Veuillez remplir les informations manuellement.',
+          text1: t('receipt_scanner.no_data_extracted'),
+          text2: t('receipt_scanner.manual_entry_hint'),
         });
       }
     } catch (error) {
       console.error('Error processing receipt:', error);
       Toast.show({
         type: 'info',
-        text1: 'ℹ️ Erreur d\'analyse',
-        text2: 'Veuillez remplir les informations manuellement.',
+        text1: t('receipt_scanner.analysis_error'),
+        text2: t('receipt_scanner.manual_entry_hint'),
       });
     } finally {
       setIsProcessing(false);
@@ -169,18 +167,18 @@ export default function ReceiptScanner() {
 
   const handleCreate = async () => {
     if (!currentAccount) {
-      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Compte non trouvé.' });
+      Toast.show({ type: 'error', text1: t('common.error'), text2: t('receipt_scanner.account_not_found') });
       return;
     }
     
     if (!title.trim() || !amount.trim()) {
-      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Le titre et le montant sont requis.' });
+      Toast.show({ type: 'error', text1: t('common.error'), text2: t('receipt_scanner.title_amount_required') });
       return;
     }
 
     const numAmount = parseFloat(amount.replace(',', '.'));
     if (isNaN(numAmount) || numAmount <= 0) {
-      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Montant invalide.' });
+      Toast.show({ type: 'error', text1: t('common.error'), text2: t('receipt_scanner.invalid_amount') });
       return;
     }
 
@@ -211,7 +209,6 @@ export default function ReceiptScanner() {
         isSynced: false,
       });
 
-      // Save the scanned receipt as an attachment
       if (imageUri) {
         await attachmentRepository.create({
           id: generateUUID(),
@@ -232,11 +229,11 @@ export default function ReceiptScanner() {
         });
       }
 
-      Toast.show({ type: 'success', text1: 'Succès', text2: 'Transaction créée avec succès.' });
+      Toast.show({ type: 'success', text1: t('common.success'), text2: t('receipt_scanner.transaction_created') });
       router.back();
     } catch (error) {
       console.error('Error creating transaction:', error);
-      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de créer la transaction.' });
+      Toast.show({ type: 'error', text1: t('common.error'), text2: t('receipt_scanner.transaction_creation_error') });
     } finally {
       setIsSubmitting(false);
     }
@@ -250,7 +247,7 @@ export default function ReceiptScanner() {
           <TouchableOpacity onPress={() => router.back()} style={{ marginRight: theme.spacing.md }}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
           </TouchableOpacity>
-          <ThemedText variant="lg" weight="bold">Scanner un reçu</ThemedText>
+          <ThemedText variant="lg" weight="bold">{t('receipt_scanner.title')}</ThemedText>
         </View>
 
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.xl, gap: theme.spacing.lg }}>
@@ -267,15 +264,14 @@ export default function ReceiptScanner() {
               <Ionicons name="scan" size={40} color={theme.colors.primary} />
             </View>
             <ThemedText variant="lg" weight="semibold" style={{ textAlign: 'center' }}>
-              Numérisez vos reçus
+              {t('receipt_scanner.scan')}
             </ThemedText>
             <ThemedText style={{ 
               textAlign: 'center', 
               color: theme.colors.mutedForeground, 
               marginTop: theme.spacing.sm 
             }}>
-              Prenez en photo ou sélectionnez un reçu. L'application extraira automatiquement 
-              les informations pour créer la transaction.
+              {t('receipt_scanner.description')}
             </ThemedText>
           </View>
 
@@ -289,7 +285,7 @@ export default function ReceiptScanner() {
           >
             <Ionicons name="camera" size={24} color="#fff" />
             <ThemedText style={{ color: '#fff', marginLeft: theme.spacing.sm, fontWeight: 'bold' }}>
-              Prendre une photo
+              {t('receipt_scanner.take_photo')}
             </ThemedText>
           </Button>
 
@@ -305,7 +301,7 @@ export default function ReceiptScanner() {
           >
             <Ionicons name="images" size={24} color={theme.colors.foreground} />
             <ThemedText style={{ marginLeft: theme.spacing.sm, fontWeight: 'bold' }}>
-              Choisir depuis la galerie
+              {t('receipt_scanner.choose_gallery')}
             </ThemedText>
           </Button>
         </View>
@@ -326,7 +322,7 @@ export default function ReceiptScanner() {
           <TouchableOpacity onPress={() => setImageUri(null)}>
             <Ionicons name="close" size={28} color={theme.colors.foreground} />
           </TouchableOpacity>
-          <ThemedText variant="lg" weight="bold">Compléter les infos</ThemedText>
+          <ThemedText variant="lg" weight="bold">{t('receipt_scanner.complete_info')}</ThemedText>
           <View style={{ width: 28 }} />
         </View>
 
@@ -354,7 +350,6 @@ export default function ReceiptScanner() {
               resizeMode="cover"
             />
             
-            {/* Indicateur de traitement OCR */}
             {isProcessing && ocrProgress && (
               <View style={{ 
                 position: 'absolute', 
@@ -369,7 +364,7 @@ export default function ReceiptScanner() {
               }}>
                 <ActivityIndicator size="large" color="#fff" />
                 <ThemedText style={{ color: '#fff', marginTop: 12, textAlign: 'center' }}>
-                  {ocrProgress.message || 'Analyse du reçu...'}
+                  {ocrProgress.message || t('receipt_scanner.processing')}
                 </ThemedText>
                 {ocrProgress.progress !== undefined && (
                   <View style={{ 
@@ -391,7 +386,6 @@ export default function ReceiptScanner() {
               </View>
             )}
 
-            {/* Bouton agrandir */}
             <View style={{ 
               position: 'absolute', 
               bottom: 8, 
@@ -404,7 +398,7 @@ export default function ReceiptScanner() {
             }}>
               <Ionicons name="expand" size={16} color="#fff" />
               <ThemedText style={{ color: '#fff', fontSize: 12, marginLeft: 4 }}>
-                Agrandir
+                {t('common.expand')}
               </ThemedText>
             </View>
           </TouchableOpacity>
@@ -432,7 +426,9 @@ export default function ReceiptScanner() {
                   } 
                 />
                 <ThemedText variant="sm" weight="semibold" style={{ marginLeft: 8 }}>
-                  {extractedData.confidence > 0.7 ? 'Données extraites avec succès' : 'Données partiellement extraites'}
+                  {extractedData.confidence > 0.7 
+                    ? t('receipt_scanner.extracted_data')
+                    : t('receipt_scanner.partial_data')}
                 </ThemedText>
               </View>
               {extractedData.merchant && (
@@ -442,11 +438,11 @@ export default function ReceiptScanner() {
               )}
               {extractedData.category && (
                 <ThemedText variant="sm" color="mutedForeground">
-                  📂 Catégorie suggérée: {extractedData.category}
+                  📂 {t('receipt_scanner.category_suggested_label')}: {extractedData.category}
                 </ThemedText>
               )}
               <ThemedText variant="xs" color="mutedForeground">
-                Confiance: {Math.round(extractedData.confidence * 100)}%
+                {t('receipt_scanner.confidence_label')}: {Math.round(extractedData.confidence * 100)}%
               </ThemedText>
             </Card>
           )}
@@ -479,7 +475,7 @@ export default function ReceiptScanner() {
                   weight={type === 'expense' ? 'bold' : 'normal'} 
                   style={{ color: type === 'expense' ? theme.financialColors.expense : theme.colors.foreground }}
                 >
-                  Dépense
+                  {t('finance.expense')}
                 </ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
@@ -500,7 +496,7 @@ export default function ReceiptScanner() {
                   weight={type === 'income' ? 'bold' : 'normal'} 
                   style={{ color: type === 'income' ? theme.financialColors.income : theme.colors.foreground }}
                 >
-                  Revenu
+                  {t('finance.income')}
                 </ThemedText>
               </TouchableOpacity>
             </View>
@@ -509,10 +505,10 @@ export default function ReceiptScanner() {
             <View style={{ gap: theme.spacing.md }}>
               <View>
                 <ThemedText style={{ marginBottom: theme.spacing.xs, fontSize: 14 }}>
-                  Titre *
+                  {t('common.title')} *
                 </ThemedText>
                 <TextInput
-                  placeholder="Ex: Supermarché, Essence..."
+                  placeholder={t('receipt_scanner.title_placeholder')}
                   value={title}
                   onChangeText={setTitle}
                   style={{ backgroundColor: theme.colors.muted }}
@@ -521,10 +517,10 @@ export default function ReceiptScanner() {
 
               <View>
                 <ThemedText style={{ marginBottom: theme.spacing.xs, fontSize: 14 }}>
-                  Montant *
+                  {t('finance.amount')} *
                 </ThemedText>
                 <TextInput
-                  placeholder="0.00"
+                  placeholder={t('common.amount_placeholder')}
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="numeric"
@@ -534,7 +530,7 @@ export default function ReceiptScanner() {
 
               <View>
                 <ThemedText style={{ marginBottom: theme.spacing.xs, fontSize: 14 }}>
-                  Date (YYYY-MM-DD)
+                  {t('finance.date')} (YYYY-MM-DD)
                 </ThemedText>
                 <TextInput
                   value={date}
@@ -546,7 +542,7 @@ export default function ReceiptScanner() {
 
               <View>
                 <ThemedText style={{ marginBottom: theme.spacing.xs, fontSize: 14 }}>
-                  Catégorie
+                  {t('finance.category')}
                 </ThemedText>
                 <View style={{ 
                   borderWidth: 1, 
@@ -565,10 +561,10 @@ export default function ReceiptScanner() {
 
               <View>
                 <ThemedText style={{ marginBottom: theme.spacing.xs, fontSize: 14 }}>
-                  Note (optionnelle)
+                  {t('finance.note')} ({t('common.optional')})
                 </ThemedText>
                 <TextInput
-                  placeholder="Informations additionnelles..."
+                  placeholder={t('receipt_scanner.note_placeholder')}
                   value={note}
                   onChangeText={setNote}
                   multiline
@@ -599,7 +595,7 @@ export default function ReceiptScanner() {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="checkmark-circle" size={20} color="#fff" />
               <ThemedText style={{ color: '#fff', fontWeight: 'bold', marginLeft: 8 }}>
-                Créer la transaction
+                {t('receipt_scanner.create_transaction')}
               </ThemedText>
             </View>
           )}

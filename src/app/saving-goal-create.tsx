@@ -21,7 +21,10 @@ import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 
+import { useTranslation } from "react-i18next";
+
 export default function SavingGoalCreate() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();

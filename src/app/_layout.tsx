@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Stack } from "expo-router";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -12,13 +13,17 @@ import { PermissionProvider } from "@/contexts/permission-context";
 import Toast from "react-native-toast-message";
 import { toastConfig } from "@/configs/toast-config";
 import { AppLock } from "@/components/auth/app-lock";
-import Tesseract from "tesseract.js";
+import { AnimatedSplashScreen } from "@/components/animations/AnimatedSplashScreen";
 
-// global.css
+
+// ✅ IMPORTANT: Importer la configuration i18n
+import "@/configs/i18n";
+
 import "@/global.css";
-Tesseract.setLogging(false);
 
 export default function RootLayout() {
+  const [isSplashAnimationDone, setIsSplashAnimationDone] = useState(false);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -28,7 +33,13 @@ export default function RootLayout() {
               <SyncProvider>
                 <PermissionProvider>
                   <NotificationProvider>
-                    {/* AppLock en dehors de MigrationLoader */}
+                    {/* Splash screen animé affiché au démarrage */}
+                    {!isSplashAnimationDone && (
+                      <AnimatedSplashScreen
+                        onAnimationComplete={() => setIsSplashAnimationDone(true)}
+                      />
+                    )}
+
                     <AppLock />
                     <MigrationLoader>
                       <Stack

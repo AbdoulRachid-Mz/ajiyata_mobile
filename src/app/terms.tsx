@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import {
-  View,
   ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -76,177 +75,76 @@ export default function TermsScreen() {
         {/* Date de mise à jour */}
         <Card style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="sm" color="mutedForeground">
-            Dernière mise à jour : 1er janvier 2025
+            Dernière mise à jour : 1er mars 2026
           </ThemedText>
         </Card>
 
-        {/* Introduction */}
+        {/* Objet */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Introduction
+            1. Objet et Acceptation
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Bienvenue sur Ajiya Ta. En utilisant notre application, vous acceptez de vous 
-            conformer aux présentes conditions d'utilisation. Veuillez les lire attentivement 
-            avant d'utiliser nos services.
+            Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation 
+            de l'application mobile **Ajiya Ta**.
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText style={{ lineHeight: 22 }}>
-            Ces conditions s'appliquent à tous les utilisateurs de l'application Ajiya Ta, 
-            qu'ils utilisent l'application en mode hors ligne ou en ligne.
+            L'utilisation de l'application implique l'acceptation sans réserve des présentes CGU par l'utilisateur.
           </ThemedText>
         </Card>
 
-        {/* Acceptation des conditions */}
+        {/* Description du Service */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Acceptation des conditions
+            2. Nature du Service
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            En créant un compte et en utilisant Ajiya Ta, vous acceptez les présentes conditions. 
-            Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser l'application.
-          </ThemedText>
-        </Card>
-
-        {/* Utilisation de l'application */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Utilisation de l'application
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Vous acceptez d'utiliser Ajiya Ta conformément aux règles suivantes :
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            • Fournir des informations exactes et à jour
-            {'\n'}• Utiliser l'application uniquement à des fins personnelles et légitimes
-            {'\n'}• Respecter les lois et règlements en vigueur
-            {'\n'}• Ne pas tenter d'accéder à des comptes non autorisés
-            {'\n'}• Ne pas interférer avec le fonctionnement de l'application
-            {'\n'}• Ne pas utiliser l'application pour des activités illégales
-          </ThemedText>
-        </Card>
-
-        {/* Comptes utilisateur */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Comptes utilisateur
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Vous êtes responsable de :
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            • La sécurité de vos identifiants de connexion
-            {'\n'}• Toutes les activités effectuées sous votre compte
-            {'\n'}• La mise à jour de vos informations personnelles
-            {'\n'}• La sauvegarde de vos données financières
+            Ajiya Ta est un outil de gestion budgétaire et financière personnelle. 
+            L'application permet d'enregistrer des flux financiers, de suivre des budgets et de gérer des comptes.
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText variant="sm" color="mutedForeground">
-            ⚠️ Note : L'application fonctionne en mode "offline-first". Vos données sont 
-            stockées localement sur votre appareil.
+            ⚠️ Ajiya Ta n'est pas un établissement de crédit ni un système de paiement électronique bancaire. L'application constitue un outil d'aide au suivi comptable personnel.
           </ThemedText>
         </Card>
 
-        {/* Données financières */}
+        {/* Engagements de l'Utilisateur */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Données financières
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Ajiya Ta vous permet de gérer vos finances personnelles. Vous reconnaissez que :
+            3. Obligations de l'Utilisateur
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            • Vous êtes responsable de l'exactitude de vos données
-            {'\n'}• L'application fournit des calculs à titre indicatif
-            {'\n'}• Nous ne fournissons pas de conseils financiers professionnels
-            {'\n'}• Vous devez consulter un professionnel pour des décisions financières importantes
+            L'utilisateur s'engage à :
+            {'\n'}• Saisir des données exactes sous sa seule responsabilité.
+            {'\n'}• Ne pas utiliser l'application à des fins frauduleuses ou illégales au regard des lois nigériennes et internationales.
+            {'\n'}• Assurer la confidentialité de ses accès de déverrouillage (code, biométrie).
           </ThemedText>
         </Card>
 
-        {/* Synchronisation et backup */}
+        {/* Responsabilité */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Synchronisation et sauvegarde
+            4. Limitation de Responsabilité
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Ajiya Ta offre des fonctionnalités de synchronisation et de sauvegarde. 
-            Vous êtes responsable de la sauvegarde régulière de vos données. 
-            Bien que nous fassions notre possible pour protéger vos données, 
-            nous ne pouvons garantir une disponibilité ininterrompue.
+            Ajiya Ta fournit des calculs et statistiques à titre strictement indicatif. 
+            Nous ne pourrons être tenus responsables en cas d'erreur de saisie par l'utilisateur, 
+            de perte de données liée à la perte ou à la détérioration de l'appareil mobile, ou d'interruption temporaire du service.
           </ThemedText>
         </Card>
 
-        {/* Propriété intellectuelle */}
+        {/* Loi Applicable et Juridiction */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Propriété intellectuelle
+            5. Droit Applicable et Règlement des Litiges
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            L'application Ajiya Ta, son code source, sa conception, ses fonctionnalités, 
-            et son contenu sont protégés par les lois sur la propriété intellectuelle. 
-            Vous n'êtes pas autorisé à :
+            Les présentes CGU sont régies et interprétées conformément au **Droit de la République du Niger**.
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText style={{ lineHeight: 22 }}>
-            • Copier ou modifier l'application
-            {'\n'}• Décompiler ou désassembler le code
-            {'\n'}• Utiliser l'application à des fins commerciales sans autorisation
-            {'\n'}• Supprimer les mentions de copyright
-          </ThemedText>
-        </Card>
-
-        {/* Limitation de responsabilité */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Limitation de responsabilité
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            Ajiya Ta est fournie "telle quelle", sans garantie d'aucune sorte. 
-            Nous ne sommes pas responsables des dommages directs ou indirects 
-            résultant de l'utilisation de l'application, y compris :
-          </ThemedText>
-          <Spacer height={theme.spacing.sm} />
-          <ThemedText style={{ lineHeight: 22 }}>
-            • Perte de données
-            {'\n'}• Perte financière
-            {'\n'}• Interruption de service
-            {'\n'}• Erreurs de calcul
-          </ThemedText>
-        </Card>
-
-        {/* Résiliation */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Résiliation
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            Vous pouvez cesser d'utiliser l'application à tout moment. 
-            Nous nous réservons le droit de suspendre ou de résilier votre compte 
-            en cas de violation de ces conditions.
-          </ThemedText>
-        </Card>
-
-        {/* Modifications */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Modifications des conditions
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            Nous pouvons modifier ces conditions à tout moment. Les modifications 
-            entrent en vigueur dès leur publication dans l'application. 
-            Votre utilisation continue de l'application constitue votre acceptation 
-            des conditions modifiées.
-          </ThemedText>
-        </Card>
-
-        {/* Loi applicable */}
-        <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
-          <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Loi applicable
-          </ThemedText>
-          <ThemedText style={{ lineHeight: 22 }}>
-            Les présentes conditions sont régies par les lois du Niger. 
-            Tout litige sera soumis aux tribunaux compétents de Niamey.
+            Tout litige relatif à l'interprétation ou à l'exécution des présentes qui ne pourrait être réglé à l'amiable sera soumis à la compétence exclusive des **Tribunaux compétents de Niamey**.
           </ThemedText>
         </Card>
 
@@ -256,8 +154,7 @@ export default function TermsScreen() {
             Contact
           </ThemedText>
           <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Pour toute question concernant ces conditions d'utilisation, 
-            veuillez nous contacter :
+            Pour toute question juridique ou réclamation :
           </ThemedText>
           <TouchableOpacity onPress={handleEmailPress}>
             <ThemedText color="primary" weight="semibold">

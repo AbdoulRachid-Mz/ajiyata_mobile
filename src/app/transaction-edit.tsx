@@ -30,7 +30,10 @@ import {
 // Utilitaires
 import { getCurrentTimestamp } from '@/utils/uuid';
 
+import { useTranslation } from 'react-i18next';
+
 export default function TransactionEdit() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();

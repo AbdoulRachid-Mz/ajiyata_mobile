@@ -1,14 +1,6 @@
 import { db } from "@/db";
 import { accounts, categories, users } from "@/db/schema";
-import {
-  DEFAULT_EXPENSE_CATEGORIES,
-  DEFAULT_INCOME_CATEGORIES,
-  BUSINESS_EXPENSE_CATEGORIES,
-  BUSINESS_INCOME_CATEGORIES,
-  FAMILY_EXPENSE_CATEGORIES,
-  FAMILY_INCOME_CATEGORIES,
-} from "@/features/categories/constants";
-import { Storage } from "@/lib/storage";
+import { getCategoriesForAccountType } from "@/features/categories/constants";
 import type {
   Account,
   Category,
@@ -18,6 +10,7 @@ import type {
   User,
 } from "@/types";
 import { generateUUID, getCurrentTimestamp } from "@/utils/uuid";
+import i18n from "@/configs/i18n";
 
 export type InitializeAccountResult = {
   user: User;
@@ -28,15 +21,19 @@ export type InitializeAccountResult = {
 export async function initializeAccount(
   userName: string,
   accountName: string,
-  phoneNumber: string,  
+  phoneNumber: string,
   accountType: "personal" | "business" | "family",
   currency: string,
   initialBalance: number = 0,
 ): Promise<InitializeAccountResult> {
   const userId = generateUUID();
   const accountId = generateUUID();
+  const deviceId = "temp-device-id";
   const now = getCurrentTimestamp();
-  const deviceId = await Storage.getCurrentDeviceId() || 'temp-device-id';
+
+  // Utiliser la fonction de traduction i18n
+  const t = i18n.t.bind(i18n);
+
   console.log('Initializing account for:', userName, 'Account:', accountName, 'Initial balance:', initialBalance);
 
   try {
@@ -44,7 +41,7 @@ export async function initializeAccount(
     const userData: NewUser = {
       id: userId,
       name: userName,
-      phoneNumber: phoneNumber.trim(),
+      phoneNumber: phoneNumber,
       defaultCurrency: currency,
       accountType: accountType,
       createdAt: now,
@@ -57,7 +54,6 @@ export async function initializeAccount(
       isSynced: false,
     };
 
-    // Insert user and get back the inserted record
     const userResult = await db.insert(users).values(userData).returning();
     const insertedUser = userResult[0];
 
@@ -82,7 +78,6 @@ export async function initializeAccount(
     };
 
     console.log('Inserting account...');
-    // Insert account and get back the inserted record
     const accountResult = await db
       .insert(accounts)
       .values(accountData)
@@ -91,30 +86,18 @@ export async function initializeAccount(
 
     if (!insertedAccount) throw new Error("Failed to insert account");
 
-    // Create default categories
-    let allDefaultCategories: any[] = [];
-    if (accountType === "business") {
-      allDefaultCategories = [
-        ...BUSINESS_INCOME_CATEGORIES,
-        ...BUSINESS_EXPENSE_CATEGORIES,
-      ];
-    } else if (accountType === "family") {
-      allDefaultCategories = [
-        ...FAMILY_INCOME_CATEGORIES,
-        ...FAMILY_EXPENSE_CATEGORIES,
-      ];
-    } else {
-      allDefaultCategories = [
-        ...DEFAULT_INCOME_CATEGORIES,
-        ...DEFAULT_EXPENSE_CATEGORIES,
-      ];
-    }
-
+    // Create default categories with translations
+    const defaultCategories = getCategoriesForAccountType(accountType, t);
+    
     console.log('Creating categories...');
-    const newCategories: NewCategory[] = allDefaultCategories.map((cat) => ({
+    const newCategories: NewCategory[] = defaultCategories.map((cat) => ({
       id: generateUUID(),
       accountId: accountId,
-      ...cat,
+      name: cat.name, // Déjà traduit par getCategoriesForAccountType
+      type: cat.type,
+      color: cat.color,
+      icon: cat.icon,
+      isDefault: true,
       createdAt: now,
       updatedAt: now,
       deviceId,
@@ -123,7 +106,6 @@ export async function initializeAccount(
       metadata: {},
     }));
 
-    // Insert categories and get back the inserted records
     const insertedCategories = await db
       .insert(categories)
       .values(newCategories)

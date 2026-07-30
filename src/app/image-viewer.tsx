@@ -1,3 +1,5 @@
+// src/app/image-viewer.tsx
+
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -26,6 +28,7 @@ import {
   GestureDetector,
   Gesture,
 } from 'react-native-gesture-handler';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/contexts/theme-context';
 import SafeAreaView from '@/components/ui/safe-area-view';
@@ -48,6 +51,7 @@ if (!isExpoGo) {
 }
 
 export default function ImageViewer() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { uri, title } = useLocalSearchParams<{
@@ -173,7 +177,7 @@ export default function ImageViewer() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `📸 Image partagée depuis Ajiya Ta${title ? ` - ${title}` : ''}`,
+        message: t('image_viewer.share_message', { title: title || t('image_viewer.image') }),
         url: uri,
       });
     } catch (error) {
@@ -259,7 +263,7 @@ export default function ImageViewer() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <ThemedText style={{ marginTop: 12 }} color="mutedForeground">
-              Chargement de l'image...
+              {t('common.loading')}
             </ThemedText>
           </View>
         )}
@@ -304,7 +308,9 @@ export default function ImageViewer() {
                   ) : (
                     <>
                       <Ionicons name="download-outline" size={20} color="#fff" />
-                      <ThemedText style={styles.footerButtonText}>Télécharger</ThemedText>
+                      <ThemedText style={styles.footerButtonText}>
+                        {t('image_viewer.download')}
+                      </ThemedText>
                     </>
                   )}
                 </TouchableOpacity>
@@ -314,14 +320,16 @@ export default function ImageViewer() {
                   onPress={handleShare}
                 >
                   <Ionicons name="share-outline" size={20} color="#fff" />
-                  <ThemedText style={styles.footerButtonText}>Partager</ThemedText>
+                  <ThemedText style={styles.footerButtonText}>
+                    {t('image_viewer.share')}
+                  </ThemedText>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.footerInfo}>
                 <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.6)" />
                 <ThemedText style={styles.footerInfoText}>
-                  Pinch pour zoomer • Double tap pour agrandir
+                  {t('image_viewer.zoom_hint')}
                 </ThemedText>
               </View>
             </Animated.View>

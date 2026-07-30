@@ -1,3 +1,5 @@
+// src/app/(tabs)/settings.tsx
+
 import Button from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import Drawer from "@/components/ui/drawer";
@@ -30,6 +32,9 @@ import {
   View,
 } from "react-native";
 
+// Ajouter l'import du LanguageSelector
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
+
 // Importer conditionnellement expo-notifications uniquement si ce n'est pas Expo Go
 const isExpoGo = Constants.appOwnership === "expo";
 let Notifications: any = null;
@@ -43,7 +48,10 @@ if (!isExpoGo) {
   }
 }
 
+import { useTranslation } from "react-i18next";
+
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const { theme, isDark, toggleTheme } = useTheme();
   const router = useRouter();
   const {
@@ -56,6 +64,8 @@ export default function SettingsScreen() {
     reminderEnabled,
     setReminderEnabled,
     reminderTime,
+    lockTimeoutMinutes,
+    setLockTimeoutMinutes,
     setReminderTime,
   } = useAppStore();
   const {
@@ -79,7 +89,6 @@ export default function SettingsScreen() {
   } = useSync();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [isLockTimeoutPickerOpen, setIsLockTimeoutPickerOpen] = useState(false);
-  const [lockTimeoutMinutes, setLockTimeoutMinutes] = useState(5);
 
   useEffect(() => {
     const checkBiometrics = async () => {
@@ -108,7 +117,6 @@ export default function SettingsScreen() {
   // States for modals and editing
   const [isCountryPickerOpen, setIsCountryPickerOpen] = useState(false);
   const [isCurrencyPickerOpen, setIsCurrencyPickerOpen] = useState(false);
-  const [isLanguagePickerOpen, setIsLanguagePickerOpen] = useState(false);
   const [isAccountTypePickerOpen, setIsAccountTypePickerOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
@@ -125,9 +133,6 @@ export default function SettingsScreen() {
   const [selectedCountry, setSelectedCountry] = useState<Country>(
     getDefaultCountry(currentUser?.country || "NE"),
   );
-  const [selectedLanguage, setSelectedLanguage] = useState(
-    currentUser?.language || "fr",
-  );
   const [selectedCurrency, setSelectedCurrency] = useState(
     currentUser?.defaultCurrency || "XOF",
   );
@@ -139,8 +144,7 @@ export default function SettingsScreen() {
     if (currentUser) {
       setEditingName(currentUser.name || "");
       setEditingPhone(currentUser.phoneNumber || "");
-      setSelectedCountry(getDefaultCountry(currentUser.country || "NE"));
-      setSelectedLanguage(currentUser.language || "fr");
+      setSelectedCountry(getDefaultCountry(currentUser?.country || "NE"));
       setSelectedCurrency(currentUser.defaultCurrency || "XOF");
     }
   }, [currentUser]);
@@ -159,11 +163,13 @@ export default function SettingsScreen() {
         name: editingName,
         phoneNumber: editingPhone,
         country: selectedCountry.code,
-        language: selectedLanguage,
         defaultCurrency: selectedCurrency,
       },
     });
-    Alert.alert("Succès", "Vos informations ont été mises à jour !");
+    Alert.alert(
+      t("common.success"),
+      t("settings.profile_updated"),
+    );
   };
 
   const handleSaveAccountType = async () => {
@@ -175,7 +181,7 @@ export default function SettingsScreen() {
       },
     });
     setIsAccountTypePickerOpen(false);
-    Alert.alert("Succès", "Type de compte mis à jour !");
+    Alert.alert(t("common.success"), t("settings.account_type_updated"));
   };
 
   const handleLogout = async () => {
@@ -192,17 +198,17 @@ export default function SettingsScreen() {
       !deleteOptions.cloud &&
       !deleteOptions.account
     ) {
-      Alert.alert("Erreur", "Veuillez sélectionner au moins une option.");
+      Alert.alert(t("common.error"), t("settings.delete_select_one"));
       return;
     }
 
     Alert.alert(
-      "Confirmation de suppression",
-      "Êtes-vous sûr de vouloir continuer ? Cette action est irréversible.",
+      t("settings.delete_confirm_title"),
+      t("settings.delete_confirm_message"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             setIsDeleteModalOpen(false);
@@ -223,15 +229,9 @@ export default function SettingsScreen() {
               }
 
               setDeleteOptions({ local: false, cloud: false, account: false });
-              Alert.alert(
-                "Succès",
-                "Les données sélectionnées ont été supprimées.",
-              );
+              Alert.alert(t("common.success"), t("settings.delete_success"));
             } catch (error) {
-              Alert.alert(
-                "Erreur",
-                "Une erreur est survenue lors de la suppression.",
-              );
+              Alert.alert(t("common.error"), t("settings.delete_error"));
             }
           },
         },
@@ -241,18 +241,18 @@ export default function SettingsScreen() {
 
   const handleBackup = async () => {
     Alert.alert(
-      "Sauvegarder les données",
-      "Êtes-vous sûr de vouloir sauvegarder vos données en ligne ?",
+      t("settings.backup_title"),
+      t("settings.backup_message"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Sauvegarder",
+          text: t("settings.backup_confirm"),
           onPress: async () => {
             const result = await backupToCloud();
             if (result.success) {
-              Alert.alert("Succès", result.message);
+              Alert.alert(t("common.success"), result.message);
             } else {
-              Alert.alert("Erreur", result.message);
+              Alert.alert(t("common.error"), result.message);
             }
           },
         },
@@ -262,19 +262,19 @@ export default function SettingsScreen() {
 
   const handleRestore = async () => {
     Alert.alert(
-      "Restaurer les données",
-      "Attention : Cette action remplacera toutes vos données locales par celles sauvegardées en ligne. Êtes-vous sûr ?",
+      t("settings.restore_title"),
+      t("settings.restore_message"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Restaurer",
+          text: t("settings.restore_confirm"),
           style: "destructive",
           onPress: async () => {
             const result = await restoreFromCloud();
             if (result.success) {
-              Alert.alert("Succès", result.message);
+              Alert.alert(t("common.success"), result.message);
             } else {
-              Alert.alert("Erreur", result.message);
+              Alert.alert(t("common.error"), result.message);
             }
           },
         },
@@ -283,46 +283,41 @@ export default function SettingsScreen() {
   };
 
   const languages = [
-    { code: "fr", name: "Français" },
-    { code: "en", name: "Anglais" },
-    { code: "ha", name: "Haoussa" },
+    { code: "fr", name: t("language.french") || "Français" },
+    { code: "en", name: t("language.english") || "English" },
+    { code: "ha", name: t("language.hausa") || "Hausa" },
+    { code: "zrm", name: t("language.zarma") || "Zarma" },
+    { code: "ar", name: t("language.arabic") || "العربية" },
   ];
 
   const currencies = ["XOF", "EUR", "USD", "GBP", "CAD"];
 
   const accountTypes = [
-    { type: "personal" as const, label: "Personnel", icon: "person-outline" },
-    {
-      type: "business" as const,
-      label: "Professionnel",
-      icon: "briefcase-outline",
-    },
-    { type: "family" as const, label: "Famille", icon: "home-outline" },
+    { type: "personal" as const, label: t("settings.personal"), icon: "person-outline" },
+    { type: "business" as const, label: t("settings.business"), icon: "briefcase-outline" },
+    { type: "family" as const, label: t("settings.family"), icon: "home-outline" },
   ];
 
   // Fonction pour gérer les permissions de notifications
   const handleNotificationPermission = async (value: boolean) => {
-    // Si on désactive, on continue
     if (!value) {
       setReminderEnabled(value);
       return;
     }
 
-    // Si on active, vérifier les permissions
     if (isExpoGo) {
       Alert.alert(
-        "⚠️ Non disponible",
-        "Les notifications ne sont pas disponibles dans Expo Go. Utilisez un build de développement.",
+        t("common.not_available"),
+        t("notifications.expo_go_warning"),
       );
       return;
     }
 
     try {
-      // Vérifier si Notifications est disponible
       if (!Notifications) {
         Alert.alert(
-          "⚠️ Non disponible",
-          "Les notifications ne sont pas disponibles sur cet appareil.",
+          t("common.not_available"),
+          t("common.not_available"),
         );
         return;
       }
@@ -333,8 +328,8 @@ export default function SettingsScreen() {
           await Notifications.requestPermissionsAsync();
         if (newStatus !== "granted") {
           Alert.alert(
-            "Permission refusée",
-            "Veuillez autoriser les notifications dans les paramètres de votre appareil.",
+            t("common.error"),
+            t("settings.permission_denied"),
           );
           return;
         }
@@ -342,7 +337,7 @@ export default function SettingsScreen() {
       setReminderEnabled(value);
     } catch (error) {
       console.error("Erreur de permission:", error);
-      Alert.alert("Erreur", "Impossible de vérifier les permissions.");
+      Alert.alert(t("common.error"), t("common.error"));
     }
   };
 
@@ -364,7 +359,7 @@ export default function SettingsScreen() {
           }}
         >
           <ThemedText variant="2xl" weight="bold">
-            Paramètres
+            {t("settings.title")}
           </ThemedText>
         </ThemedView>
 
@@ -377,7 +372,7 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.sm }}
           >
-            Sauvegarde et synchronisation
+            {t("settings.sync")}
           </ThemedText>
 
           {isAuthenticated ? (
@@ -395,7 +390,7 @@ export default function SettingsScreen() {
                   color={theme.financialColors.income}
                   style={{ marginRight: 8 }}
                 />
-                <ThemedText>Connecté à votre compte</ThemedText>
+                <ThemedText>{t("settings.cloud_connected")}</ThemedText>
               </View>
 
               <ThemedText
@@ -412,7 +407,7 @@ export default function SettingsScreen() {
                   color="mutedForeground"
                   style={{ marginBottom: theme.spacing.md }}
                 >
-                  Dernière sauvegarde :{" "}
+                  {t("settings.last_backup")} :{" "}
                   {new Date(lastBackupDate).toLocaleDateString("fr-FR")}
                 </ThemedText>
               )}
@@ -423,7 +418,7 @@ export default function SettingsScreen() {
                   color="mutedForeground"
                   style={{ marginBottom: theme.spacing.md }}
                 >
-                  Dernière restauration :{" "}
+                  {t("settings.last_restore")} :{" "}
                   {new Date(lastRestoreDate).toLocaleDateString("fr-FR")}
                 </ThemedText>
               )}
@@ -448,7 +443,9 @@ export default function SettingsScreen() {
                         color="white"
                         style={{ marginRight: 8 }}
                       />
-                      <ThemedText>Sauvegarde en cours...</ThemedText>
+                      <ThemedText style={{ color: "white" }}>
+                        {t("common.loading")}
+                      </ThemedText>
                     </>
                   ) : (
                     <>
@@ -459,7 +456,7 @@ export default function SettingsScreen() {
                         style={{ marginRight: 8 }}
                       />
                       <ThemedText style={{ color: "white" }}>
-                        Sauvegarder dans le cloud
+                        {t("settings.sync_now")}
                       </ThemedText>
                     </>
                   )}
@@ -482,7 +479,7 @@ export default function SettingsScreen() {
                       style={{ marginRight: 8 }}
                     />
                     <ThemedText style={{ color: "white" }}>
-                      Restaurer depuis le cloud
+                      {t("settings.restore")}
                     </ThemedText>
                   </Button>
                 )}
@@ -503,21 +500,20 @@ export default function SettingsScreen() {
                   color={theme.financialColors.expense}
                   style={{ marginRight: 8 }}
                 />
-                <ThemedText>Mode hors-ligne</ThemedText>
+                <ThemedText>{t("settings.offline_mode")}</ThemedText>
               </View>
               <ThemedText
                 variant="sm"
                 color="mutedForeground"
                 style={{ marginBottom: theme.spacing.md }}
               >
-                Vos données sont stockées localement. Connectez-vous pour les
-                sauvegarder en ligne.
+                {t("settings.offline_description")}
               </ThemedText>
               <Button
                 variant="default"
                 onPress={() => router.push("/auth/login")}
               >
-                Se connecter pour sauvegarder
+                {t("auth.login")}
               </Button>
             </View>
           )}
@@ -532,11 +528,11 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Profil
+            {t("settings.profile")}
           </ThemedText>
 
           <TextInput
-            label="Nom complet"
+            label={t("settings.name")}
             value={editingName}
             onChangeText={setEditingName}
             style={{ marginBottom: theme.spacing.sm }}
@@ -550,7 +546,7 @@ export default function SettingsScreen() {
           />
 
           <TextInput
-            label="Numéro de téléphone"
+            label={t("settings.phone")}
             value={editingPhone}
             onChangeText={setEditingPhone}
             keyboardType="phone-pad"
@@ -588,7 +584,7 @@ export default function SettingsScreen() {
                 size={20}
                 color={theme.colors.mutedForeground}
               />
-              <ThemedText>Pays</ThemedText>
+              <ThemedText>{t("settings.country")}</ThemedText>
             </View>
             <View
               style={{
@@ -600,50 +596,6 @@ export default function SettingsScreen() {
               <ThemedText>{selectedCountry.flag}</ThemedText>
               <ThemedText color="mutedForeground">
                 {selectedCountry.name}
-              </ThemedText>
-              <Ionicons
-                name="chevron-forward-outline"
-                size={18}
-                color={theme.colors.mutedForeground}
-              />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setIsLanguagePickerOpen(true)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingVertical: theme.spacing.sm,
-              marginBottom: theme.spacing.md,
-              borderBottomWidth: 1,
-              borderBottomColor: theme.colors.border,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: theme.spacing.sm,
-              }}
-            >
-              <Ionicons
-                name="language-outline"
-                size={20}
-                color={theme.colors.mutedForeground}
-              />
-              <ThemedText>Langue</ThemedText>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: theme.spacing.sm,
-              }}
-            >
-              <ThemedText color="mutedForeground">
-                {languages.find((l) => l.code === selectedLanguage)?.name}
               </ThemedText>
               <Ionicons
                 name="chevron-forward-outline"
@@ -675,7 +627,7 @@ export default function SettingsScreen() {
                 size={20}
                 color={theme.colors.mutedForeground}
               />
-              <ThemedText>Devise par défaut</ThemedText>
+              <ThemedText>{t("settings.currency")}</ThemedText>
             </View>
             <View
               style={{
@@ -697,8 +649,8 @@ export default function SettingsScreen() {
 
           <Button onPress={handleSaveProfile} disabled={updateUser.isPending}>
             {updateUser.isPending
-              ? "Enregistrement..."
-              : "Enregistrer les modifications"}
+              ? t("common.loading")
+              : t("settings.save_profile")}
           </Button>
         </Card>
 
@@ -708,7 +660,7 @@ export default function SettingsScreen() {
           weight="semibold"
           style={{ marginBottom: theme.spacing.md }}
         >
-          Compte
+          {t("settings.account_type")}
         </ThemedText>
         <Card
           style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
@@ -737,7 +689,7 @@ export default function SettingsScreen() {
                 size={20}
                 color={theme.colors.mutedForeground}
               />
-              <ThemedText>Type de compte</ThemedText>
+              <ThemedText>{t("settings.account_type")}</ThemedText>
             </View>
             <View
               style={{
@@ -748,10 +700,10 @@ export default function SettingsScreen() {
             >
               <ThemedText color="mutedForeground">
                 {currentAccount?.type === "personal"
-                  ? "Personnel"
+                  ? t("settings.personal")
                   : currentAccount?.type === "business"
-                    ? "Professionnel"
-                    : "Famille"}
+                    ? t("settings.business")
+                    : t("settings.family")}
               </ThemedText>
               <Ionicons
                 name="chevron-forward-outline"
@@ -768,7 +720,7 @@ export default function SettingsScreen() {
           weight="semibold"
           style={{ marginBottom: theme.spacing.md }}
         >
-          Préférences
+          {t("settings.preferences") || "Préférences"}
         </ThemedText>
         <Card
           style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
@@ -793,7 +745,7 @@ export default function SettingsScreen() {
                 size={20}
                 color={theme.colors.foreground}
               />
-              <ThemedText>Mode sombre</ThemedText>
+              <ThemedText>{t("settings.dark_mode")}</ThemedText>
             </View>
             <Switch
               value={isDark}
@@ -805,6 +757,9 @@ export default function SettingsScreen() {
             />
           </View>
 
+          {/* Language Selector */}
+          <LanguageSelector />
+
           {biometricAvailable && (
             <>
               <View
@@ -812,6 +767,7 @@ export default function SettingsScreen() {
                   flexDirection: "row",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  marginTop: theme.spacing.md,
                 }}
               >
                 <View
@@ -826,7 +782,7 @@ export default function SettingsScreen() {
                     size={20}
                     color={theme.colors.foreground}
                   />
-                  <ThemedText>Authentification biométrique</ThemedText>
+                  <ThemedText>{t("settings.biometric")}</ThemedText>
                 </View>
                 <Switch
                   value={isBiometricEnabled}
@@ -835,8 +791,8 @@ export default function SettingsScreen() {
                       const success = await enableBiometric();
                       if (!success) {
                         Alert.alert(
-                          "Erreur",
-                          "Authentification biométrique échouée.",
+                          t("common.error"),
+                          t("auth.biometric_failed"),
                         );
                       }
                     } else {
@@ -853,7 +809,6 @@ export default function SettingsScreen() {
 
               {isBiometricEnabled && (
                 <>
-                  {/* Switch to enable/disable app lock */}
                   <View
                     style={{
                       flexDirection: "row",
@@ -874,22 +829,12 @@ export default function SettingsScreen() {
                         size={20}
                         color={theme.colors.foreground}
                       />
-                      <ThemedText>Activer le verrouillage</ThemedText>
+                      <ThemedText>{t("settings.app_lock")}</ThemedText>
                     </View>
                     <Switch
                       value={isAppLockEnabled}
                       onValueChange={(value) => {
-                        console.log("📱 Settings - AppLock toggled:", value);
                         setAppLockEnabled(value);
-                        // Force re-render of the store
-                        setTimeout(() => {
-                          const current =
-                            useAppStore.getState().isAppLockEnabled;
-                          console.log(
-                            "📱 Settings - AppLock value after update:",
-                            current,
-                          );
-                        }, 100);
                       }}
                       trackColor={{
                         false: theme.colors.border,
@@ -897,7 +842,7 @@ export default function SettingsScreen() {
                       }}
                     />
                   </View>
-                  {/* Lock timeout selector - only show when app lock is enabled */}
+
                   {isAppLockEnabled && (
                     <View
                       style={{
@@ -919,7 +864,7 @@ export default function SettingsScreen() {
                           size={20}
                           color={theme.colors.foreground}
                         />
-                        <ThemedText>Verrouiller après</ThemedText>
+                        <ThemedText>{t("settings.lock_timeout")}</ThemedText>
                       </View>
                       <TouchableOpacity
                         onPress={() => setIsLockTimeoutPickerOpen(true)}
@@ -937,7 +882,7 @@ export default function SettingsScreen() {
                           weight="bold"
                           style={{ color: theme.colors.primary, fontSize: 16 }}
                         >
-                          {lockTimeoutMinutes} min
+                          {lockTimeoutMinutes} {t("settings.minutes")}
                         </ThemedText>
                         <Ionicons
                           name="chevron-down"
@@ -948,18 +893,12 @@ export default function SettingsScreen() {
                     </View>
                   )}
 
-                  {/* Time picker for lock timeout */}
                   <TimePicker
                     visible={isLockTimeoutPickerOpen}
                     value={`${String(lockTimeoutMinutes).padStart(2, "0")}:00`}
                     onConfirm={(time) => {
                       const minutes = parseInt(time.split(":")[0], 10);
                       if (!isNaN(minutes) && minutes > 0) {
-                        console.log(
-                          "📱 Settings - Setting lockTimeoutMinutes to:",
-                          minutes,
-                        );
-                        // Utiliser la fonction du store directement
                         setLockTimeoutMinutes(minutes);
                       }
                       setIsLockTimeoutPickerOpen(false);
@@ -978,7 +917,7 @@ export default function SettingsScreen() {
           weight="semibold"
           style={{ marginBottom: theme.spacing.md }}
         >
-          Rappels quotidiens
+          {t("settings.reminders")}
         </ThemedText>
         <Card
           style={{ marginBottom: theme.spacing.lg, padding: theme.spacing.md }}
@@ -1003,7 +942,7 @@ export default function SettingsScreen() {
                 size={20}
                 color={theme.colors.foreground}
               />
-              <ThemedText>Activer les rappels</ThemedText>
+              <ThemedText>{t("settings.reminders")}</ThemedText>
             </View>
             <Switch
               value={reminderEnabled}
@@ -1040,7 +979,7 @@ export default function SettingsScreen() {
                   size={20}
                   color={theme.colors.foreground}
                 />
-                <ThemedText>Heure du rappel</ThemedText>
+                <ThemedText>{t("settings.reminder_time")}</ThemedText>
               </View>
               <View
                 style={{
@@ -1063,40 +1002,40 @@ export default function SettingsScreen() {
               </View>
             </TouchableOpacity>
           )}
+
           <TimePicker
             visible={isTimePickerOpen}
-            value={reminderTime}
+            value={reminderTime || "09:00"}
             onConfirm={(time) => {
               setReminderTime(time);
               setIsTimePickerOpen(false);
             }}
             onClose={() => setIsTimePickerOpen(false)}
           />
-          {/* Dans la section des rappels, après le sélecteur d'heure */}
+
           {reminderEnabled && (
             <Button
               variant="outline"
               size="sm"
               onPress={async () => {
-                // Get notification service directly
                 const { notificationService, isExpoGo } =
                   await import("@/configs/notifications");
                 if (isExpoGo) {
                   Alert.alert(
-                    "⚠️ Non disponible",
-                    "Les notifications ne sont pas disponibles dans Expo Go.",
+                    t("common.not_available"),
+                    t("notifications.expo_go_warning"),
                   );
                   return;
                 }
                 await notificationService.sendNotification({
-                  title: "🔔 Test de rappel",
-                  body: "Cette notification fonctionne correctement !",
+                  title: t("notifications.test.title"),
+                  body: t("notifications.test.body"),
                   data: { type: "test" },
                 });
               }}
               style={{ marginTop: theme.spacing.sm }}
             >
-              Tester la notification
+              {t("settings.test_notification")}
             </Button>
           )}
         </Card>
@@ -1110,14 +1049,14 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Exporter les données
+            {t("settings.export")}
           </ThemedText>
           <ThemedText
             variant="sm"
             color="mutedForeground"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Exporter vos données et votre compte
+            {t("settings.export_description") || "Exporter vos données et votre compte"}
           </ThemedText>
           <Button
             style={{
@@ -1131,16 +1070,16 @@ export default function SettingsScreen() {
             <Ionicons
               name="download-outline"
               size={20}
-              color={theme.colors.foreground}
+              color={theme.colors.primaryForeground}
             />
             <ThemedText
               style={{
                 marginLeft: theme.spacing.sm,
                 fontWeight: "600",
-                color: theme.colors.foreground,
+                color: theme.colors.primaryForeground,
               }}
             >
-              Exporter les données
+              {t("settings.export")}
             </ThemedText>
           </Button>
         </Card>
@@ -1154,14 +1093,14 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Supprimer les données
+            {t("settings.delete_data")}
           </ThemedText>
           <ThemedText
             variant="sm"
             color="mutedForeground"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Gérer vos données et votre compte
+            {t("settings.delete_description") || "Gérer vos données et votre compte"}
           </ThemedText>
           <Button
             variant="destructive"
@@ -1172,14 +1111,14 @@ export default function SettingsScreen() {
               size={20}
               style={{ marginRight: 8 }}
             />
-            Supprimer les données
+            {t("settings.delete_data")}
           </Button>
         </Card>
 
         {/* Logout */}
         {isAuthenticated && (
           <Button variant="destructive" onPress={handleLogout}>
-            Déconnexion
+            {t("auth.logout")}
           </Button>
         )}
       </ScrollView>
@@ -1195,7 +1134,7 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Choisir un pays
+            {t("settings.country")}
           </ThemedText>
           <ScrollView style={{ maxHeight: 400 }}>
             {countries.map((country) => (
@@ -1236,7 +1175,7 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Choisir une devise
+            {t("settings.currency")}
           </ThemedText>
           {currencies.map((currency) => (
             <TouchableOpacity
@@ -1259,40 +1198,6 @@ export default function SettingsScreen() {
         </ThemedView>
       </Drawer>
 
-      {/* Language Picker Drawer */}
-      <Drawer
-        visible={isLanguagePickerOpen}
-        onClose={() => setIsLanguagePickerOpen(false)}
-      >
-        <ThemedView style={{ padding: theme.spacing.lg }}>
-          <ThemedText
-            variant="lg"
-            weight="bold"
-            style={{ marginBottom: theme.spacing.md }}
-          >
-            Choisir une langue
-          </ThemedText>
-          {languages.map((language) => (
-            <TouchableOpacity
-              key={language.code}
-              onPress={() => {
-                setSelectedLanguage(language.code);
-                setIsLanguagePickerOpen(false);
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: theme.spacing.sm,
-                borderBottomWidth: 1,
-                borderBottomColor: theme.colors.border,
-              }}
-            >
-              <ThemedText>{language.name}</ThemedText>
-            </TouchableOpacity>
-          ))}
-        </ThemedView>
-      </Drawer>
-
       {/* Account Type Picker Drawer */}
       <Drawer
         visible={isAccountTypePickerOpen}
@@ -1304,7 +1209,7 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Choisir le type de compte
+            {t("settings.account_type")}
           </ThemedText>
           {accountTypes.map(({ type, label, icon }) => (
             <TouchableOpacity
@@ -1332,7 +1237,7 @@ export default function SettingsScreen() {
             onPress={handleSaveAccountType}
             disabled={updateAccount.isPending}
           >
-            {updateAccount.isPending ? "Enregistrement..." : "Enregistrer"}
+            {updateAccount.isPending ? t("common.loading") : t("common.save")}
           </Button>
         </ThemedView>
       </Drawer>
@@ -1351,7 +1256,7 @@ export default function SettingsScreen() {
             weight="bold"
             style={{ marginBottom: theme.spacing.lg }}
           >
-            Supprimer les données
+            {t("settings.delete_data")}
           </ThemedText>
 
           <TouchableOpacity
@@ -1380,9 +1285,9 @@ export default function SettingsScreen() {
                 color={theme.colors.foreground}
               />
               <View>
-                <ThemedText>Données locales</ThemedText>
+                <ThemedText>{t("settings.delete_local")}</ThemedText>
                 <ThemedText variant="sm" color="mutedForeground">
-                  Supprime les données stockées sur cet appareil
+                  {t("settings.delete_local_desc") || "Supprime les données stockées sur cet appareil"}
                 </ThemedText>
               </View>
             </View>
@@ -1435,9 +1340,9 @@ export default function SettingsScreen() {
                   color={theme.colors.foreground}
                 />
                 <View>
-                  <ThemedText>Données cloud</ThemedText>
+                  <ThemedText>{t("settings.delete_cloud")}</ThemedText>
                   <ThemedText variant="sm" color="mutedForeground">
-                    Supprime les données sauvegardées en ligne
+                    {t("settings.delete_cloud_desc") || "Supprime les données sauvegardées en ligne"}
                   </ThemedText>
                 </View>
               </View>
@@ -1492,9 +1397,9 @@ export default function SettingsScreen() {
                   color={theme.colors.foreground}
                 />
                 <View>
-                  <ThemedText>Compte utilisateur</ThemedText>
+                  <ThemedText>{t("settings.delete_account")}</ThemedText>
                   <ThemedText variant="sm" color="mutedForeground">
-                    Déconnecte et supprime votre session
+                    {t("settings.delete_account_desc") || "Déconnecte et supprime votre session"}
                   </ThemedText>
                 </View>
               </View>
@@ -1523,7 +1428,7 @@ export default function SettingsScreen() {
 
           <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
             <Button variant="destructive" onPress={handleDeleteData}>
-              Confirmer la suppression
+              {t("common.confirm")}
             </Button>
             <Button
               variant="secondary"
@@ -1536,7 +1441,7 @@ export default function SettingsScreen() {
                 });
               }}
             >
-              Annuler
+              {t("common.cancel")}
             </Button>
           </View>
         </ThemedView>

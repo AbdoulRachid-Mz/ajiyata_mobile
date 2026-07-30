@@ -1,3 +1,5 @@
+// src/app/onboarding-config.tsx
+
 import { useTheme } from "@/contexts/theme-context";
 import { initializeAccount } from "@/features/accounts/services";
 import { useAppStore } from "@/stores/app-store";
@@ -5,6 +7,12 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// i18n
+import { useTranslation } from "react-i18next";
+
+// Ajouter l'import du LanguageSelector
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 
 // Composants UI
 import Button from "@/components/ui/button";
@@ -18,13 +26,16 @@ import { ScrollView } from "@/components/ui";
 
 export default function OnboardingConfig() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { setCurrentUser, setCurrentAccount } = useAppStore();
 
   const [step, setStep] = useState(0);
   const [userName, setUserName] = useState("");
   const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState<"personal" | "business" | "family">("personal");
+  const [accountType, setAccountType] = useState<
+    "personal" | "business" | "family"
+  >("personal");
   const [phoneNumber, setPhoneNumber] = useState<string | number>(
     "+22796021553",
   );
@@ -33,10 +44,10 @@ export default function OnboardingConfig() {
   const [loading, setLoading] = useState(false);
 
   const steps = [
-    { title: "Votre identité", icon: "person-outline" },
-    { title: "Votre compte", icon: "business-outline" },
-    { title: "Balance initiale", icon: "wallet-outline" },
-    { title: "Devise", icon: "cash-outline" },
+    { title: t('onboarding_config.step_identity'), icon: "person-outline" },
+    { title: t('onboarding_config.step_account'), icon: "business-outline" },
+    { title: t('onboarding_config.step_balance'), icon: "wallet-outline" },
+    { title: t('onboarding_config.step_currency'), icon: "cash-outline" },
   ];
 
   const handleNext = () => {
@@ -62,7 +73,6 @@ export default function OnboardingConfig() {
       );
       setCurrentUser(user);
       setCurrentAccount(account);
-      // Marquer l'onboarding comme terminé pour ne plus le revoir
       await AsyncStorage.setItem("hasCompletedOnboarding", "true");
       router.replace("/(tabs)/dashboard");
     } catch (error) {
@@ -78,13 +88,13 @@ export default function OnboardingConfig() {
         return (
           <View style={{ gap: theme.spacing.lg }}>
             <ThemedText variant="lg" weight="semibold">
-              Comment voulez-vous qu'on vous appelle ?
+              {t('onboarding_config.whats_your_name')}
             </ThemedText>
             <TextInput
-              placeholder="Entrez votre nom"
+              placeholder={t('onboarding_config.name_placeholder')}
               value={userName}
               onChangeText={setUserName}
-              label="Nom complet"
+              label={t('auth.full_name')}
               leftIcon={
                 <Ionicons
                   name="person-outline"
@@ -94,10 +104,10 @@ export default function OnboardingConfig() {
               }
             />
             <TextInput
-              placeholder="Entrez votre numéro de téléphone"
+              placeholder={t('onboarding_config.phone_placeholder')}
               value={phoneNumber.toString() || ""}
               onChangeText={setPhoneNumber}
-              label="Numéro de téléphone"
+              label={t('settings.phone')}
               keyboardType="phone-pad"
               leftIcon={
                 <Ionicons
@@ -107,9 +117,21 @@ export default function OnboardingConfig() {
                 />
               }
             />
+            {/* Sélecteur de langue dans l'onboarding */}
+            <View style={{ marginTop: theme.spacing.sm }}>
+              <ThemedText
+                variant="sm"
+                weight="medium"
+                style={{ marginBottom: theme.spacing.xs }}
+              >
+                {t('settings.language')}
+              </ThemedText>
+              <LanguageSelector />
+            </View>
+            
             <Spacer height={theme.spacing.sm} />
             <ThemedText variant="sm" color="mutedForeground">
-              C'est le nom qui apparaîtra sur votre profil
+              {t('onboarding_config.name_hint')}
             </ThemedText>
           </View>
         );
@@ -118,13 +140,13 @@ export default function OnboardingConfig() {
         return (
           <View style={{ gap: theme.spacing.lg }}>
             <ThemedText variant="lg" weight="semibold">
-              Choisissez un nom pour votre compte
+              {t('onboarding_config.choose_account_name')}
             </ThemedText>
             <TextInput
-              placeholder="Ex: Mes finances"
+              placeholder={t('onboarding_config.account_name_placeholder')}
               value={accountName}
               onChangeText={setAccountName}
-              label="Nom du compte"
+              label={t('onboarding_config.account_name')}
               leftIcon={
                 <Ionicons
                   name="business-outline"
@@ -141,7 +163,7 @@ export default function OnboardingConfig() {
               weight="medium"
               style={{ marginBottom: theme.spacing.xs }}
             >
-              Type de compte
+              {t('settings.account_type')}
             </ThemedText>
             <View
               style={{
@@ -177,10 +199,10 @@ export default function OnboardingConfig() {
                   }
                 />
                 <ThemedText weight="semibold" style={{ marginTop: 4 }}>
-                  Personnel
+                  {t('settings.personal')}
                 </ThemedText>
                 <ThemedText variant="xs" color="mutedForeground">
-                  Pour vos finances perso
+                  {t('onboarding_config.personal_desc')}
                 </ThemedText>
               </TouchableOpacity>
 
@@ -211,10 +233,10 @@ export default function OnboardingConfig() {
                   }
                 />
                 <ThemedText weight="semibold" style={{ marginTop: 4 }}>
-                  Professionnel
+                  {t('settings.business')}
                 </ThemedText>
                 <ThemedText variant="xs" color="mutedForeground">
-                  Pour votre business
+                  {t('onboarding_config.business_desc')}
                 </ThemedText>
               </TouchableOpacity>
 
@@ -246,10 +268,10 @@ export default function OnboardingConfig() {
                   }
                 />
                 <ThemedText weight="semibold" style={{ marginTop: 4 }}>
-                  Famille
+                  {t('settings.family')}
                 </ThemedText>
                 <ThemedText variant="xs" color="mutedForeground">
-                  Pour le foyer
+                  {t('onboarding_config.family_desc')}
                 </ThemedText>
               </TouchableOpacity>
             </View>
@@ -260,13 +282,13 @@ export default function OnboardingConfig() {
         return (
           <View style={{ gap: theme.spacing.lg }}>
             <ThemedText variant="lg" weight="semibold">
-              Quelle est votre balance actuelle ?
+              {t('onboarding_config.whats_your_balance')}
             </ThemedText>
             <TextInput
-              placeholder="Ex: 50000"
+              placeholder={t('onboarding_config.balance_placeholder')}
               value={initialBalance}
               onChangeText={setInitialBalance}
-              label="Balance initiale"
+              label={t('onboarding_config.initial_balance')}
               keyboardType="numeric"
               leftIcon={
                 <Ionicons
@@ -278,7 +300,7 @@ export default function OnboardingConfig() {
             />
             <Spacer height={theme.spacing.sm} />
             <ThemedText variant="sm" color="mutedForeground">
-              C'est le montant que vous avez actuellement sur vous
+              {t('onboarding_config.balance_hint')}
             </ThemedText>
           </View>
         );
@@ -287,7 +309,7 @@ export default function OnboardingConfig() {
         return (
           <View style={{ gap: theme.spacing.lg }}>
             <ThemedText variant="lg" weight="semibold">
-              Quelle est votre devise préférée ?
+              {t('onboarding_config.choose_currency')}
             </ThemedText>
 
             <View style={{ flexDirection: "row", gap: theme.spacing.md }}>
@@ -338,7 +360,7 @@ export default function OnboardingConfig() {
               color="mutedForeground"
               style={{ textAlign: "center" }}
             >
-              Vous pourrez changer cette devise plus tard dans les paramètres
+              {t('onboarding_config.currency_hint')}
             </ThemedText>
           </View>
         );
@@ -388,7 +410,7 @@ export default function OnboardingConfig() {
             {steps[step].title}
           </ThemedText>
           <ThemedText variant="base" color="mutedForeground">
-            Étape {step + 1} sur {steps.length}
+            {t('onboarding_config.step_prefix')} {step + 1} {t('onboarding_config.step_of')} {steps.length}
           </ThemedText>
         </View>
 
@@ -411,7 +433,7 @@ export default function OnboardingConfig() {
               style={{ flex: 1 }}
               onPress={() => setStep(step - 1)}
             >
-              Retour
+              {t('common.back')}
             </Button>
           )}
           <Button
@@ -424,10 +446,10 @@ export default function OnboardingConfig() {
             }
           >
             {loading
-              ? "Configuration..."
+              ? t('common.loading')
               : step === steps.length - 1
-                ? "Terminer 🚀"
-                : "Continuer"}
+                ? t('common.finish')
+                : t('common.continue')}
           </Button>
         </View>
       </ScrollView>

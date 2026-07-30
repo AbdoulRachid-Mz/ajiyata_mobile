@@ -1,3 +1,5 @@
+// src/components/finance/TransactionFilters.tsx
+
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -19,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCategories } from '@/features/categories/hooks';
 import { useBudgets } from '@/features/budgets/hooks';
 import { useAppStore } from '@/stores/app-store';
+import { useTranslation } from 'react-i18next';
 import { DatePreset, SortField, TransactionFilters, TransactionType } from '@/features/transactions/types/filters';
 
 interface TransactionFiltersProps {
@@ -34,6 +37,7 @@ export const TransactionFiltersModal = ({
   onClose,
   visible,
 }: TransactionFiltersProps) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { currentAccount } = useAppStore();
   const accountId = currentAccount?.id || '';
@@ -57,7 +61,6 @@ export const TransactionFiltersModal = ({
     const budget = budgets?.find(b => b.id === budgetId);
     if (!budget) return;
     
-    // Si on clique sur le même budget, on le désélectionne
     if (activeBudgetId === budgetId) {
        setLocalFilters(prev => ({ ...prev, categoryIds: [] }));
     } else {
@@ -125,26 +128,26 @@ export const TransactionFiltersModal = ({
 
   const getSortLabel = (field: SortField): string => {
     const labels = {
-      date: 'Date',
-      amount: 'Montant',
-      type: 'Type',
-      title: 'Titre',
+      date: t('finance.date'),
+      amount: t('finance.amount'),
+      type: t('transactions.type'),
+      title: t('common.title'),
     };
     return labels[field];
   };
 
   const typeOptions: { label: string; value: TransactionType; icon: string }[] = [
-    { label: 'Tous', value: 'all', icon: 'apps-outline' },
-    { label: 'Revenus', value: 'income', icon: 'arrow-up' },
-    { label: 'Dépenses', value: 'expense', icon: 'arrow-down' },
-    { label: 'Virements', value: 'transfer', icon: 'swap-horizontal' },
+    { label: t('common.all'), value: 'all', icon: 'apps-outline' },
+    { label: t('finance.income'), value: 'income', icon: 'arrow-up' },
+    { label: t('finance.expense'), value: 'expense', icon: 'arrow-down' },
+    { label: t('finance.transfer'), value: 'transfer', icon: 'swap-horizontal' },
   ];
 
   const datePresets: { label: string; value: DatePreset; icon: string }[] = [
-    { label: "Aujourd'hui", value: 'today', icon: 'today-outline' },
-    { label: 'Cette semaine', value: 'week', icon: 'calendar-outline' },
-    { label: 'Ce mois', value: 'month', icon: 'calendar-outline' },
-    { label: 'Cette année', value: 'year', icon: 'calendar-outline' },
+    { label: t('periods.today'), value: 'today', icon: 'today-outline' },
+    { label: t('periods.this_week'), value: 'week', icon: 'calendar-outline' },
+    { label: t('periods.this_month'), value: 'month', icon: 'calendar-outline' },
+    { label: t('periods.this_year'), value: 'year', icon: 'calendar-outline' },
   ];
 
   return (
@@ -160,9 +163,9 @@ export const TransactionFiltersModal = ({
           <TouchableOpacity onPress={onClose} style={styles.headerButton}>
             <Ionicons name="close" size={24} color={theme.colors.foreground} />
           </TouchableOpacity>
-          <ThemedText variant="xl" weight="bold">Filtres</ThemedText>
+          <ThemedText variant="xl" weight="bold">{t('common.filters')}</ThemedText>
           <TouchableOpacity onPress={handleReset} style={styles.headerButton}>
-            <ThemedText variant="sm" color="mutedForeground">Réinitialiser</ThemedText>
+            <ThemedText variant="sm" color="mutedForeground">{t('common.reset')}</ThemedText>
           </TouchableOpacity>
         </View>
 
@@ -174,14 +177,14 @@ export const TransactionFiltersModal = ({
           {/* Recherche */}
           <View style={styles.section}>
             <ThemedText variant="sm" weight="semibold" style={styles.sectionTitle}>
-              Recherche
+              {t('common.search')}
             </ThemedText>
             <View style={[styles.searchContainer, { borderColor: theme.colors.border }]}>
               <Ionicons name="search" size={20} color={theme.colors.mutedForeground} />
               <RNTextInput
                 ref={searchInputRef}
                 style={[styles.searchInput, { color: theme.colors.foreground }]}
-                placeholder="Rechercher une transaction..."
+                placeholder={t('transactions.search_placeholder')}
                 placeholderTextColor={theme.colors.mutedForeground}
                 value={localFilters.search}
                 onChangeText={(text) => setLocalFilters(prev => ({ ...prev, search: text }))}
@@ -199,7 +202,7 @@ export const TransactionFiltersModal = ({
           {/* Type */}
           <View style={styles.section}>
             <ThemedText variant="sm" weight="semibold" style={styles.sectionTitle}>
-              Type
+              {t('transactions.type')}
             </ThemedText>
             <View style={styles.typeContainer}>
               {typeOptions.map(option => (
@@ -243,7 +246,7 @@ export const TransactionFiltersModal = ({
           {/* Période */}
           <View style={styles.section}>
             <ThemedText variant="sm" weight="semibold" style={styles.sectionTitle}>
-              Période
+              {t('finance.period')}
             </ThemedText>
             <View style={styles.dateContainer}>
               {datePresets.map(preset => (
@@ -278,7 +281,7 @@ export const TransactionFiltersModal = ({
           {budgets && budgets.filter(b => b.status === 'active').length > 0 && (
             <View style={styles.section}>
               <ThemedText variant="sm" weight="semibold" style={styles.sectionTitle}>
-                Budgets
+                {t('budgets.title')}
               </ThemedText>
               <View style={styles.categoriesContainer}>
                 {budgets.filter(b => b.status === 'active').map(budget => {
@@ -304,7 +307,7 @@ export const TransactionFiltersModal = ({
                           color: isSelected ? cat.color : theme.colors.foreground,
                         }}
                       >
-                        Budget {cat.name}
+                        {t('budgets.title')} {cat.name}
                       </ThemedText>
                     </TouchableOpacity>
                   );
@@ -317,7 +320,7 @@ export const TransactionFiltersModal = ({
           {categories && categories.length > 0 && (
             <View style={styles.section}>
               <ThemedText variant="sm" weight="semibold" style={styles.sectionTitle}>
-                Catégories
+                {t('finance.categories')}
               </ThemedText>
               <View style={styles.categoriesContainer}>
                 {categories.map(category => {
@@ -353,7 +356,7 @@ export const TransactionFiltersModal = ({
           {/* Tri */}
           <View style={styles.section}>
             <ThemedText variant="sm" weight="semibold" style={styles.sectionTitle}>
-              Trier par
+              {t('common.sort_by')}
             </ThemedText>
             <View style={styles.sortContainer}>
               {(['date', 'amount', 'type', 'title'] as SortField[]).map(field => (
@@ -398,7 +401,7 @@ export const TransactionFiltersModal = ({
           <View style={styles.section}>
             <Card style={styles.summaryCard}>
               <ThemedText variant="sm" weight="medium" style={styles.summaryTitle}>
-                Résumé des filtres
+                {t('common.summary')}
               </ThemedText>
               <ThemedText variant="xs" color="mutedForeground" style={styles.summaryText}>
                 {getFilterSummary(localFilters)}
@@ -415,14 +418,14 @@ export const TransactionFiltersModal = ({
             style={styles.footerButton}
             onPress={onClose}
           >
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button
             isFullWidth={false}
             style={styles.applyButton}
             onPress={handleApply}
           >
-            Appliquer
+            {t('common.apply')}
           </Button>
         </View>
       </View>

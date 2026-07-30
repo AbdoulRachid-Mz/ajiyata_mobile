@@ -17,6 +17,7 @@ import ThemedText from "@/components/ui/text";
 import { useTheme } from "@/contexts/theme-context";
 import { Transaction } from "@/types";
 import { formatAmountWithSign } from "@/lib/formatters/currency";
+import { useTranslation } from "react-i18next";
 
 // Types pour les actions
 interface TransactionItemProps {
@@ -44,6 +45,7 @@ export const TransactionItem = ({
   showActions = true,
   style,
 }: TransactionItemProps) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const swipeableRef = useRef<Swipeable>(null);
   const lastTap = useRef<number>(0);
@@ -113,7 +115,7 @@ export const TransactionItem = ({
         >
           <Ionicons name="checkmark-circle" size={28} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Valider
+            {t('transaction_item.validate')}
           </ThemedText>
         </TouchableOpacity>
       </Animated.View>
@@ -148,7 +150,7 @@ export const TransactionItem = ({
         >
           <Ionicons name="create-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Modifier
+            {t('common.edit')}
           </ThemedText>
         </TouchableOpacity>
 
@@ -164,7 +166,7 @@ export const TransactionItem = ({
         >
           <Ionicons name="trash-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Supprimer
+            {t('common.delete')}
           </ThemedText>
         </TouchableOpacity>
       </Animated.View>
@@ -283,8 +285,8 @@ export const TransactionItem = ({
                   <>
                     <View style={styles.dot} />
                     <ThemedText variant="sm" color="mutedForeground">
-                      Catégorie
-                    </ThemedText>
+                    {t('transaction_item.category')}
+                  </ThemedText>
                   </>
                 )}
               </View>

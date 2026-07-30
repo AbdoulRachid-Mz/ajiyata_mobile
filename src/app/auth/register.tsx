@@ -1,3 +1,5 @@
+// src/app/auth/register.tsx
+
 import Button from "@/components/ui/button";
 import SafeAreaView from "@/components/ui/safe-area-view";
 import ThemedText from "@/components/ui/text";
@@ -18,16 +20,17 @@ import {
   View,
 } from "react-native";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 
 const registerSchema = z
   .object({
-    displayName: z.string().min(2, "Nom trop court"),
-    email: z.string().email("Email invalide"),
-    password: z.string().min(6, "Mot de passe trop court"),
-    confirmPassword: z.string().min(6, "Mot de passe trop court"),
+    displayName: z.string().min(2, "auth.name_too_short"),
+    email: z.string().email("auth.invalid_email"),
+    password: z.string().min(6, "auth.password_too_short"),
+    confirmPassword: z.string().min(6, "auth.password_too_short"),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Les mots de passe ne correspondent pas",
+    message: "auth.passwords_mismatch",
     path: ["confirmPassword"],
   });
 
@@ -36,6 +39,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function RegisterScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const { register, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -64,7 +68,7 @@ export default function RegisterScreen() {
     if (response.success) {
       router.replace("/(tabs)/dashboard");
     } else {
-      Alert.alert("Erreur", response.error || "Échec de l'inscription");
+      Alert.alert(t('common.error'), response.error || t('common.error'));
     }
   };
 
@@ -110,14 +114,14 @@ export default function RegisterScreen() {
               weight="bold"
               style={{ textAlign: "center" }}
             >
-              Créer un compte
+              {t('auth.register_title')}
             </ThemedText>
             <ThemedText
               variant="base"
               color="mutedForeground"
               style={{ textAlign: "center", marginTop: 8 }}
             >
-              Rejoignez Ajiya Ta et gérez vos finances
+              {t('auth.register_subtitle')}
             </ThemedText>
           </View>
 
@@ -127,8 +131,8 @@ export default function RegisterScreen() {
               name="displayName"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label="Nom complet"
-                  placeholder="Votre nom"
+                  label={t('auth.full_name')}
+                  placeholder={t('auth.name_placeholder')}
                   value={value}
                   onChangeText={onChange}
                   error={!!errors.displayName}
@@ -151,7 +155,7 @@ export default function RegisterScreen() {
                   marginBottom: theme.spacing.sm,
                 }}
               >
-                {errors.displayName.message}
+                {t(errors.displayName.message as string)}
               </ThemedText>
             )}
 
@@ -160,8 +164,8 @@ export default function RegisterScreen() {
               name="email"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label="Email"
-                  placeholder="votre@email.com"
+                  label={t('auth.email')}
+                  placeholder={t('auth.email_placeholder')}
                   value={value}
                   onChangeText={onChange}
                   keyboardType="email-address"
@@ -186,7 +190,7 @@ export default function RegisterScreen() {
                   marginBottom: theme.spacing.sm,
                 }}
               >
-                {errors.email.message}
+                {t(errors.email.message as string)}
               </ThemedText>
             )}
 
@@ -195,8 +199,8 @@ export default function RegisterScreen() {
               name="password"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label="Mot de passe"
-                  placeholder="••••••••"
+                  label={t('auth.password')}
+                  placeholder={t('auth.password_placeholder')}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showPassword}
@@ -231,7 +235,7 @@ export default function RegisterScreen() {
                   marginBottom: theme.spacing.sm,
                 }}
               >
-                {errors.password.message}
+                {t(errors.password.message as string)}
               </ThemedText>
             )}
 
@@ -240,8 +244,8 @@ export default function RegisterScreen() {
               name="confirmPassword"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label="Confirmer le mot de passe"
-                  placeholder="••••••••"
+                  label={t('auth.confirm_password')}
+                  placeholder={t('auth.password_placeholder')}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showConfirmPassword}
@@ -282,7 +286,7 @@ export default function RegisterScreen() {
                   marginBottom: theme.spacing.sm,
                 }}
               >
-                {errors.confirmPassword.message}
+                {t(errors.confirmPassword.message as string)}
               </ThemedText>
             )}
 
@@ -295,7 +299,7 @@ export default function RegisterScreen() {
                 marginTop: theme.spacing.lg,
               }}
             >
-              {isLoading ? "Inscription..." : "S'inscrire"}
+              {isLoading ? t('common.loading') : t('auth.sign_up')}
             </Button>
           </View>
 
@@ -306,10 +310,10 @@ export default function RegisterScreen() {
               marginTop: theme.spacing.xl,
             }}
           >
-            <ThemedText color="mutedForeground">Déjà un compte ? </ThemedText>
+            <ThemedText color="mutedForeground">{t('auth.has_account')} </ThemedText>
             <TouchableOpacity onPress={() => router.push("/auth/login")}>
               <ThemedText color="primary" weight="bold">
-                Se connecter
+                {t('auth.sign_in')}
               </ThemedText>
             </TouchableOpacity>
           </View>

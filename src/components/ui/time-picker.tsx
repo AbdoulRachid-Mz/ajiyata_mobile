@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  Platform,
 } from 'react-native';
 import { useTheme } from '@/contexts/theme-context';
 import ThemedText from '@/components/ui/text';
@@ -54,7 +53,6 @@ function WheelPicker({
     onSelect(data[clampedIndex]);
   };
 
-  // Fonction pour obtenir l'item à afficher (avec padding)
   const getItem = (index: number) => {
     const realIndex = index - 2;
     if (realIndex < 0 || realIndex >= data.length) return '';
@@ -63,7 +61,6 @@ function WheelPicker({
 
   return (
     <View style={{ height: ITEM_HEIGHT * 5, width: 80, overflow: 'hidden' }}>
-      {/* Highlight bar for selected item */}
       <View
         pointerEvents="none"
         style={[
@@ -120,12 +117,16 @@ export function TimePicker({ visible, value, onConfirm, onClose }: Props) {
   const [hour, setHour] = useState('08');
   const [minute, setMinute] = useState('00');
 
-  // Mettre à jour les valeurs quand le picker s'ouvre avec la valeur actuelle
+  // Synchronise les heures/minutes dès l'ouverture avec la valeur reçue (ex: "09:30")
   useEffect(() => {
-    if (visible) {
-      const [h, m] = value.split(':');
-      setHour(h || '08');
-      setMinute(m || '00');
+    if (visible && value) {
+      const parts = value.split(':');
+      if (parts.length === 2) {
+        const h = parts[0].padStart(2, '0');
+        const m = parts[1].padStart(2, '0');
+        setHour(HOURS.includes(h) ? h : '08');
+        setMinute(MINUTES.includes(m) ? m : '00');
+      }
     }
   }, [visible, value]);
 
@@ -161,7 +162,7 @@ export function TimePicker({ visible, value, onConfirm, onClose }: Props) {
             weight="bold"
             style={{ marginBottom: 16, textAlign: 'center' }}
           >
-            Heure du rappel
+            Sélectionner l'heure
           </ThemedText>
 
           <View style={styles.wheelRow}>

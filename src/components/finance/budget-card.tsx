@@ -1,14 +1,20 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
+// src/components/finance/budget-card.tsx
 
-import Card from '@/components/ui/card';
-import ThemedText from '@/components/ui/text';
-import { useTheme } from '@/contexts/theme-context';
-import { formatCurrency } from '@/lib/formatters/currency';
-import { Budget, BudgetWithRelations, Category } from '@/types';
+import React, { useRef } from "react";
+import { View, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  Swipeable,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
+import * as Haptics from "expo-haptics";
+
+import Card from "@/components/ui/card";
+import ThemedText from "@/components/ui/text";
+import { useTheme } from "@/contexts/theme-context";
+import { formatCurrency } from "@/lib/formatters/currency";
+import { Budget, BudgetWithRelations, Category } from "@/types";
+import { useTranslation } from "react-i18next";
 
 interface BudgetCardProps {
   budget: BudgetWithRelations;
@@ -29,6 +35,7 @@ export const BudgetCard = ({
   onDuplicate,
   showActions = true,
 }: BudgetCardProps) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const swipeableRef = useRef<Swipeable>(null);
 
@@ -36,7 +43,6 @@ export const BudgetCard = ({
   const isExceeded = budget.spent > budget.limit;
   const isNearLimit = progress >= 0.8 && !isExceeded;
 
-  // Haptique pour les actions importantes
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onPress) {
@@ -45,7 +51,9 @@ export const BudgetCard = ({
   };
 
   // Render des actions de swipe
-  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>) => {
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+  ) => {
     const translateX = progress.interpolate({
       inputRange: [0, 1],
       outputRange: [120, 0],
@@ -53,10 +61,7 @@ export const BudgetCard = ({
 
     return (
       <Animated.View
-        style={[
-          styles.swipeActionsContainer,
-          { transform: [{ translateX }] },
-        ]}
+        style={[styles.swipeActionsContainer, { transform: [{ translateX }] }]}
       >
         <TouchableOpacity
           style={[styles.swipeAction, styles.duplicateAction]}
@@ -70,7 +75,7 @@ export const BudgetCard = ({
         >
           <Ionicons name="copy-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Dupliquer
+            {t("common.duplicate")}
           </ThemedText>
         </TouchableOpacity>
 
@@ -85,7 +90,7 @@ export const BudgetCard = ({
         >
           <Ionicons name="create-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Modifier
+            {t("common.edit")}
           </ThemedText>
         </TouchableOpacity>
 
@@ -101,10 +106,93 @@ export const BudgetCard = ({
         >
           <Ionicons name="trash-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Supprimer
+            {t("common.delete")}
           </ThemedText>
         </TouchableOpacity>
       </Animated.View>
+    );
+  };
+
+  // Rendu du statut
+  const renderStatus = () => {
+    if (budget.status === "completed") {
+      return (
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: theme.colors.muted },
+          ]}
+        >
+          <Ionicons
+            name="flag-outline"
+            size={14}
+            color={theme.colors.mutedForeground}
+          />
+          <ThemedText
+            style={[
+              styles.statusText,
+              { color: theme.colors.mutedForeground },
+            ]}
+          >
+            {t("budgets.completed")}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    if (isExceeded) {
+      return (
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: theme.colors.destructive },
+          ]}
+        >
+          <Ionicons name="alert-circle" size={14} color="#fff" />
+          <ThemedText
+            style={styles.statusText}
+            color="destructiveForeground"
+          >
+            {t("budgets.exceeded")}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    if (isNearLimit) {
+      return (
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: theme.financialColors.budget },
+          ]}
+        >
+          <Ionicons name="warning" size={14} color="#fff" />
+          <ThemedText
+            style={styles.statusText}
+            color="primaryForeground"
+          >
+            {t("budgets.near_limit")}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    return (
+      <View
+        style={[
+          styles.statusBadge,
+          { backgroundColor: theme.financialColors.saving },
+        ]}
+      >
+        <Ionicons name="checkmark-circle" size={14} color="#fff" />
+        <ThemedText
+          style={styles.statusText}
+          color="primaryForeground"
+        >
+          {t("budgets.on_track")}
+        </ThemedText>
+      </View>
     );
   };
 
@@ -129,11 +217,14 @@ export const BudgetCard = ({
                 <View
                   style={[
                     styles.categoryColor,
-                    { backgroundColor: category?.color || theme.financialColors.budget },
+                    {
+                      backgroundColor:
+                        category?.color || theme.financialColors.budget,
+                    },
                   ]}
                 />
                 <ThemedText weight="semibold" style={{ fontSize: 16 }}>
-                  {category?.name || 'Catégorie'}
+                  {category?.name || t("common.unknown")}
                 </ThemedText>
               </View>
               <View style={styles.headerRight}>
@@ -144,11 +235,11 @@ export const BudgetCard = ({
                   ]}
                 >
                   <ThemedText variant="xs" color="mutedForeground">
-                    {budget.period === 'daily'
-                      ? 'Quotidien'
-                      : budget.period === 'weekly'
-                      ? 'Hebdomadaire'
-                      : 'Mensuel'}
+                    {budget.period === "daily"
+                      ? t("budgets.daily")
+                      : budget.period === "weekly"
+                        ? t("budgets.weekly")
+                        : t("budgets.monthly")}
                   </ThemedText>
                 </View>
               </View>
@@ -164,8 +255,8 @@ export const BudgetCard = ({
                     backgroundColor: isExceeded
                       ? theme.colors.destructive
                       : isNearLimit
-                      ? theme.financialColors.budget
-                      : theme.financialColors.saving,
+                        ? theme.financialColors.budget
+                        : theme.financialColors.saving,
                   },
                 ]}
               />
@@ -175,17 +266,19 @@ export const BudgetCard = ({
             <View style={styles.details}>
               <View>
                 <ThemedText variant="sm" color="mutedForeground">
-                  Dépensé
+                  {t("budgets.spent")}
                 </ThemedText>
                 <ThemedText weight="semibold">
-                  {/* {formatCurrency(budget.spent, budget.currency)} */}
-                  {formatCurrency(budget.spent, budget?.account?.currency || 'XOF')}
+                  {formatCurrency(
+                    budget.spent,
+                    budget?.account?.currency || "XOF",
+                  )}
                 </ThemedText>
               </View>
 
               <View style={styles.detailCenter}>
                 <ThemedText variant="sm" color="mutedForeground">
-                  Restant
+                  {t("budgets.remaining")}
                 </ThemedText>
                 <ThemedText
                   weight="semibold"
@@ -193,50 +286,33 @@ export const BudgetCard = ({
                     color: isExceeded
                       ? theme.colors.destructive
                       : isNearLimit
-                      ? theme.financialColors.budget
-                      : theme.financialColors.saving,
+                        ? theme.financialColors.budget
+                        : theme.financialColors.saving,
                   }}
                 >
-                  {formatCurrency(Math.max(0, budget.limit - budget.spent), budget?.account?.currency || 'XOF')}
+                  {formatCurrency(
+                    Math.max(0, budget.limit - budget.spent),
+                    budget?.account?.currency || "XOF",
+                  )}
                 </ThemedText>
               </View>
 
               <View style={styles.detailRight}>
                 <ThemedText variant="sm" color="mutedForeground">
-                  Total
+                  {t("budgets.total")}
                 </ThemedText>
                 <ThemedText weight="semibold">
-                  {formatCurrency(budget.limit, budget?.account?.currency || 'XOF')}
+                  {formatCurrency(
+                    budget.limit,
+                    budget?.account?.currency || "XOF",
+                  )}
                 </ThemedText>
               </View>
             </View>
 
             {/* Indicateur de statut */}
             <View style={styles.statusContainer}>
-              {isExceeded && (
-                <View style={[styles.statusBadge, { backgroundColor: theme.colors.destructive }]}>
-                  <Ionicons name="alert-circle" size={14} color="#fff" />
-                  <ThemedText style={styles.statusText} color="destructiveForeground">
-                    Dépassé
-                  </ThemedText>
-                </View>
-              )}
-              {isNearLimit && !isExceeded && (
-                <View style={[styles.statusBadge, { backgroundColor: theme.financialColors.budget }]}>
-                  <Ionicons name="warning" size={14} color="#fff" />
-                  <ThemedText style={styles.statusText} color="primaryForeground">
-                    Bientôt atteint
-                  </ThemedText>
-                </View>
-              )}
-              {!isNearLimit && !isExceeded && (
-                <View style={[styles.statusBadge, { backgroundColor: theme.financialColors.saving }]}>
-                  <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                  <ThemedText style={styles.statusText} color="primaryForeground">
-                    En bonne voie
-                  </ThemedText>
-                </View>
-              )}
+              {renderStatus()}
               <ThemedText variant="xs" color="mutedForeground">
                 {Math.round(progress * 100)}%
               </ThemedText>
@@ -253,14 +329,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   categoryColor: {
@@ -269,8 +345,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   periodBadge: {
@@ -280,34 +356,34 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     height: 8,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: "#e5e7eb",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 12,
   },
   progressBar: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   details: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   detailCenter: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   detailRight: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -315,31 +391,31 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   swipeActionsContainer: {
-    flexDirection: 'row',
-    height: '100%',
+    flexDirection: "row",
+    height: "100%",
   },
   swipeAction: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 16,
     minWidth: 80,
   },
   editAction: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: "#3b82f6",
   },
   deleteAction: {
-    backgroundColor: '#ef4444',
+    backgroundColor: "#ef4444",
   },
   duplicateAction: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: "#8b5cf6",
   },
   swipeActionText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 10,
     marginTop: 2,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

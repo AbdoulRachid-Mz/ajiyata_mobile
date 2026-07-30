@@ -24,41 +24,10 @@ import { useTransactions } from "@/features/transactions/hooks";
 import { exportData } from "@/lib/export/export-service";
 import { structuredExport } from "@/lib/export/structured-export";
 import { useAppStore } from "@/stores/app-store";
+import { useTranslation } from "react-i18next";
 
 type ExportFormat = "json" | "excel" | "pdf";
 type ExportType = "transactions" | "budgets" | "goals" | "all";
-
-const TYPE_OPTIONS: {
-  key: ExportType;
-  label: string;
-  icon: string;
-  desc: string;
-}[] = [
-  {
-    key: "all",
-    label: "Tout exporter",
-    icon: "folder-outline",
-    desc: "Export complet de toutes vos données",
-  },
-  {
-    key: "transactions",
-    label: "Transactions",
-    icon: "list-outline",
-    desc: "Export des transactions",
-  },
-  {
-    key: "budgets",
-    label: "Budgets",
-    icon: "wallet-outline",
-    desc: "Export des budgets",
-  },
-  {
-    key: "goals",
-    label: "Objectifs",
-    icon: "trophy-outline",
-    desc: "Export des objectifs d'épargne",
-  },
-];
 
 const FORMAT_OPTIONS: { key: ExportFormat; label: string; icon: string }[] = [
   { key: "json", label: "JSON", icon: "code-slash-outline" },
@@ -73,6 +42,7 @@ function formatSize(bytes: number): string {
 }
 
 export default function ExportScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -110,8 +80,8 @@ export default function ExportScreen() {
 
     if (!selectedTransactions || selectedTransactions.length === 0) {
       Alert.alert(
-        "Aucune donnée",
-        "Seules les transactions peuvent être exportées en PDF/Excel pour l'instant.",
+        t('export.no_data_title'),
+        t('export.no_data_message'),
       );
       return;
     }
@@ -142,7 +112,7 @@ export default function ExportScreen() {
           currency: currency,
           categories: categories || [],
         });
-        Toast.show({ type: "success", text1: "Export terminé avec succès !" });
+        Toast.show({ type: "success", text1: t('export.success') });
       }
     } catch (error: any) {
       Toast.show({
@@ -160,11 +130,11 @@ export default function ExportScreen() {
       if (exportResult?.files && exportResult.files.length > 0) {
         // Share the first file (simplified)
         await Sharing.shareAsync(exportResult.files[0], {
-          dialogTitle: "Partager l'export",
+          dialogTitle: t('export.share_title'),
         });
       }
     } catch (error) {
-      Toast.show({ type: "error", text1: "Erreur lors du partage." });
+      Toast.show({ type: "error", text1: t('export.share_error') });
     }
   };
 
@@ -215,7 +185,7 @@ export default function ExportScreen() {
             />
           </TouchableOpacity>
           <ThemedText variant="2xl" weight="bold">
-            Exporter les données
+            {t('export.title')}
           </ThemedText>
         </ThemedView>
 
@@ -225,10 +195,15 @@ export default function ExportScreen() {
           weight="semibold"
           style={{ marginBottom: theme.spacing.sm }}
         >
-          Quelles données exporter ?
+          {t('export.what_to_export')}
         </ThemedText>
         <View style={{ gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
-          {TYPE_OPTIONS.map((opt) => {
+          {[
+            { key: 'all' as ExportType, label: t('export.type_all'), icon: 'folder-outline', desc: t('export.type_all_desc') },
+            { key: 'transactions' as ExportType, label: t('export.type_transactions'), icon: 'list-outline', desc: t('export.type_transactions_desc') },
+            { key: 'budgets' as ExportType, label: t('export.type_budgets'), icon: 'wallet-outline', desc: t('export.type_budgets_desc') },
+            { key: 'goals' as ExportType, label: t('export.type_goals'), icon: 'trophy-outline', desc: t('export.type_goals_desc') },
+          ].map((opt) => {
             const count =
               opt.key === "all"
                 ? counts.transactions + counts.budgets + counts.goals
@@ -291,7 +266,7 @@ export default function ExportScreen() {
                       {opt.label}
                     </ThemedText>
                     <ThemedText variant="xs" color="mutedForeground">
-                      {opt.desc} ({count} élément{count > 1 ? "s" : ""})
+                      {opt.desc} ({count} {t('export.item')}{count > 1 ? t('export.items_plural_suffix') : ""})
                     </ThemedText>
                   </View>
                   {exportType === opt.key && (
@@ -313,7 +288,7 @@ export default function ExportScreen() {
           weight="semibold"
           style={{ marginBottom: theme.spacing.sm }}
         >
-          Format d'export
+          {t('export.format')}
         </ThemedText>
         <View style={{ gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
           {FORMAT_OPTIONS.map((opt) => {
@@ -390,7 +365,7 @@ export default function ExportScreen() {
             weight="semibold"
             style={{ marginBottom: theme.spacing.sm }}
           >
-            Résumé de l'export
+            {t('export.summary_title')}
           </ThemedText>
 
           <View
@@ -429,7 +404,7 @@ export default function ExportScreen() {
             }}
           >
             <ThemedText variant="xs" color="mutedForeground">
-              Objectifs d'épargne
+              {t('export.savings_goals')}
             </ThemedText>
             <ThemedText variant="xs" weight="bold">
               {counts.goals}
@@ -468,7 +443,7 @@ export default function ExportScreen() {
             >
               <ActivityIndicator size="small" color="#fff" />
               <ThemedText style={{ color: "#fff", fontWeight: "600" }}>
-                Exportation...
+                {t('export.exporting')}
               </ThemedText>
             </View>
           ) : (
@@ -477,8 +452,8 @@ export default function ExportScreen() {
             >
               <Ionicons name="download-outline" size={20} color="#fff" />
               <ThemedText style={{ color: "#fff", fontWeight: "600" }}>
-                Exporter ({getSelectedCount()} élément
-                {getSelectedCount() > 1 ? "s" : ""}
+                {t('export.export_button')} ({getSelectedCount()} {t('export.item')}
+                {getSelectedCount() > 1 ? t('export.items_plural_suffix') : ""}
               </ThemedText>
             </View>
           )}
@@ -488,7 +463,7 @@ export default function ExportScreen() {
           <Button variant="secondary" size="lg" onPress={handleShare}>
             <Ionicons name="share-outline" size={20} />
             <ThemedText style={{ marginLeft: 8, fontWeight: "600" }}>
-              Partager
+              {t('export.share')}
             </ThemedText>
           </Button>
         )}

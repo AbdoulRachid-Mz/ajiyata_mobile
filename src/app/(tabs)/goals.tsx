@@ -1,4 +1,4 @@
-// Fichier: src/app/(tabs)/goals.tsx
+// src/app/(tabs)/goals.tsx
 
 import React, {
   useRef,
@@ -55,6 +55,7 @@ import {
 } from "@/services/goal-intelligence.service";
 import { generateUUID, getCurrentTimestamp } from "@/utils/uuid";
 import { Storage } from "@/lib/storage";
+import { useTranslation } from "react-i18next";
 
 type GoalStatusFilter = "all" | "active" | "completed" | "paused";
 
@@ -71,6 +72,7 @@ function formatCurrency(amount: number, currency = "XOF") {
 // ---- Main Screen ----
 
 export default function GoalsScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -128,17 +130,22 @@ export default function GoalsScreen() {
       await refetch();
       await loadSuggestions();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Toast.show({
+        type: "success",
+        text1: t("common.refresh_success"),
+        text2: t("goals.refresh_success"),
+      });
     } catch (error) {
       console.error("Refresh error:", error);
       Toast.show({
         type: "error",
-        text1: "Erreur",
-        text2: "Impossible de rafraîchir",
+        text1: t("common.error"),
+        text2: t("errors.refresh_failed"),
       });
     } finally {
       setRefreshing(false);
     }
-  }, [refetch, loadSuggestions]);
+  }, [refetch, loadSuggestions, t]);
 
   // Créer un objectif depuis une suggestion
   const handleCreateFromSuggestion = useCallback(
@@ -164,7 +171,7 @@ export default function GoalsScreen() {
           metadata: {},
         });
 
-        Toast.show({ type: "success", text1: "Objectif créé avec succès" });
+        Toast.show({ type: "success", text1: t("goals.create_success") });
 
         // Retirer la suggestion
         setSuggestions((prev) =>
@@ -177,10 +184,10 @@ export default function GoalsScreen() {
         refetch();
       } catch (error) {
         console.error("Error creating goal from suggestion:", error);
-        Toast.show({ type: "error", text1: "Erreur lors de la création" });
+        Toast.show({ type: "error", text1: t("errors.create_failed") });
       }
     },
-    [currentAccount, refetch],
+    [currentAccount, createGoal, refetch, t, suggestions.length],
   );
 
   // Gestion du scroll
@@ -218,7 +225,6 @@ export default function GoalsScreen() {
               currency: currentAccount.currency,
             }
           : null,
-        // Calculer le score de priorité
         priorityScore:
           g.status === "active" ? 0 : g.status === "paused" ? 1 : 2,
         daysUntilDeadline: g.deadline
@@ -226,11 +232,9 @@ export default function GoalsScreen() {
           : null,
       }))
       .sort((a, b) => {
-        // D'abord par statut (active > paused > completed)
         if (a.priorityScore !== b.priorityScore) {
           return a.priorityScore - b.priorityScore;
         }
-        // Ensuite par date de création la plus récente
         return (
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
@@ -266,9 +270,9 @@ export default function GoalsScreen() {
       let dateKey = "";
 
       if (isToday(dateObj)) {
-        dateKey = "Aujourd'hui";
+        dateKey = t("periods.today");
       } else if (isYesterday(dateObj)) {
-        dateKey = "Hier";
+        dateKey = t("periods.yesterday");
       } else {
         dateKey = format(dateObj, "EEEE d MMMM yyyy", { locale: fr });
       }
@@ -279,11 +283,13 @@ export default function GoalsScreen() {
       groups[dateKey].push(goal);
     });
 
+    const todayKey = t("periods.today");
+    const yesterdayKey = t("periods.yesterday");
     const sortedKeys = Object.keys(groups).sort((a, b) => {
-      if (a === "Aujourd'hui") return -1;
-      if (b === "Aujourd'hui") return 1;
-      if (a === "Hier") return -1;
-      if (b === "Hier") return 1;
+      if (a === todayKey) return -1;
+      if (b === todayKey) return 1;
+      if (a === yesterdayKey) return -1;
+      if (b === yesterdayKey) return 1;
       return a.localeCompare(b);
     });
 
@@ -292,7 +298,7 @@ export default function GoalsScreen() {
       data: groups[key],
       count: groups[key].length,
     }));
-  }, [filteredGoals]);
+  }, [filteredGoals, t]);
 
   // Statistiques
   const stats = useMemo(() => {
@@ -326,12 +332,12 @@ export default function GoalsScreen() {
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      "Supprimer l'objectif",
-      "Voulez-vous vraiment supprimer cet objectif d'épargne ?",
+      t("goals.delete_title"),
+      t("goals.delete_confirm"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("common.delete"),
           style: "destructive",
           onPress: () => {
             deleteGoal.mutate(id);
@@ -354,7 +360,7 @@ export default function GoalsScreen() {
     if (!selectedGoalId || !amountInput) return;
     const amount = parseFloat(amountInput);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert("Erreur", "Veuillez entrer un montant valide.");
+      Alert.alert(t("common.error"), t("errors.invalid_amount"));
       return;
     }
 
@@ -384,21 +390,21 @@ export default function GoalsScreen() {
     icon: string;
     count: number;
   }[] = [
-    { label: "Tous", value: "all", icon: "apps-outline", count: stats.total },
+    { label: t("common.all"), value: "all", icon: "apps-outline", count: stats.total },
     {
-      label: "Actifs",
+      label: t("goals.active"),
       value: "active",
       icon: "trending-up-outline",
       count: stats.active,
     },
     {
-      label: "Terminés",
+      label: t("goals.completed"),
       value: "completed",
       icon: "checkmark-circle-outline",
       count: stats.completed,
     },
     {
-      label: "En pause",
+      label: t("goals.paused"),
       value: "paused",
       icon: "pause-outline",
       count: stats.paused,
@@ -423,7 +429,7 @@ export default function GoalsScreen() {
           }}
         >
           <ThemedText variant="xl" weight="bold">
-            Objectifs d'épargne
+            {t("goals.title")}
           </ThemedText>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TouchableOpacity
@@ -496,7 +502,7 @@ export default function GoalsScreen() {
                   color: theme.colors.foreground,
                   fontSize: 16,
                 }}
-                placeholder="Rechercher un objectif..."
+                placeholder={t("goals.search_placeholder")}
                 placeholderTextColor={theme.colors.mutedForeground}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -637,7 +643,7 @@ export default function GoalsScreen() {
                   weight="bold"
                   style={{ color: theme.financialColors.saving }}
                 >
-                  💡 Suggestions d'objectifs
+                  💡 {t("goals.suggestions")}
                 </ThemedText>
                 <TouchableOpacity onPress={() => setShowSuggestions(false)}>
                   <Ionicons
@@ -667,9 +673,9 @@ export default function GoalsScreen() {
                     <ThemedText variant="xs" color="mutedForeground">
                       {formatCurrency(suggestion.suggestedTarget)}
                       {suggestion.deadline &&
-                        ` · Échéance: ${format(new Date(suggestion.deadline), "dd/MM/yyyy")}`}
+                        ` · ${t("goals.deadline")}: ${format(new Date(suggestion.deadline), "dd/MM/yyyy")}`}
                       {" · "}
-                      {Math.round(suggestion.confidence * 100)}% confiance
+                      {Math.round(suggestion.confidence * 100)}% {t("common.confidence")}
                     </ThemedText>
                     <ThemedText variant="xs" color="mutedForeground">
                       {suggestion.reason}
@@ -688,7 +694,7 @@ export default function GoalsScreen() {
                       variant="xs"
                       style={{ color: "#fff", fontWeight: "600" }}
                     >
-                      Créer
+                      {t("common.create")}
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -704,7 +710,7 @@ export default function GoalsScreen() {
                     color="mutedForeground"
                     style={{ textAlign: "center" }}
                   >
-                    Voir toutes les suggestions ({suggestions.length})
+                    {t("common.see_all")} ({suggestions.length})
                   </ThemedText>
                 </TouchableOpacity>
               )}
@@ -725,7 +731,7 @@ export default function GoalsScreen() {
           >
             <View style={{ flex: 1 }}>
               <ThemedText variant="xs" color="mutedForeground">
-                Total épargné
+                {t("goals.total_saved")}
               </ThemedText>
               <ThemedText variant="base" weight="bold">
                 {formatCurrency(stats.totalSaved, currency)}
@@ -733,7 +739,7 @@ export default function GoalsScreen() {
             </View>
             <View style={{ flex: 1, alignItems: "flex-end" }}>
               <ThemedText variant="xs" color="mutedForeground">
-                Objectif total
+                {t("goals.total_target")}
               </ThemedText>
               <ThemedText variant="base" weight="bold">
                 {formatCurrency(stats.totalTarget, currency)}
@@ -777,16 +783,16 @@ export default function GoalsScreen() {
               style={{ marginBottom: 8, textAlign: "center" }}
             >
               {searchQuery
-                ? "Aucun objectif trouvé"
-                : "Aucun objectif d'épargne"}
+                ? t("goals.no_results")
+                : t("goals.no_goals")}
             </ThemedText>
             <ThemedText
               color="mutedForeground"
               style={{ textAlign: "center", lineHeight: 22, marginBottom: 24 }}
             >
               {searchQuery
-                ? `Aucun objectif ne correspond à "${searchQuery}"`
-                : "Créez votre premier objectif pour suivre vos économies et atteindre vos buts !"}
+                ? t("goals.no_results_description", { query: searchQuery })
+                : t("goals.create_first_description")}
             </ThemedText>
             {!searchQuery && (
               <TouchableOpacity
@@ -803,7 +809,7 @@ export default function GoalsScreen() {
               >
                 <Ionicons name="add" size={20} color="#fff" />
                 <ThemedText weight="semibold" style={{ color: "#fff" }}>
-                  Créer un objectif
+                  {t("goals.create")}
                 </ThemedText>
               </TouchableOpacity>
             )}
@@ -827,7 +833,7 @@ export default function GoalsScreen() {
                   {title}
                 </ThemedText>
                 <ThemedText variant="xs" color="mutedForeground">
-                  {count} objectif{count > 1 ? "s" : ""}
+                  {count} {t("goals.goal")}{count > 1 ? "s" : ""}
                 </ThemedText>
               </View>
             )}
@@ -888,11 +894,13 @@ export default function GoalsScreen() {
               weight="bold"
               style={{ marginBottom: theme.spacing.md }}
             >
-              {modalType === "add" ? "Ajouter des fonds" : "Retirer des fonds"}
+              {modalType === "add"
+                ? t("goals.add_funds_title")
+                : t("goals.withdraw_title")}
             </ThemedText>
             <TextInput
-              label="Montant"
-              placeholder="0.00"
+              label={t("finance.amount")}
+              placeholder={t("common.amount_placeholder")}
               keyboardType="numeric"
               value={amountInput}
               onChangeText={setAmountInput}
@@ -904,10 +912,10 @@ export default function GoalsScreen() {
                 style={{ flex: 1 }}
                 onPress={() => setIsModalOpen(false)}
               >
-                Annuler
+                {t("common.cancel")}
               </Button>
               <Button style={{ flex: 1 }} onPress={handleConfirmFunds}>
-                Confirmer
+                {t("common.confirm")}
               </Button>
             </View>
           </ThemedView>

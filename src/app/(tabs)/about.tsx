@@ -1,3 +1,5 @@
+// src/app/(tabs)/about.tsx
+
 import SafeAreaView from "@/components/ui/safe-area-view";
 import ScrollView from "@/components/ui/scroll-view";
 import ThemedText from "@/components/ui/text";
@@ -15,12 +17,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useUIStore } from "@/stores/ui-store";
 import { useRef } from "react";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 export default function AboutScreen() {
   const { theme } = useTheme();
   const { setTabBarVisible } = useUIStore();
+  const { t } = useTranslation();
   const lastScrollY = useRef(0);
-
   const router = useRouter();
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -35,16 +38,11 @@ export default function AboutScreen() {
   };
 
   const handleOpenEmail = () => {
-    Linking.openURL("mailto:rashwrightmz@gmail.com"); // Using the email from settings
+    Linking.openURL("mailto:rashwrightmz@gmail.com");
   };
 
-  const handleOpenTwitter = () => {
-    Linking.openURL("https://twitter.com/"); // Fallback twitter URL
-  };
-
-  // handleOpenContact
   const handleOpenContact = (number: string) => {
-    Linking.openURL(`tel:${number}`); // Using the phone from settings
+    Linking.openURL(`tel:${number}`);
   };
 
   return (
@@ -81,7 +79,7 @@ export default function AboutScreen() {
             Ajiya Ta
           </ThemedText>
           <ThemedText variant="sm" color="mutedForeground">
-            Version 1.0.0
+            {t('about.version')} 1.0.0
           </ThemedText>
         </View>
 
@@ -93,14 +91,10 @@ export default function AboutScreen() {
             weight="semibold"
             style={{ marginBottom: theme.spacing.sm }}
           >
-            À propos de l'application
+            {t('about.app_description_title')}
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Ajiya Ta est votre assistant financier personnel, conçu pour vous
-            aider à gérer vos revenus, vos dépenses, et à atteindre vos
-            objectifs d'épargne. L'application est construite avec une
-            philosophie "offline-first" pour vous assurer un accès à vos données
-            à tout moment.
+            {t('about.app_description')}
           </ThemedText>
         </Card>
 
@@ -112,7 +106,7 @@ export default function AboutScreen() {
             weight="semibold"
             style={{ marginBottom: theme.spacing.sm }}
           >
-            Développeur
+            {t('about.developer')}
           </ThemedText>
           <View
             style={{
@@ -132,7 +126,7 @@ export default function AboutScreen() {
                 Abdoul Rachid
               </ThemedText>
               <ThemedText variant="sm" color="mutedForeground">
-                Developpeur web & mobile
+                {t('about.developer_role')}
               </ThemedText>
             </View>
           </View>
@@ -180,11 +174,10 @@ export default function AboutScreen() {
             weight="semibold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Mentions légales
+            {t('about.legal')}
           </ThemedText>
 
           <TouchableOpacity
-            // @ts-ignore
             onPress={() => router.push("/privacy")}
             style={{
               flexDirection: "row",
@@ -193,7 +186,7 @@ export default function AboutScreen() {
               paddingVertical: theme.spacing.sm,
             }}
           >
-            <ThemedText>Politique de confidentialité</ThemedText>
+            <ThemedText>{t('about.privacy_policy')}</ThemedText>
             <Ionicons
               name="chevron-forward-outline"
               size={20}
@@ -202,7 +195,6 @@ export default function AboutScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            // @ts-ignore
             onPress={() => router.push("/terms")}
             style={{
               flexDirection: "row",
@@ -211,7 +203,7 @@ export default function AboutScreen() {
               paddingVertical: theme.spacing.sm,
             }}
           >
-            <ThemedText>Conditions d'utilisation</ThemedText>
+            <ThemedText>{t('about.terms_of_use')}</ThemedText>
             <Ionicons
               name="chevron-forward-outline"
               size={20}

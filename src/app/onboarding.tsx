@@ -1,3 +1,5 @@
+// src/app/onboarding.tsx
+
 import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
@@ -36,6 +38,9 @@ import { ONBOARDING_SLIDES } from '@/constants/onboarding-slides';
 
 // Services
 import { initializeAccount } from '@/features/accounts/services';
+
+// i18n
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -103,6 +108,7 @@ const NextButton = ({
 
 export default function Onboarding() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const router: any = useRouter();
   const { setCurrentUser, setCurrentAccount } = useAppStore();
   
@@ -254,14 +260,14 @@ export default function Onboarding() {
           </View>
         </Animated.View>
 
-        {/* Texte */}
+        {/* Texte - Utiliser les traductions */}
         <Animated.View style={[styles.textContainer, titleAnimatedStyle]}>
           <ThemedText
             variant="3xl"
             weight="bold"
             style={[styles.title, { color: slide.color }]}
           >
-            {slide.title}
+            {t(`onboarding.${slide.id}.title`)}
           </ThemedText>
           
           <ThemedText
@@ -269,7 +275,7 @@ export default function Onboarding() {
             color="mutedForeground"
             style={styles.description}
           >
-            {slide.description}
+            {t(`onboarding.${slide.id}.description`)}
           </ThemedText>
         </Animated.View>
       </View>
@@ -284,7 +290,7 @@ export default function Onboarding() {
         onPress={() => router.push('/onboarding-config')}
       >
         <ThemedText variant="sm" color="mutedForeground">
-          Passer
+          {t('common.skip')}
         </ThemedText>
       </TouchableOpacity>
 
@@ -371,7 +377,7 @@ const styles = StyleSheet.create({
     borderWidth: 4,
   },
   illustrationIcon: {
-    marginLeft: 4, // Pour compenser l'offset des icônes
+    marginLeft: 4,
   },
   textContainer: {
     alignItems: 'center',

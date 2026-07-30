@@ -28,7 +28,10 @@ import { Attachment } from "@/types";
 import { useState } from "react";
 import { useDevice } from "@/hooks/use-device";
 
+import { useTranslation } from "react-i18next";
+
 export default function TransactionCreate() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { type: initialType } = useLocalSearchParams<{

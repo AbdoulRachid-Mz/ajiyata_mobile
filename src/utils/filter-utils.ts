@@ -1,7 +1,9 @@
+// src/utils/filter-utils.ts
+
 import { Transaction } from '@/types';
-// import { TransactionFilters, SortField, SortDirection } from '../types/filters';
 import { startOfDay, endOfDay, subDays, subWeeks, subMonths, subYears } from 'date-fns';
 import { DatePreset, SortDirection, SortField, TransactionFilters } from '@/features/transactions/types/filters';
+import i18n from '@/configs/i18n';
 
 export const filterTransactions = (
   transactions: Transaction[],
@@ -142,10 +144,11 @@ export const getDatePresetRange = (preset: DatePreset): { start: Date; end: Date
 };
 
 export const getFilterSummary = (filters: TransactionFilters): string => {
+  const t = i18n.t.bind(i18n);
   const parts: string[] = [];
 
   if (filters.type && filters.type !== 'all') {
-    parts.push(filters.type === 'income' ? 'Revenus' : filters.type === 'expense' ? 'Dépenses' : 'Virements');
+    parts.push(filters.type === 'income' ? t('finance.income') : filters.type === 'expense' ? t('finance.expense') : t('finance.transfer'));
   }
 
   if (filters.search && filters.search.trim()) {
@@ -153,15 +156,16 @@ export const getFilterSummary = (filters: TransactionFilters): string => {
   }
 
   if (filters.categoryIds && filters.categoryIds.length > 0) {
-    parts.push(`${filters.categoryIds.length} catégorie(s)`);
+    parts.push(`${filters.categoryIds.length} ${t('finance.category')}${filters.categoryIds.length > 1 ? 's' : ''}`);
   }
 
   if (filters.presetDate && filters.presetDate !== 'custom') {
-    const labels = {
-      today: "Aujourd'hui",
-      week: 'Cette semaine',
-      month: 'Ce mois',
-      year: 'Cette année',
+    const labels: Record<DatePreset, string> = {
+      today: t('periods.today'),
+      week: t('periods.this_week'),
+      month: t('periods.this_month'),
+      year: t('periods.this_year'),
+      custom: t('periods.custom'),
     };
     parts.push(labels[filters.presetDate]);
   }
@@ -172,5 +176,5 @@ export const getFilterSummary = (filters: TransactionFilters): string => {
     parts.push(`${min}${min && max ? ' & ' : ''}${max}`);
   }
 
-  return parts.length > 0 ? `Filtres: ${parts.join(' • ')}` : 'Toutes les transactions';
+  return parts.length > 0 ? `${t('common.filters')}: ${parts.join(' • ')}` : t('transactions.all_transactions');
 };

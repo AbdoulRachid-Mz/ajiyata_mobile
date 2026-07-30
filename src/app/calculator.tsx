@@ -13,8 +13,10 @@ import Card from '@/components/ui/card';
 // Theme
 import { useTheme } from '@/contexts/theme-context';
 import { ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 export default function Calculator() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -145,7 +147,7 @@ export default function Calculator() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
           </Button>
           <ThemedText variant="xl" weight="bold" style={{ marginLeft: theme.spacing.md }}>
-            Calculatrice
+            {t('calculator.title')}
           </ThemedText>
         </ThemedView>
 

@@ -1,3 +1,5 @@
+// src/app/auth/login.tsx
+
 import Button from "@/components/ui/button";
 import SafeAreaView from "@/components/ui/safe-area-view";
 import ThemedText from "@/components/ui/text";
@@ -9,7 +11,7 @@ import { useAppStore } from "@/stores/app-store";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -22,10 +24,11 @@ import {
 } from "react-native";
 import { z } from "zod";
 import { ActivityIndicator } from "@/components/ui";
+import { useTranslation } from "react-i18next";
 
 const loginSchema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(6, "Mot de passe trop court"),
+  email: z.string().email("auth.invalid_email"),
+  password: z.string().min(6, "auth.password_too_short"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -33,6 +36,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const { login, loginWithGoogle, loginWithBiometric, isLoading } = useAuth();
   const { setCurrentUser } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
@@ -65,19 +69,18 @@ export default function LoginScreen() {
         setCurrentUser(response.data as any);
       }
       
-      // Proposer d'activer la biométrie si disponible et non activée
       if (isBiometricAvailable && !isBiometricEnabled) {
         Alert.alert(
-          '🔐 Sécurisez votre compte',
-          'Souhaitez-vous activer l\'authentification biométrique pour un accès plus rapide ?',
+          t('auth.secure_account'),
+          t('auth.biometric_prompt'),
           [
-            { text: 'Plus tard', style: 'cancel' },
+            { text: t('common.later'), style: 'cancel' },
             { 
-              text: 'Activer', 
+              text: t('auth.enable'), 
               onPress: async () => {
                 const success = await toggleBiometric(true);
                 if (!success) {
-                  Alert.alert('Erreur', 'Impossible d\'activer la biométrie.');
+                  Alert.alert(t('common.error'), t('common.error'));
                 }
               }
             },
@@ -87,7 +90,7 @@ export default function LoginScreen() {
       
       router.replace("/(tabs)/dashboard");
     } else {
-      Alert.alert("Erreur", response.error || "Échec de la connexion");
+      Alert.alert(t('common.error'), response.error || t('auth.login_failed'));
     }
   };
 
@@ -96,7 +99,7 @@ export default function LoginScreen() {
     if (response.success) {
       router.replace("/(tabs)/dashboard");
     } else {
-      Alert.alert("Erreur", response.error || "Échec de la connexion Google");
+      Alert.alert(t('common.error'), response.error || t('auth.google_login_failed'));
     }
   };
 
@@ -105,20 +108,19 @@ export default function LoginScreen() {
     
     setIsBiometricLoading(true);
     try {
-      // Vérifier si la biométrie est disponible et activée
       if (!isBiometricAvailable) {
-        Alert.alert('Non disponible', 'La biométrie n\'est pas disponible sur cet appareil.');
+        Alert.alert(t('common.not_available'), t('common.not_available'));
         return;
       }
       
       if (!isBiometricEnabled) {
         Alert.alert(
-          'Biométrie désactivée',
-          'Activez la biométrie dans les paramètres pour utiliser cette fonction.',
+          t('auth.biometric_disabled'),
+          t('auth.enable_in_settings'),
           [
             { text: 'OK', style: 'cancel' },
             { 
-              text: 'Paramètres', 
+              text: t('tabs.settings'), 
               onPress: () => router.push('/(tabs)/settings') 
             },
           ]
@@ -126,24 +128,21 @@ export default function LoginScreen() {
         return;
       }
 
-      // Tenter l'authentification biométrique
-      const success = await authenticate('Déverrouillez Ajiya Ta avec votre empreinte');
+      const success = await authenticate(t('auth.biometric_login'));
       
       if (success) {
-        // Récupérer la session existante ou utiliser loginWithBiometric
         const response = await loginWithBiometric();
         if (response.success) {
           router.replace("/(tabs)/dashboard");
         } else {
-          Alert.alert("Erreur", response.error || "Échec de la connexion biométrique");
+          Alert.alert(t('common.error'), response.error || t('auth.login_failed'));
         }
       } else {
-        // L'utilisateur a annulé ou a échoué
-        Alert.alert('Annulé', 'Authentification biométrique annulée.');
+        Alert.alert(t('common.canceled'), t('auth.biometric_canceled'));
       }
     } catch (error) {
       console.error('Erreur biométrique:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'authentification biométrique.');
+      Alert.alert(t('common.error'), t('common.error'));
     } finally {
       setIsBiometricLoading(false);
     }
@@ -169,14 +168,14 @@ export default function LoginScreen() {
               weight="bold"
               style={{ textAlign: "center" }}
             >
-              Bienvenue !
+              {t('auth.login_title')}
             </ThemedText>
             <ThemedText
               variant="base"
               color="mutedForeground"
               style={{ textAlign: "center", marginTop: 8 }}
             >
-              Connectez-vous pour continuer
+              {t('auth.login_subtitle')}
             </ThemedText>
           </View>
 
@@ -186,8 +185,8 @@ export default function LoginScreen() {
               name="email"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label="Email"
-                  placeholder="votre@email.com"
+                  label={t('auth.email')}
+                  placeholder={t('auth.email_placeholder')}
                   value={value}
                   onChangeText={onChange}
                   keyboardType="email-address"
@@ -212,7 +211,7 @@ export default function LoginScreen() {
                   marginBottom: theme.spacing.sm,
                 }}
               >
-                {errors.email.message}
+                {t(errors.email.message as string)}
               </ThemedText>
             )}
 
@@ -221,8 +220,8 @@ export default function LoginScreen() {
               name="password"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label="Mot de passe"
-                  placeholder="••••••••"
+                  label={t('auth.password')}
+                  placeholder={t('auth.password_placeholder')}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showPassword}
@@ -257,7 +256,7 @@ export default function LoginScreen() {
                   marginBottom: theme.spacing.sm,
                 }}
               >
-                {errors.password.message}
+                {t(errors.password.message as string)}
               </ThemedText>
             )}
 
@@ -266,7 +265,7 @@ export default function LoginScreen() {
               style={{ alignSelf: "flex-end", marginBottom: theme.spacing.lg }}
             >
               <ThemedText variant="sm" color="primary" weight="semibold">
-                Mot de passe oublié ?
+                {t('auth.forgot_password')}
               </ThemedText>
             </TouchableOpacity>
 
@@ -279,10 +278,9 @@ export default function LoginScreen() {
                 borderRadius: theme.borderRadius.xl,
               }}
             >
-              {isLoading ? "Connexion..." : "Se connecter"}
+              {isLoading ? t('common.loading') : t('auth.sign_in')}
             </Button>
 
-            {/* Bouton Biométrie - Toujours visible si disponible */}
             {isBiometricAvailable && (
               <TouchableOpacity
                 onPress={handleBiometricLogin}
@@ -320,8 +318,8 @@ export default function LoginScreen() {
                       weight={isBiometricEnabled ? "semibold" : "normal"}
                     >
                       {isBiometricEnabled 
-                        ? "Connexion avec empreinte" 
-                        : "Biométrie désactivée"}
+                        ? t('auth.biometric_login')
+                        : t('auth.biometric_disabled')}
                     </ThemedText>
                     {!isBiometricEnabled && (
                       <ThemedText 
@@ -329,7 +327,7 @@ export default function LoginScreen() {
                         color="mutedForeground" 
                         style={{ marginLeft: 2 }}
                       >
-                        (Activer dans paramètres)
+                        {t('auth.enable_in_settings')}
                       </ThemedText>
                     )}
                   </>
@@ -356,7 +354,7 @@ export default function LoginScreen() {
                 color="mutedForeground"
                 style={{ marginHorizontal: theme.spacing.md }}
               >
-                ou continuer avec
+                {t('auth.or_continue_with')}
               </ThemedText>
               <View
                 style={{
@@ -381,7 +379,7 @@ export default function LoginScreen() {
                   size={24}
                   color={theme.colors.foreground}
                 />
-                <ThemedText weight="semibold">Google</ThemedText>
+                <ThemedText weight="semibold">{t('auth.google')}</ThemedText>
               </View>
             </Button>
           </View>
@@ -394,11 +392,11 @@ export default function LoginScreen() {
             }}
           >
             <ThemedText color="mutedForeground">
-              Pas encore de compte ?{" "}
+              {t('auth.no_account')}{" "}
             </ThemedText>
             <TouchableOpacity onPress={() => router.push("/auth/register")}>
               <ThemedText color="primary" weight="bold">
-                Créer un compte
+                {t('auth.create_account')}
               </ThemedText>
             </TouchableOpacity>
           </View>

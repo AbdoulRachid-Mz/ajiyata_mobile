@@ -13,6 +13,7 @@ import { exchangeRateService } from '@/services/exchange-rate.service';
 import NetInfo from '@react-native-community/netinfo';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 const CURRENCY_NAMES: Record<string, { name: string; flag: string }> = {
   XOF: { name: 'Franc CFA (BCEAO)', flag: 'CFA' },
@@ -47,6 +48,7 @@ const CURRENCY_NAMES: Record<string, { name: string; flag: string }> = {
 const POPULAR_CURRENCIES = ['USD', 'EUR', 'GBP', 'XOF', 'XAF', 'MAD', 'NGN', 'DZD'];
 
 export default function CurrencyConverter() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -178,7 +180,7 @@ export default function CurrencyConverter() {
         >
           <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
         </TouchableOpacity>
-        <ThemedText variant="lg" weight="bold">Conversion</ThemedText>
+        <ThemedText variant="lg" weight="bold">{t('currency_converter.title')}</ThemedText>
         <TouchableOpacity
           onPress={() => fetchRates(sourceCurrency)}
           disabled={isLoading}
@@ -198,12 +200,12 @@ export default function CurrencyConverter() {
           {isOffline && (
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.destructive + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
               <Ionicons name="cloud-offline" size={14} color={theme.colors.destructive} style={{ marginRight: 4 }} />
-              <ThemedText style={{ fontSize: 12, color: theme.colors.destructive }}>Hors ligne</ThemedText>
+              <ThemedText style={{ fontSize: 12, color: theme.colors.destructive }}>{t('currency_converter.offline')}</ThemedText>
             </View>
           )}
           {lastUpdated && (
              <ThemedText style={{ fontSize: 12, color: theme.colors.mutedForeground }}>
-             Mis à jour {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: fr })}
+             {t('currency_converter.updated')} {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: fr })}
            </ThemedText>
           )}
         </View>
@@ -275,7 +277,7 @@ export default function CurrencyConverter() {
         </Card>
 
         {/* Popular currencies */}
-        <ThemedText weight="semibold" style={{ marginBottom: theme.spacing.sm }}>Populaires</ThemedText>
+        <ThemedText weight="semibold" style={{ marginBottom: theme.spacing.sm }}>{t('currency_converter.popular')}</ThemedText>
         <View style={{ flexDirection: 'row', marginBottom: theme.spacing.md }}>
           <FlatList 
             horizontal
@@ -348,25 +350,25 @@ export default function CurrencyConverter() {
       >
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
-            <ThemedText variant="lg" weight="bold">Choisir une devise</ThemedText>
+            <ThemedText variant="lg" weight="bold">{t('currency_converter.choose_currency')}</ThemedText>
             <TouchableOpacity onPress={() => setIsPickerVisible(false)}>
               <Ionicons name="close-circle" size={28} color={theme.colors.mutedForeground} />
             </TouchableOpacity>
           </View>
           <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm }}>
-            <TextInput
-              style={{
-                backgroundColor: theme.colors.muted,
-                color: theme.colors.foreground,
-                padding: theme.spacing.sm,
-                borderRadius: theme.borderRadius.md,
-                fontSize: 14,
-              }}
-              placeholder="Rechercher une devise..."
-              placeholderTextColor={theme.colors.mutedForeground}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+              <TextInput
+                style={{
+                  backgroundColor: theme.colors.muted,
+                  color: theme.colors.foreground,
+                  padding: theme.spacing.sm,
+                  borderRadius: theme.borderRadius.md,
+                  fontSize: 14,
+                }}
+                placeholder={t('currency_converter.search_placeholder')}
+                placeholderTextColor={theme.colors.mutedForeground}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
           </View>
           <FlatList
             data={filteredCurrencies}

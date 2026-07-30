@@ -35,7 +35,10 @@ import { budgetRepository } from "@/features/budgets/repositories";
 import { useDevice } from "@/hooks/use-device";
 import Slider from "@react-native-community/slider";
 
+import { useTranslation } from "react-i18next";
+
 export default function BudgetCreate() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -63,64 +66,68 @@ export default function BudgetCreate() {
   const { deviceId } = useDevice();
 
   // Fonction de création multiple
-const createMultipleBudgets = async (data: BudgetFormData) => {
-  if (!currentAccount) {
-    Toast.show({ type: 'error', text1: 'Erreur', text2: 'Compte non trouvé' });
-    return;
-  }
-
-  const now = new Date();
-  const budgetsToCreate = [];
-
-  for (let i = 0; i < data.count; i++) {
-    let startDate: Date;
-    let endDate: Date;
-
-    const offset = i * getPeriodDays(data.period);
-    startDate = new Date(now);
-    startDate.setDate(startDate.getDate() + offset);
-    endDate = new Date(startDate);
-
-    switch (data.period) {
-      case "daily":
-        endDate.setDate(endDate.getDate() + 1);
-        break;
-      case "weekly":
-        endDate.setDate(endDate.getDate() + 7);
-        break;
-      case "monthly":
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
+  const createMultipleBudgets = async (data: BudgetFormData) => {
+    if (!currentAccount) {
+      Toast.show({
+        type: "error",
+        text1: "Erreur",
+        text2: "Compte non trouvé",
+      });
+      return;
     }
 
-    budgetsToCreate.push({
-      id: generateUUID(),
-      accountId: currentAccount.id,  // ⚠️ S'assurer que accountId est présent
-      categoryId: data.categoryId,
-      limit: data.limit,
-      spent: 0,
-      period: data.period,
-      startDate: startDate,
-      endDate: endDate,
-      status: "active" as const,
-      createdAt: getCurrentTimestamp(),
-      updatedAt: getCurrentTimestamp(),
-      deviceId: deviceId,
-      version: 1,
-      syncStatus: "pending" as const,
-      metadata: {},
+    const now = new Date();
+    const budgetsToCreate = [];
+
+    for (let i = 0; i < data.count; i++) {
+      let startDate: Date;
+      let endDate: Date;
+
+      const offset = i * getPeriodDays(data.period);
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() + offset);
+      endDate = new Date(startDate);
+
+      switch (data.period) {
+        case "daily":
+          endDate.setDate(endDate.getDate() + 1);
+          break;
+        case "weekly":
+          endDate.setDate(endDate.getDate() + 7);
+          break;
+        case "monthly":
+          endDate.setMonth(endDate.getMonth() + 1);
+          break;
+      }
+
+      budgetsToCreate.push({
+        id: generateUUID(),
+        accountId: currentAccount.id, // ⚠️ S'assurer que accountId est présent
+        categoryId: data.categoryId,
+        limit: data.limit,
+        spent: 0,
+        period: data.period,
+        startDate: startDate,
+        endDate: endDate,
+        status: "active" as const,
+        createdAt: getCurrentTimestamp(),
+        updatedAt: getCurrentTimestamp(),
+        deviceId: deviceId,
+        version: 1,
+        syncStatus: "pending" as const,
+        metadata: {},
+      });
+    }
+
+    // Créer tous les budgets en parallèle
+    await Promise.all(budgetsToCreate.map((b) => budgetRepository.create(b)));
+
+    Toast.show({
+      type: "success",
+      text1: `${budgetsToCreate.length} budgets créés avec succès`,
     });
-  }
-
-  // Créer tous les budgets en parallèle
-  await Promise.all(budgetsToCreate.map((b) => budgetRepository.create(b)));
-
-  Toast.show({
-    type: "success",
-    text1: `${budgetsToCreate.length} budgets créés avec succès`,
-  });
-  router.back();
-};
+    router.back();
+  };
 
   // Helper function to get the number of days in a period type
   const getPeriodDays = (period: string): number => {
@@ -188,84 +195,84 @@ const createMultipleBudgets = async (data: BudgetFormData) => {
     });
   };
 
- const onSubmit = async (data: BudgetFormData) => {
-  if (!currentAccount) {
-    Alert.alert("Erreur", "Compte non trouvé.");
-    return;
-  }
+  const onSubmit = async (data: BudgetFormData) => {
+    if (!currentAccount) {
+      Alert.alert("Erreur", "Compte non trouvé.");
+      return;
+    }
 
-  // Si plus d'un budget, utiliser la création multiple
-  if (data.count > 1) {
-    await createMultipleBudgets(data);
-    return;
-  }
+    // Si plus d'un budget, utiliser la création multiple
+    if (data.count > 1) {
+      await createMultipleBudgets(data);
+      return;
+    }
 
-  // Vérifier si un doublon existe dans la même période
-  const hasDuplicate = isDuplicateBudget(data.categoryId, data.period);
+    // Vérifier si un doublon existe dans la même période
+    const hasDuplicate = isDuplicateBudget(data.categoryId, data.period);
 
-  const performCreation = async () => {
-    try {
-      const now = new Date();
-      let startDate: Date;
-      let endDate: Date;
+    const performCreation = async () => {
+      try {
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date;
 
-      switch (data.period) {
-        case "daily":
-          startDate = startOfDay(now);
-          endDate = endOfDay(now);
-          break;
-        case "weekly":
-          startDate = startOfWeek(now, { weekStartsOn: 1 });
-          endDate = endOfWeek(now, { weekStartsOn: 1 });
-          break;
-        case "monthly":
-          startDate = startOfMonth(now);
-          endDate = endOfMonth(now);
-          break;
-        default:
-          startDate = now;
-          endDate = now;
+        switch (data.period) {
+          case "daily":
+            startDate = startOfDay(now);
+            endDate = endOfDay(now);
+            break;
+          case "weekly":
+            startDate = startOfWeek(now, { weekStartsOn: 1 });
+            endDate = endOfWeek(now, { weekStartsOn: 1 });
+            break;
+          case "monthly":
+            startDate = startOfMonth(now);
+            endDate = endOfMonth(now);
+            break;
+          default:
+            startDate = now;
+            endDate = now;
+        }
+
+        const newBudget = {
+          id: generateUUID(),
+          accountId: currentAccount.id, // ⚠️ S'assurer que accountId est présent
+          categoryId: data.categoryId,
+          limit: data.limit,
+          spent: 0,
+          period: data.period,
+          startDate: startDate,
+          endDate: endDate,
+          status: "active" as const,
+          createdAt: getCurrentTimestamp(),
+          updatedAt: getCurrentTimestamp(),
+          deviceId: deviceId,
+          version: 1,
+          syncStatus: "pending" as const,
+          metadata: {},
+        };
+
+        await createBudget.mutateAsync(newBudget);
+        router.back();
+      } catch (error) {
+        console.error("Failed to create budget:", error);
+        Alert.alert("Erreur", "Impossible de créer le budget.");
       }
+    };
 
-      const newBudget = {
-        id: generateUUID(),
-        accountId: currentAccount.id,  // ⚠️ S'assurer que accountId est présent
-        categoryId: data.categoryId,
-        limit: data.limit,
-        spent: 0,
-        period: data.period,
-        startDate: startDate,
-        endDate: endDate,
-        status: "active" as const,
-        createdAt: getCurrentTimestamp(),
-        updatedAt: getCurrentTimestamp(),
-        deviceId: deviceId,
-        version: 1,
-        syncStatus: "pending" as const,
-        metadata: {},
-      };
-
-      await createBudget.mutateAsync(newBudget);
-      router.back();
-    } catch (error) {
-      console.error("Failed to create budget:", error);
-      Alert.alert("Erreur", "Impossible de créer le budget.");
+    if (hasDuplicate) {
+      Alert.alert(
+        "Budget existant",
+        "Un budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment en créer un autre ?",
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "Créer quand même", onPress: performCreation },
+        ],
+      );
+    } else {
+      await performCreation();
     }
   };
-
-  if (hasDuplicate) {
-    Alert.alert(
-      "Budget existant",
-      "Un budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment en créer un autre ?",
-      [
-        { text: "Annuler", style: "cancel" },
-        { text: "Créer quand même", onPress: performCreation },
-      ],
-    );
-  } else {
-    await performCreation();
-  }
-};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>

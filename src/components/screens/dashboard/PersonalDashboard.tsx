@@ -50,7 +50,10 @@ import { QuickActions } from "@/components/finance/QuickActions";
 import { formatCurrency } from "@/lib/formatters/currency";
 
 
+import { useTranslation } from "react-i18next";
+
 export function PersonalDashboard() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -76,7 +79,7 @@ export function PersonalDashboard() {
         lastBackPressTime.current = currentTime;
         Toast.show({
           type: 'success',
-          text1: "Appuyez à nouveau pour quitter",
+          text1: t('dashboard.press_back_again'),
           position: "bottom",
           bottomOffset: 20,
         });
@@ -247,12 +250,12 @@ export function PersonalDashboard() {
   // Gestionnaires d'actions
   const handleDeleteTransaction = (transaction: Transaction) => {
     Alert.alert(
-      "Supprimer la transaction",
-      `Voulez-vous vraiment supprimer "${transaction.title}" ?`,
+      t('transactions.delete_title'),
+      t('transactions.delete_confirm', { title: transaction.title }),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t('common.cancel'), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t('common.delete'),
           style: "destructive",
           onPress: () => {
             deleteTransaction.mutate(transaction.id);
@@ -300,10 +303,10 @@ export function PersonalDashboard() {
         >
           <ThemedView>
             <ThemedText variant="sm" color="mutedForeground">
-              Bonjour,
+              {t('dashboard.hello')}
             </ThemedText>
             <ThemedText variant="2xl" weight="bold">
-              {currentAccount?.name || "Tableau de bord"}
+              {currentAccount?.name || t('dashboard.title')}
             </ThemedText>
           </ThemedView>
         </ThemedView>
@@ -349,7 +352,7 @@ export function PersonalDashboard() {
               weight="semibold"
               style={{ marginBottom: theme.spacing.md }}
             >
-              Statistiques du mois
+              {t('dashboard.monthly_stats')}
             </ThemedText>
 
             {/* KPI Grid */}
@@ -362,7 +365,7 @@ export function PersonalDashboard() {
             >
               <Card style={{ flex: 1, padding: theme.spacing.md }}>
                 <ThemedText variant="xs" color="mutedForeground">
-                  Dépense moy./jour
+                  {t('dashboard.avg_daily_expense')}
                 </ThemedText>
                 <ThemedText variant="xl" weight="bold">
                   {formatCurrency(kpiStats.avgDailyExpense, currency)}
@@ -370,7 +373,7 @@ export function PersonalDashboard() {
               </Card>
               <Card style={{ flex: 1, padding: theme.spacing.md }}>
                 <ThemedText variant="xs" color="mutedForeground">
-                  Revenu moy./jour
+                  {t('dashboard.avg_daily_income')}
                 </ThemedText>
                 <ThemedText
                   variant="xl"
@@ -398,13 +401,13 @@ export function PersonalDashboard() {
               >
                 <View>
                   <ThemedText variant="xs" color="mutedForeground">
-                    Tendance hebdomadaire
+                    {t('dashboard.weekly_trend')}
                   </ThemedText>
                   <ThemedText variant="lg" weight="semibold">
                     {formatCurrency(kpiStats.thisWeekExpenses, currency)}
                   </ThemedText>
                   <ThemedText variant="xs" color="mutedForeground">
-                    Semaine précédente:{" "}
+                    {t('dashboard.previous_week')}{" "}
                     {formatCurrency(kpiStats.lastWeekExpenses, currency)}
                   </ThemedText>
                 </View>
@@ -448,7 +451,7 @@ export function PersonalDashboard() {
                 }}
               >
                 <ThemedText variant="xs" color="mutedForeground">
-                  Plus grosse dépense du mois
+                  {t('dashboard.biggest_expense')}
                 </ThemedText>
                 <View
                   style={{
@@ -490,7 +493,7 @@ export function PersonalDashboard() {
                   weight="semibold"
                   style={{ marginBottom: theme.spacing.sm }}
                 >
-                  Top catégories (dépenses)
+                  {t('dashboard.top_categories')}
                 </ThemedText>
                 {kpiStats.topCategories.map((cat, i) => (
                   <View
@@ -552,7 +555,7 @@ export function PersonalDashboard() {
           }}
         >
           <ThemedText variant="lg" weight="semibold">
-            Opérations récentes
+            {t('dashboard.recent_transactions')}
           </ThemedText>
           {recentTransactions && recentTransactions.length > 0 && (
             <Button
@@ -560,7 +563,7 @@ export function PersonalDashboard() {
               size="sm"
               onPress={() => router.push("/transactions")}
             >
-              Voir tout
+              {t('common.see_all')}
             </Button>
           )}
         </ThemedView>
@@ -587,8 +590,8 @@ export function PersonalDashboard() {
           <Card style={{ padding: theme.spacing.lg, alignItems: "center" }}>
             <ThemedText color="mutedForeground" style={{ textAlign: "center" }}>
               {isLoading
-                ? "Chargement des transactions..."
-                : "Aucune operation pour le moment"}
+                ? t('common.loading')
+                : t('dashboard.no_transactions')}
             </ThemedText>
             {!isLoading && (
               <>
@@ -597,7 +600,7 @@ export function PersonalDashboard() {
                   variant="outline"
                   onPress={() => router.push("/transaction-create")}
                 >
-                  Ajouter ma première opération
+                  {t('dashboard.add_first_transaction')}
                 </Button>
               </>
             )}

@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/formatters/currency";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 interface BalanceCardProps {
   balance: number;
@@ -22,6 +23,7 @@ export const BalanceCard = ({
   currency,
   transactionsCount = 0,
 }: BalanceCardProps) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   // `balance` is already the final calculated balance from calculateFinancialSummary
   const finalBalance = balance || 0;
@@ -62,7 +64,7 @@ export const BalanceCard = ({
         >
           <View>
             <ThemedText variant="sm" color="primaryForeground">
-              Solde total
+              {t('balance_card.total_balance')}
             </ThemedText>
             <ThemedText variant={balanceStyleSize} weight="bold">
               {formatCurrency(finalBalance , currency)}
@@ -108,7 +110,7 @@ export const BalanceCard = ({
                 color="primaryForeground"
                 style={{ opacity: 0.8 }}
               >
-                Revenus
+                {t('balance_card.income')}
               </ThemedText>
             </View>
             <ThemedText
@@ -138,7 +140,7 @@ export const BalanceCard = ({
                 color="primaryForeground"
                 style={{ opacity: 0.8 }}
               >
-                Dépenses
+                {t('balance_card.expense')}
               </ThemedText>
             </View>
             <ThemedText

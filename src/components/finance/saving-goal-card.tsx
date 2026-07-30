@@ -1,3 +1,5 @@
+// src/components/finance/saving-goal-card.tsx
+
 import React, { useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +11,7 @@ import ThemedText from '@/components/ui/text';
 import { useTheme } from '@/contexts/theme-context';
 import { formatCurrency } from '@/lib/formatters/currency';
 import { SavingGoal, SavingGoalWithRelations } from '@/types';
+import { useTranslation } from 'react-i18next';
 
 interface SavingGoalCardProps {
   goal: SavingGoalWithRelations;
@@ -29,6 +32,7 @@ export const SavingGoalCard = ({
   onWithdraw,
   showActions = true,
 }: SavingGoalCardProps) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const swipeableRef = useRef<Swipeable>(null);
 
@@ -36,7 +40,6 @@ export const SavingGoalCard = ({
   const isCompleted = goal.status === 'completed';
   const isPaused = goal.status === 'paused';
 
-  // Haptique pour les actions
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onPress) {
@@ -70,7 +73,7 @@ export const SavingGoalCard = ({
         >
           <Ionicons name="add-circle-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Ajouter
+            {t("common.add")}
           </ThemedText>
         </TouchableOpacity>
 
@@ -85,7 +88,7 @@ export const SavingGoalCard = ({
         >
           <Ionicons name="create-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Modifier
+            {t("common.edit")}
           </ThemedText>
         </TouchableOpacity>
 
@@ -101,7 +104,7 @@ export const SavingGoalCard = ({
         >
           <Ionicons name="trash-outline" size={24} color="#fff" />
           <ThemedText style={styles.swipeActionText} color="primaryForeground">
-            Supprimer
+            {t("common.delete")}
           </ThemedText>
         </TouchableOpacity>
       </Animated.View>
@@ -162,7 +165,7 @@ export const SavingGoalCard = ({
                   </ThemedText>
                   {goal.deadline && (
                     <ThemedText variant="xs" color="mutedForeground">
-                      Échéance : {new Date(goal.deadline).toLocaleDateString('fr-FR')}
+                      {t('saving_goal_card.deadline')} : {new Date(goal.deadline).toLocaleDateString()}
                     </ThemedText>
                   )}
                 </View>
@@ -191,10 +194,10 @@ export const SavingGoalCard = ({
                   }}
                 >
                   {isCompleted
-                    ? 'Terminé'
+                    ? t('saving_goal_card.completed')
                     : isPaused
-                    ? 'En pause'
-                    : 'Actif'}
+                    ? t('saving_goal_card.paused')
+                    : t('saving_goal_card.active')}
                 </ThemedText>
               </View>
             </View>
@@ -220,7 +223,7 @@ export const SavingGoalCard = ({
             <View style={styles.details}>
               <View>
                 <ThemedText variant="sm" color="mutedForeground">
-                  Épargné
+                  {t('saving_goal_card.saved')}
                 </ThemedText>
                 <ThemedText weight="semibold" style={{ fontSize: 18 }}>
                   {formatCurrency(goal.currentAmount, goal.account.currency || 'XOF')}
@@ -229,7 +232,7 @@ export const SavingGoalCard = ({
 
               <View style={styles.detailCenter}>
                 <ThemedText variant="sm" color="mutedForeground">
-                  Objectif
+                  {t('saving_goal_card.goal')}
                 </ThemedText>
                 <ThemedText weight="semibold" style={{ fontSize: 18 }}>
                   {formatCurrency(goal.targetAmount, goal.account.currency || 'XOF')}
@@ -238,7 +241,7 @@ export const SavingGoalCard = ({
 
               <View style={styles.detailRight}>
                 <ThemedText variant="sm" color="mutedForeground">
-                  Progression
+                  {t('saving_goal_card.progress')}
                 </ThemedText>
                 <ThemedText
                   weight="bold"
@@ -280,7 +283,7 @@ export const SavingGoalCard = ({
                     color={theme.financialColors.saving}
                   />
                   <ThemedText variant="sm" style={{ color: theme.financialColors.saving }}>
-                    Ajouter des fonds
+                    {t('saving_goal_card.add_funds')}
                   </ThemedText>
                 </TouchableOpacity>
 
@@ -306,7 +309,7 @@ export const SavingGoalCard = ({
                       color={theme.colors.destructive}
                     />
                     <ThemedText variant="sm" style={{ color: theme.colors.destructive }}>
-                      Retirer
+                      {t('saving_goal_card.withdraw')}
                     </ThemedText>
                   </TouchableOpacity>
                 )}

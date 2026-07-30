@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
 import { ActionsGrid, ActionItem } from '@/components/ui/actions-grid';
+import { useTranslation } from 'react-i18next';
 
 interface QuickActionsProps {
   variant?: 'default' | 'premium' | 'minimal';
@@ -18,13 +19,14 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   customActions,
   showAll = true,
 }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
 
   const defaultActions: ActionItem[] = [
     {
       id: 'income',
-      label: 'Revenu',
+      label: t('quick_actions.income'),
       icon: 'add-circle',
       color: theme.financialColors.income,
       backgroundColor: theme.financialColors.income + '25',
@@ -32,7 +34,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     },
     {
       id: 'expense',
-      label: 'Dépense',
+      label: t('quick_actions.expense'),
       icon: 'remove-circle',
       color: theme.financialColors.expense,
       backgroundColor: theme.financialColors.expense + '25',
@@ -40,7 +42,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     },
     {
       id: 'budget',
-      label: 'Budget',
+      label: t('quick_actions.budget'),
       icon: 'wallet',
       color: theme.financialColors.budget,
       backgroundColor: theme.financialColors.budget + '25',
@@ -48,7 +50,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     },
     {
       id: 'goal',
-      label: 'Objectif',
+      label: t('quick_actions.goal'),
       icon: 'trending-up',
       color: theme.financialColors.saving,
       backgroundColor: theme.financialColors.saving + '25',
@@ -56,7 +58,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     },
     {
       id: 'calculator',
-      label: 'Calculatrice',
+      label: t('quick_actions.calculator'),
       icon: 'calculator',
       color: theme.colors.primary,
       backgroundColor: theme.colors.primary + '25',
@@ -64,7 +66,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     },
     {
       id: 'convert',
-      label: 'Conversion',
+      label: t('quick_actions.convert'),
       icon: 'swap-horizontal',
       color: '#8b5cf6',
       backgroundColor: '#8b5cf625',
@@ -72,7 +74,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     },
     {
       id: 'scan',
-      label: 'Scanner',
+      label: t('quick_actions.scan'),
       icon: 'scan',
       color: '#06b6d4',
       backgroundColor: '#06b6d425',
@@ -80,7 +82,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     },
     {
       id: 'export',
-      label: 'Exporter',
+      label: t('quick_actions.export'),
       icon: 'download',
       color: '#f59e0b',
       backgroundColor: '#f59e0b25',
@@ -94,7 +96,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   return (
     <ActionsGrid
       actions={displayActions}
-      title="Actions rapides"
+      title={t('quick_actions.title')}
       layout={layout}
       columns={4}
       itemsPerView={4}

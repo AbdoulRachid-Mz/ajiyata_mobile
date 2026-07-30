@@ -1,3 +1,5 @@
+// src/contexts/auth-context.tsx
+
 import {
   AuthCredentials,
   AuthRegisterData,
@@ -12,6 +14,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -56,6 +59,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const { t } = useTranslation();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -73,8 +77,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             setUser({
               uid: "local",
-              email: "Utilisateur Local",
-              displayName: "Mode Hors-Ligne",
+              email: t('auth.local_user'),
+              displayName: t('auth.offline_mode'),
               photoURL: null,
               phoneNumber: null,
               emailVerified: false,
@@ -98,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       authService.cleanup();
     };
-  }, []);
+  }, [t]);
 
   const login = async (credentials: AuthCredentials): Promise<AuthResponse> => {
     setIsLoading(true);
@@ -137,8 +141,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.success) {
         setUser({
           uid: "local",
-          email: "Utilisateur Local",
-          displayName: "Mode Hors-Ligne",
+          email: t('auth.local_user'),
+          displayName: t('auth.offline_mode'),
           photoURL: null,
           phoneNumber: null,
           emailVerified: false,
@@ -157,7 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loginWithGoogle = async (): Promise<AuthResponse> => {
-    return { success: false, error: "Google login not implemented yet" };
+    return { success: false, error: t('auth.google_not_implemented') };
   };
 
   const loginWithBiometric = async (): Promise<AuthResponse> => {
@@ -169,8 +173,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser({
           uid: "local",
-          email: "Utilisateur Local",
-          displayName: "Mode Hors-Ligne",
+          email: t('auth.local_user'),
+          displayName: t('auth.offline_mode'),
           photoURL: null,
           phoneNumber: null,
           emailVerified: false,
@@ -179,7 +183,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       return { success: true };
     }
-    return { success: false, error: "Biometric authentication failed" };
+    return { success: false, error: t('auth.biometric_failed') };
   };
 
   const enableBiometric = async (): Promise<boolean> => {
@@ -223,8 +227,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (response.success) {
       setUser({
         uid: "local",
-        email: "Utilisateur Local",
-        displayName: "Mode Hors-Ligne",
+        email: t('auth.local_user'),
+        displayName: t('auth.offline_mode'),
         photoURL: null,
         phoneNumber: null,
         emailVerified: false,

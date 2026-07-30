@@ -21,7 +21,10 @@ import {
   savingGoalFormSchema,
 } from "@/lib/validation";
 
+import { useTranslation } from "react-i18next";
+
 export default function SavingGoalEdit() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();

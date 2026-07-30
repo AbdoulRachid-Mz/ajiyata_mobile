@@ -1,3 +1,5 @@
+// src/features/categories/components/category-picker.tsx
+
 import React, { useState } from 'react';
 import { View, Pressable, StyleSheet, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { useTheme } from '@/contexts/theme-context';
@@ -8,6 +10,7 @@ import { useCreateCategory } from '../hooks';
 import { Category } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useDevice } from '@/hooks/use-device';
+import { useTranslation } from 'react-i18next';
 
 interface CategoryPickerProps {
   accountId: string;
@@ -17,6 +20,7 @@ interface CategoryPickerProps {
 }
 
 export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: CategoryPickerProps) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const [visible, setVisible] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -34,9 +38,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
 
   const selectedCategory = categories?.find(c => c.id === selectedId);
 
-  // Vérifier si une chaîne est un nom d'icône Ionicons valide
   const isValidIconName = (iconName: string): boolean => {
-    // Liste des icônes Ionicons courantes
     const validIcons = [
       'cash-outline', 'briefcase-outline', 'trending-up-outline', 'home-outline',
       'people-outline', 'cart-outline', 'gift-outline', 'wallet-outline',
@@ -49,7 +51,6 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
       'phone-portrait', 'paw', 'color-palette', 'basketball', 'construct',
       'stats-chart', 'create'
     ];
-    // Si le nom commence par un émoji, le remplacer
     const emojiRegex = /[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FEFF}]/u;
     if (emojiRegex.test(iconName)) {
       return false;
@@ -57,18 +58,16 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
     return validIcons.includes(iconName);
   };
 
-  // Obtenir un nom d'icône valide
   const getValidIconName = (iconName: string): string => {
     if (isValidIconName(iconName)) {
       return iconName;
     }
-    return 'wallet-outline'; // Fallback
+    return 'wallet-outline';
   };
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
     
-    // S'assurer que l'icône est valide
     const validIcon = getValidIconName(newCategoryIcon);
     
     try {
@@ -78,7 +77,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
         type: type || 'expense',
         color: newCategoryColor,
         icon: validIcon,
-        id: '', // Sera généré par le repository
+        id: '',
         deviceId,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -104,14 +103,12 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
     setVisible(false);
   };
 
-  // Couleurs prédéfinies pour les catégories
   const presetColors = [
     '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6',
     '#ec4899', '#06b6d4', '#14b8a6', '#f97316', '#6366f1',
     '#84cc16', '#f43f5e', '#0ea5e9', '#a855f7', '#10b981'
   ];
 
-  // Icônes prédéfinies
   const presetIcons = [
     'wallet-outline', 'cash-outline', 'cart-outline', 'home-outline',
     'restaurant-outline', 'bus-outline', 'medical-outline', 'game-controller-outline',
@@ -247,7 +244,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
               <ThemedText>{selectedCategory.name}</ThemedText>
             </>
           ) : (
-            <ThemedText color="mutedForeground">Sélectionner une catégorie</ThemedText>
+            <ThemedText color="mutedForeground">{t('finance.select_category')}</ThemedText>
           )}
         </View>
         <Ionicons name="chevron-down" size={20} color={theme.colors.mutedForeground} />
@@ -256,7 +253,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
       <Drawer visible={visible} onClose={() => setVisible(false)}>
         <View style={{ padding: theme.spacing.lg, maxHeight: '100%' }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Catégories
+            {t('finance.categories')}
           </ThemedText>
 
           {!showCreateInput && (
@@ -265,7 +262,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
               onPress={() => setShowCreateInput(true)}
             >
               <Ionicons name="add" size={20} color={theme.colors.primary} />
-              <ThemedText style={{ color: theme.colors.primary }}>Ajouter une nouvelle catégorie</ThemedText>
+              <ThemedText style={{ color: theme.colors.primary }}>{t('finance.add_category')}</ThemedText>
             </Pressable>
           )}
 
@@ -275,14 +272,13 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
                 style={styles.input}
                 value={newCategoryName}
                 onChangeText={setNewCategoryName}
-                placeholder="Nom de la catégorie"
+                placeholder={t('finance.category_name_placeholder')}
                 placeholderTextColor={theme.colors.mutedForeground}
                 autoFocus
               />
               
-              {/* Sélecteur de couleur */}
               <ThemedText variant="xs" color="mutedForeground" style={{ marginTop: 8 }}>
-                Couleur
+                {t('common.color')}
               </ThemedText>
               <View style={styles.colorPicker}>
                 {presetColors.map((color) => (
@@ -298,9 +294,8 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
                 ))}
               </View>
 
-              {/* Sélecteur d'icône */}
               <ThemedText variant="xs" color="mutedForeground" style={{ marginTop: 8 }}>
-                Icône
+                {t('common.icon')}
               </ThemedText>
               <View style={styles.iconPicker}>
                 {presetIcons.slice(0, 12).map((icon) => (
@@ -327,7 +322,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
                     setNewCategoryColor('#16a34a');
                   }}
                 >
-                  <ThemedText color="mutedForeground">Annuler</ThemedText>
+                  <ThemedText color="mutedForeground">{t('common.cancel')}</ThemedText>
                 </Pressable>
                 <Pressable 
                   style={{ 
@@ -344,7 +339,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <ThemedText style={{ color: '#fff', fontWeight: '600' }}>
-                      Créer
+                      {t('common.create')}
                     </ThemedText>
                   )}
                 </Pressable>
@@ -358,7 +353,7 @@ export const CategoryPicker = ({ accountId, selectedId, onSelect, type }: Catego
             </View>
           ) : filteredCategories?.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <ThemedText color="mutedForeground">Aucune catégorie trouvée</ThemedText>
+              <ThemedText color="mutedForeground">{t('finance.no_categories_found')}</ThemedText>
             </View>
           ) : (
             <FlatList

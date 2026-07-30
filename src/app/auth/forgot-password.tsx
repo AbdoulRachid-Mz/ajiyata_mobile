@@ -1,3 +1,5 @@
+// src/app/auth/forgot-password.tsx
+
 import React, { useState } from "react";
 import {
   View,
@@ -19,9 +21,10 @@ import Card from "@/components/ui/card";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email("Email invalide"),
+  email: z.string().email("auth.invalid_email"),
 });
 
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
@@ -30,6 +33,7 @@ export default function ForgotPasswordScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const { resetPassword, isLoading } = useAuth();
+  const { t } = useTranslation();
   const [isSent, setIsSent] = useState(false);
 
   const {
@@ -48,7 +52,7 @@ export default function ForgotPasswordScreen() {
     if (response.success) {
       setIsSent(true);
     } else {
-      Alert.alert("Erreur", response.error || "Échec de l'envoi");
+      Alert.alert(t('common.error'), response.error || t('auth.login_failed'));
     }
   };
 
@@ -80,10 +84,10 @@ export default function ForgotPasswordScreen() {
               <Ionicons name="key-outline" size={50} color={theme.colors.primary} />
             </LinearGradient>
             <ThemedText variant="3xl" weight="bold" style={{ textAlign: "center" }}>
-              Mot de passe oublié
+              {t('auth.forgot_password_title')}
             </ThemedText>
             <ThemedText variant="base" color="mutedForeground" style={{ textAlign: "center", marginTop: 8 }}>
-              Entrez votre email pour recevoir un lien de réinitialisation
+              {t('auth.forgot_password_subtitle')}
             </ThemedText>
           </View>
 
@@ -101,16 +105,16 @@ export default function ForgotPasswordScreen() {
                 <Ionicons name="checkmark-circle" size={60} color={theme.financialColors.income} />
               </View>
               <ThemedText variant="2xl" weight="bold" style={{ textAlign: "center" }}>
-                Email envoyé !
+                {t('auth.email_sent')}
               </ThemedText>
               <ThemedText variant="sm" color="mutedForeground" style={{ textAlign: "center", marginTop: theme.spacing.sm }}>
-                Vérifiez votre boîte mail pour réinitialiser votre mot de passe
+                {t('auth.check_email')}
               </ThemedText>
               <Button
                 style={{ marginTop: theme.spacing.xl, borderRadius: theme.borderRadius.xl }}
                 onPress={() => router.push("/auth/login")}
               >
-                Retour à la connexion
+                {t('auth.back_to_login')}
               </Button>
             </Card>
           ) : (
@@ -120,8 +124,8 @@ export default function ForgotPasswordScreen() {
                 name="email"
                 render={({ field: { onChange, value } }) => (
                   <TextInput
-                    label="Email"
-                    placeholder="votre@email.com"
+                    label={t('auth.email')}
+                    placeholder={t('auth.email_placeholder')}
                     value={value}
                     onChangeText={onChange}
                     keyboardType="email-address"
@@ -146,7 +150,7 @@ export default function ForgotPasswordScreen() {
                     marginBottom: theme.spacing.sm,
                   }}
                 >
-                  {errors.email.message}
+                  {t(errors.email.message as string)}
                 </ThemedText>
               )}
 
@@ -156,7 +160,7 @@ export default function ForgotPasswordScreen() {
                 disabled={isLoading}
                 style={{ borderRadius: theme.borderRadius.xl }}
               >
-                {isLoading ? "Envoi..." : "Envoyer le lien"}
+                {isLoading ? t('common.loading') : t('auth.send_reset_link')}
               </Button>
             </Card>
           )}

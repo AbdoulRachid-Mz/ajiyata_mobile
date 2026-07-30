@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/theme-context';
 import ThemedText from '@/components/ui/text';
 import Card from '@/components/ui/card';
 import { formatCurrency } from '@/lib/formatters/currency';
+import { useTranslation } from 'react-i18next';
 
 interface QuickStatsProps {
   totalIncome: number;
@@ -15,25 +16,26 @@ interface QuickStatsProps {
 }
 
 export const QuickStats = ({ totalIncome, totalExpense, balance, currency, transactionCount }: QuickStatsProps) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
 
   const stats = [
     {
-      label: 'Revenus',
+      label: t('balance_card.income'),
       value: totalIncome,
       color: theme.financialColors.income,
       icon: 'arrow-up-circle',
       prefix: '+',
     },
     {
-      label: 'Dépenses',
+      label: t('balance_card.expense'),
       value: totalExpense,
       color: theme.financialColors.expense,
       icon: 'arrow-down-circle',
       prefix: '-',
     },
     {
-      label: 'Transactions',
+      label: t('quick_stats.transactions'),
       value: transactionCount,
       color: theme.colors.primary,
       icon: 'list',

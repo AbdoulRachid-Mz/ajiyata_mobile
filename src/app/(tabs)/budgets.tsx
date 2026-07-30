@@ -1,4 +1,4 @@
-// Fichier: src/app/(tabs)/budgets.tsx
+// src/app/(tabs)/budgets.tsx
 
 import React, {
   useEffect,
@@ -31,6 +31,7 @@ import {
   format,
   parseISO,
   differenceInDays,
+  isAfter,
 } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useRouter } from "expo-router";
@@ -50,7 +51,6 @@ import {
   useBudgetsWithPeriod,
   useCreateBudget,
   useDeleteBudget,
-  useExpiredBudgets,
 } from "@/features/budgets/hooks";
 import { useCategories } from "@/features/categories/hooks";
 import { useTransactions } from "@/features/transactions/hooks";
@@ -64,6 +64,7 @@ import {
   BudgetSuggestion,
 } from "@/services/budget-intelligence.service";
 import { ScrollView } from "@/components/ui";
+import { useTranslation } from "react-i18next";
 
 // ---- Helpers ----
 
@@ -80,6 +81,7 @@ type BudgetStatusFilter = "all" | "active" | "exceeded" | "completed";
 // ---- Main Screen ----
 
 export default function BudgetsScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { currentAccount } = useAppStore();
@@ -105,41 +107,24 @@ export default function BudgetsScreen() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   // Charger les suggestions
-  // const loadSuggestions = useCallback(async () => {
-  //   if (!accountId) return;
-  //   setIsLoadingSuggestions(true);
-  //   try {
-  //     const result = await budgetIntelligence.suggestBudgets(accountId);
-  //     // Filtrer les suggestions qui n'ont pas déjà un budget
-  //     const filtered = result.filter((s) => !s.hasExistingBudget);
-  //     setSuggestions(filtered);
-  //     setShowSuggestions(filtered.length > 0);
-  //     console.log(`📊 Suggestions chargées: ${filtered.length}`);
-  //   } catch (error) {
-  //     console.error("Error loading suggestions:", error);
-  //   } finally {
-  //     setIsLoadingSuggestions(false);
-  //   }
-  // }, [accountId]);
-
   const loadSuggestions = useCallback(async () => {
-  if (!accountId) return;
-  setIsLoadingSuggestions(true);
-  try {
-    const result = await budgetIntelligence.suggestBudgets(accountId);
-    const filtered = result.filter((s) => !s.hasExistingBudget);
-    setSuggestions(filtered);
-    setShowSuggestions(filtered.length > 0);
-  } catch (error) {
-    console.error("Error loading suggestions:", error);
-  } finally {
-    setIsLoadingSuggestions(false);
-  }
-}, [accountId, transactions]);
+    if (!accountId) return;
+    setIsLoadingSuggestions(true);
+    try {
+      const result = await budgetIntelligence.suggestBudgets(accountId);
+      const filtered = result.filter((s) => !s.hasExistingBudget);
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+      console.log(`📊 Suggestions chargées: ${filtered.length}`);
+    } catch (error) {
+      console.error("Error loading suggestions:", error);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, [accountId]);
 
   // Charger les suggestions au montage
   useEffect(() => {
-    // refresh suggestions
     loadSuggestions();
   }, [loadSuggestions]);
 
@@ -154,13 +139,13 @@ export default function BudgetsScreen() {
       console.error("Refresh error:", error);
       Toast.show({
         type: "error",
-        text1: "Erreur",
-        text2: "Impossible de rafraîchir",
+        text1: t("common.error"),
+        text2: t("errors.refresh_failed"),
       });
     } finally {
       setRefreshing(false);
     }
-  }, [refetch, loadSuggestions]);
+  }, [refetch, loadSuggestions, t]);
 
   // Créer un budget depuis une suggestion
   const handleCreateFromSuggestion = useCallback(
@@ -209,9 +194,8 @@ export default function BudgetsScreen() {
           metadata: {},
         });
 
-        Toast.show({ type: "success", text1: "Budget créé avec succès" });
+        Toast.show({ type: "success", text1: t("budgets.create_success") });
 
-        // Retirer la suggestion de la liste
         setSuggestions((prev) =>
           prev.filter((s) => s.categoryId !== suggestion.categoryId),
         );
@@ -219,26 +203,25 @@ export default function BudgetsScreen() {
           setShowSuggestions(false);
         }
 
-        // Rafraîchir la liste
         refetch();
       } catch (error) {
         console.error("Error creating budget from suggestion:", error);
-        Toast.show({ type: "error", text1: "Erreur lors de la création" });
+        Toast.show({ type: "error", text1: t("errors.create_failed") });
       }
     },
-    [currentAccount, createBudget, refetch],
+    [currentAccount, createBudget, refetch, suggestions.length, t],
   );
 
   // Gestionnaires CRUD
   const handleDelete = useCallback(
     (budgetId: string) => {
       Alert.alert(
-        "Supprimer le budget",
-        "Êtes-vous sûr de vouloir supprimer ce budget ?",
+        t("budgets.delete_title"),
+        t("budgets.delete_confirm"),
         [
-          { text: "Annuler", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Supprimer",
+            text: t("common.delete"),
             style: "destructive",
             onPress: async () => {
               try {
@@ -249,14 +232,14 @@ export default function BudgetsScreen() {
                 refetch();
               } catch (e) {
                 console.error("Delete error", e);
-                Alert.alert("Erreur", "Impossible de supprimer le budget.");
+                Alert.alert(t("common.error"), t("errors.delete_failed"));
               }
             },
           },
         ],
       );
     },
-    [deleteBudget, refetch],
+    [deleteBudget, refetch, t],
   );
 
   const handleDuplicate = useCallback(
@@ -269,8 +252,8 @@ export default function BudgetsScreen() {
         if (!accountId) {
           Toast.show({
             type: "error",
-            text1: "Erreur",
-            text2: "Compte manquant",
+            text1: t("common.error"),
+            text2: t("errors.account_missing"),
           });
           return;
         }
@@ -295,14 +278,14 @@ export default function BudgetsScreen() {
 
         await createBudget.mutateAsync(newBudget);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Toast.show({ type: "success", text1: "Budget dupliqué avec succès" });
+        Toast.show({ type: "success", text1: t("budgets.duplicate_success") });
         refetch();
       } catch (e) {
         console.error("Duplication error:", e);
-        Toast.show({ type: "error", text1: "Erreur lors de la duplication" });
+        Toast.show({ type: "error", text1: t("errors.duplicate_failed") });
       }
     },
-    [currentAccount, createBudget, refetch],
+    [currentAccount, createBudget, refetch, t],
   );
 
   // UI - Gestion du scroll
@@ -339,23 +322,22 @@ export default function BudgetsScreen() {
     const now = new Date();
 
     const processed = budgets.map((budget) => {
-      let start, end;
-      if (budget.period === "daily") {
-        start = startOfDay(now);
-        end = endOfDay(now);
-      } else if (budget.period === "weekly") {
-        start = startOfWeek(now, { weekStartsOn: 1 });
-        end = endOfWeek(now, { weekStartsOn: 1 });
-      } else {
-        start = startOfMonth(now);
-        end = endOfMonth(now);
-      }
+      const start = typeof budget.startDate === "string" 
+        ? parseISO(budget.startDate) 
+        : new Date(budget.startDate);
+        
+      const end = typeof budget.endDate === "string" 
+        ? parseISO(budget.endDate) 
+        : new Date(budget.endDate);
+
+      const isExpired = isAfter(now, end);
 
       let spent = 0;
       if (transactions) {
         for (const tx of transactions) {
           if (tx.categoryId === budget.categoryId && tx.type === "expense") {
-            const txDate = new Date(tx.date);
+            const txDate = typeof tx.date === "string" ? parseISO(tx.date) : new Date(tx.date);
+            
             if (isWithinInterval(txDate, { start, end })) {
               spent += Number(tx.amount);
             }
@@ -364,16 +346,18 @@ export default function BudgetsScreen() {
       }
 
       let status = budget.status;
-      if (status === "active" && spent > budget.limit) {
+      if (isExpired) {
+        status = "completed";
+      } else if (spent > budget.limit) {
         status = "exceeded";
+      } else {
+        status = "active";
       }
 
-      // Calculer le nombre de jours restants
       const daysUntilEnd = differenceInDays(end, now);
       const daysUntilStart = differenceInDays(start, now);
       const totalDays = differenceInDays(end, start);
 
-      // Score pour le tri : priorité aux budgets actifs les plus proches
       const priorityScore =
         status === "active" ? 0 : status === "exceeded" ? 1 : 2;
 
@@ -381,25 +365,22 @@ export default function BudgetsScreen() {
         ...budget,
         spent,
         status,
+        isExpired,
         category: categoryMap[budget.categoryId],
         periodStart: start,
         periodEnd: end,
         daysUntilEnd,
         daysUntilStart,
         totalDays,
-        progress: totalDays > 0 ? daysUntilStart / totalDays : 0,
+        progress: totalDays > 0 ? Math.max(0, daysUntilStart / totalDays) : 0,
         priorityScore,
       };
     });
 
-    // Tri par date de début la plus proche d'aujourd'hui
     return processed.sort((a, b) => {
-      // D'abord par statut (active > exceeded > completed)
       if (a.priorityScore !== b.priorityScore) {
         return a.priorityScore - b.priorityScore;
       }
-
-      // Ensuite par date de début la plus proche (ascendant)
       const aStart = new Date(a.startDate).getTime();
       const bStart = new Date(b.startDate).getTime();
       return aStart - bStart;
@@ -417,7 +398,7 @@ export default function BudgetsScreen() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       result = result.filter((b) => {
-        const categoryName = b.category?.name || "Inconnue";
+        const categoryName = b.category?.name || t("common.unknown");
         return (
           categoryName.toLowerCase().includes(query) ||
           b.id.toLowerCase().includes(query)
@@ -426,7 +407,7 @@ export default function BudgetsScreen() {
     }
 
     return result;
-  }, [budgetsWithSpent, statusFilter, searchQuery]);
+  }, [budgetsWithSpent, statusFilter, searchQuery, t]);
 
   // Groupement par date
   const groupedBudgets = useMemo(() => {
@@ -440,9 +421,9 @@ export default function BudgetsScreen() {
 
       let dateKey = "";
       if (isToday(dateObj)) {
-        dateKey = "Aujourd'hui";
+        dateKey = t("periods.today");
       } else if (isYesterday(dateObj)) {
-        dateKey = "Hier";
+        dateKey = t("periods.yesterday");
       } else {
         dateKey = format(dateObj, "EEEE d MMMM yyyy", { locale: fr });
       }
@@ -454,10 +435,10 @@ export default function BudgetsScreen() {
     });
 
     const sortedKeys = Object.keys(groups).sort((a, b) => {
-      if (a === "Aujourd'hui") return -1;
-      if (b === "Aujourd'hui") return 1;
-      if (a === "Hier") return -1;
-      if (b === "Hier") return 1;
+      if (a === t("periods.today")) return -1;
+      if (b === t("periods.today")) return 1;
+      if (a === t("periods.yesterday")) return -1;
+      if (b === t("periods.yesterday")) return 1;
       return a.localeCompare(b);
     });
 
@@ -466,7 +447,7 @@ export default function BudgetsScreen() {
       data: groups[key],
       count: groups[key].length,
     }));
-  }, [filteredBudgets]);
+  }, [filteredBudgets, t]);
 
   // Statistiques
   const stats = useMemo(() => {
@@ -492,25 +473,25 @@ export default function BudgetsScreen() {
 
   const statusTabs = [
     {
-      label: "Tous",
+      label: t("budgets.all"),
       value: "all" as BudgetStatusFilter,
       icon: "apps-outline",
       count: stats.total,
     },
     {
-      label: "Actifs",
+      label: t("budgets.active"),
       value: "active",
       icon: "checkmark-circle-outline",
       count: stats.active,
     },
     {
-      label: "Dépassés",
+      label: t("budgets.exceeded"),
       value: "exceeded",
       icon: "alert-circle-outline",
       count: stats.exceeded,
     },
     {
-      label: "Terminés",
+      label: t("budgets.completed"),
       value: "completed",
       icon: "flag-outline",
       count: stats.completed,
@@ -535,7 +516,7 @@ export default function BudgetsScreen() {
           }}
         >
           <ThemedText variant="xl" weight="bold">
-            Budgets
+            {t("budgets.title")}
           </ThemedText>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TouchableOpacity
@@ -608,7 +589,7 @@ export default function BudgetsScreen() {
                   color: theme.colors.foreground,
                   fontSize: 16,
                 }}
-                placeholder="Rechercher un budget..."
+                placeholder={t("common.search") + " " + t("budgets.title")}
                 placeholderTextColor={theme.colors.mutedForeground}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -749,7 +730,7 @@ export default function BudgetsScreen() {
                   weight="bold"
                   style={{ color: theme.colors.primary }}
                 >
-                  💡 Suggestions de budgets
+                  💡 {t("budgets.suggestions")}
                 </ThemedText>
                 <TouchableOpacity onPress={() => setShowSuggestions(false)}>
                   <Ionicons
@@ -779,12 +760,12 @@ export default function BudgetsScreen() {
                     <ThemedText variant="xs" color="mutedForeground">
                       {formatCurrency(suggestion.suggestedLimit)} /{" "}
                       {suggestion.period === "daily"
-                        ? "jour"
+                        ? t("budgets.daily")
                         : suggestion.period === "weekly"
-                          ? "semaine"
-                          : "mois"}
+                          ? t("budgets.weekly")
+                          : t("budgets.monthly")}
                       {" · "}
-                      {Math.round(suggestion.confidence * 100)}% confiance
+                      {Math.round(suggestion.confidence * 100)}% {t("common.confidence")}
                     </ThemedText>
                     <ThemedText variant="xs" color="mutedForeground">
                       {suggestion.reason}
@@ -803,7 +784,7 @@ export default function BudgetsScreen() {
                       variant="xs"
                       style={{ color: "#fff", fontWeight: "600" }}
                     >
-                      Créer
+                      {t("common.create")}
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -819,7 +800,7 @@ export default function BudgetsScreen() {
                     color="mutedForeground"
                     style={{ textAlign: "center" }}
                   >
-                    Voir toutes les suggestions ({suggestions.length})
+                    {t("common.see_all")} ({suggestions.length})
                   </ThemedText>
                 </TouchableOpacity>
               )}
@@ -861,20 +842,19 @@ export default function BudgetsScreen() {
               weight="bold"
               style={{ marginBottom: 8, textAlign: "center" }}
             >
-              {searchQuery ? "Aucun budget trouvé" : "Aucun budget"}
+              {searchQuery ? t("budgets.no_results") : t("budgets.no_budgets")}
             </ThemedText>
             <ThemedText
               color="mutedForeground"
               style={{ textAlign: "center", lineHeight: 22, marginBottom: 24 }}
             >
               {searchQuery
-                ? `Aucun budget ne correspond à "${searchQuery}"`
-                : "Créez votre premier budget pour mieux contrôler vos dépenses par catégorie."}
+                ? t("budgets.no_results_description", { query: searchQuery })
+                : t("budgets.create_first_description")}
             </ThemedText>
             {!searchQuery && (
               <ThemedView
                 style={{
-                  display: "flex",
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
@@ -894,11 +874,10 @@ export default function BudgetsScreen() {
                 >
                   <Ionicons name="add" size={20} color="#fff" />
                   <ThemedText weight="semibold" style={{ color: "#fff" }}>
-                    Créer un budget
+                    {t("budgets.create")}
                   </ThemedText>
                 </TouchableOpacity>
 
-                {/* refresh data */}
                 <TouchableOpacity
                   onPress={() => onRefresh()}
                   style={{
@@ -913,7 +892,7 @@ export default function BudgetsScreen() {
                 >
                   <Ionicons name="refresh" size={20} color="#fff" />
                   <ThemedText weight="semibold" style={{ color: "#fff" }}>
-                    Actualiser
+                    {t("common.refresh")}
                   </ThemedText>
                 </TouchableOpacity>
               </ThemedView>
@@ -938,7 +917,7 @@ export default function BudgetsScreen() {
                   {title}
                 </ThemedText>
                 <ThemedText variant="xs" color="mutedForeground">
-                  {count} budget{count > 1 ? "s" : ""}
+                  {count} {t("budgets.budget")}{count > 1 ? "s" : ""}
                 </ThemedText>
               </View>
             )}

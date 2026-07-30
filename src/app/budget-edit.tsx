@@ -23,7 +23,10 @@ import { Controller, useForm } from "react-hook-form";
 import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 
+import { useTranslation } from "react-i18next";
+
 export default function BudgetEdit() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();

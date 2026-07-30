@@ -1,3 +1,5 @@
+// src/app/(tabs)/_layout.tsx
+
 import { Tabs } from "expo-router";
 import { useTheme } from "@/contexts/theme-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,10 +9,12 @@ import { useDailyReminders } from "@/hooks/use-daily-reminders";
 import { Animated as RNAnimated } from "react-native";
 import { useEffect, useRef } from "react";
 import { useUIStore } from "@/stores/ui-store";
+import { useTranslation } from "react-i18next";
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { theme } = useTheme();
   const { isTabBarVisible } = useUIStore();
+  const { t } = useTranslation();
   const translateY = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
@@ -20,6 +24,26 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       useNativeDriver: true,
     }).start();
   }, [isTabBarVisible]);
+
+  // Mapping des noms de routes vers les clés de traduction
+  const routeToKey: Record<string, string> = {
+    dashboard: "tabs.home",
+    transactions: "tabs.transactions",
+    budgets: "tabs.budgets",
+    goals: "tabs.goals",
+    settings: "tabs.settings",
+    about: "tabs.about",
+  };
+
+  // Mapping des noms de routes vers les icônes
+  const routeToIcon: Record<string, { focused: string; unfocused: string }> = {
+    dashboard: { focused: "home", unfocused: "home-outline" },
+    transactions: { focused: "list", unfocused: "list-outline" },
+    budgets: { focused: "pie-chart", unfocused: "pie-chart-outline" },
+    goals: { focused: "trophy", unfocused: "trophy-outline" },
+    settings: { focused: "settings", unfocused: "settings-outline" },
+    about: { focused: "information-circle", unfocused: "information-circle-outline" },
+  };
 
   return (
     <RNAnimated.View
@@ -35,13 +59,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     >
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
-        const label =
-          options.tabBarLabel !== undefined
-            ? options.tabBarLabel
-            : options.title !== undefined
-              ? options.title
-              : route.name;
-
         const isFocused = state.index === index;
 
         const onPress = () => {
@@ -63,21 +80,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           });
         };
 
-        let iconName = "ellipse-outline";
-        if (route.name === "dashboard")
-          iconName = isFocused ? "home" : "home-outline";
-        if (route.name === "transactions")
-          iconName = isFocused ? "list" : "list-outline";
-        if (route.name === "budgets")
-          iconName = isFocused ? "pie-chart" : "pie-chart-outline";
-        if (route.name === "goals")
-          iconName = isFocused ? "trophy" : "trophy-outline";
-        if (route.name === "settings")
-          iconName = isFocused ? "settings" : "settings-outline";
-        if (route.name === "about")
-          iconName = isFocused
-            ? "information-circle"
-            : "information-circle-outline";
+        const iconData = routeToIcon[route.name] || { focused: "ellipse", unfocused: "ellipse-outline" };
+        const iconName = isFocused ? iconData.focused : iconData.unfocused;
+        const label = routeToKey[route.name] ? t(routeToKey[route.name]) : route.name;
 
         const color = isFocused
           ? theme.colors.primary
@@ -113,7 +118,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 marginTop: 4,
               }}
             >
-              {label as string}
+              {label}
             </ThemedText>
           </TouchableOpacity>
         );
@@ -136,37 +141,37 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Accueil",
+          title: "tabs.home",
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
-          title: "Opérations",
+          title: "tabs.transactions",
         }}
       />
       <Tabs.Screen
         name="budgets"
         options={{
-          title: "Budgets",
+          title: "tabs.budgets",
         }}
       />
       <Tabs.Screen
         name="goals"
         options={{
-          title: "Objectifs",
+          title: "tabs.goals",
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Paramètres",
+          title: "tabs.settings",
         }}
       />
       <Tabs.Screen
         name="about"
         options={{
-          title: "À propos",
+          title: "tabs.about",
         }}
       />
     </Tabs>

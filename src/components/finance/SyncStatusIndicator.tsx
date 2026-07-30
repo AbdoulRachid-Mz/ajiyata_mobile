@@ -7,8 +7,10 @@ import ThemedText from '@/components/ui/text';
 import Card from '@/components/ui/card';
 import { useSyncAll, useSyncStatus } from '@/hooks/use-sync';
 import { useNetwork } from '@/providers/network-provider';
+import { useTranslation } from 'react-i18next';
 
 export const SyncStatusIndicator = () => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { isConnected } = useNetwork();
   const syncAll = useSyncAll();
@@ -45,7 +47,7 @@ export const SyncStatusIndicator = () => {
       }}>
         <Ionicons name="cloud-offline" size={16} color={theme.colors.destructive} />
         <ThemedText variant="xs" style={{ marginLeft: 6, color: theme.colors.destructive }}>
-          Hors ligne
+          {t('sync.offline')}
         </ThemedText>
       </Card>
     );
@@ -70,21 +72,21 @@ export const SyncStatusIndicator = () => {
           <>
             <ActivityIndicator size="small" color={theme.colors.primary} />
             <ThemedText variant="xs" style={{ marginLeft: 6 }}>
-              Synchronisation...
+              {t('sync.syncing')}
             </ThemedText>
           </>
         ) : hasPending ? (
           <>
             <Ionicons name="cloud-outline" size={16} color={theme.financialColors.budget} />
             <ThemedText variant="xs" style={{ marginLeft: 6, color: theme.financialColors.budget }}>
-              {syncStatus?.pending ?? 0} en attente
+              {syncStatus?.pending ?? 0} {t('sync.pending')}
             </ThemedText>
           </>
         ) : (
           <>
             <Ionicons name="cloud-done" size={16} color={theme.financialColors.saving} />
             <ThemedText variant="xs" style={{ marginLeft: 6 }}>
-              Synchronisé
+              {t('sync.synced')}
             </ThemedText>
           </>
         )}
