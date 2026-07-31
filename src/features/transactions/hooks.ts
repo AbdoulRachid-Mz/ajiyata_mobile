@@ -1,20 +1,24 @@
-
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { transactionRepository } from './repositories';
-import type { NewTransaction, Transaction } from '@/types';
+import type { GetAllTransactionsOptions, GetByIdOptions, NewTransaction, Transaction } from '@/types';
 
-export const useTransactions = (accountId: string) => {
+export const useTransactions = (accountId: string, options?: GetAllTransactionsOptions) => {
   return useQuery({
-    queryKey: ["transactions", accountId],
-    queryFn: () => transactionRepository.getAllForAccount(accountId),
-
+    queryKey: ["transactions", accountId, options],
+    queryFn: () => transactionRepository.getPaginatedForAccount(accountId, options),
     enabled: !!accountId,
-
     placeholderData: keepPreviousData,
-
     staleTime: 60 * 1000,
-
     gcTime: 10 * 60 * 1000,
+  });
+};
+
+export const useTransactionDetails = (transactionId: string, options?: GetByIdOptions) => {
+  return useQuery({
+    queryKey: ['transactions', 'detail', transactionId, options],
+    queryFn: () => transactionRepository.getById(transactionId, options),
+    enabled: !!transactionId,
+    staleTime: 60 * 1000,
   });
 };
 
@@ -61,7 +65,6 @@ export const useUpdateTransaction = () => {
       return await transactionRepository.update(updatedTransaction);
     },
     onSuccess: (_, variables) => {
-      // Invalider les queries concernées
       queryClient.invalidateQueries({
         queryKey: ['transactions', variables.accountId],
       });
@@ -69,7 +72,7 @@ export const useUpdateTransaction = () => {
         queryKey: ['transactions', 'recent', variables.accountId],
       });
       queryClient.invalidateQueries({
-        queryKey: ['transactions', variables.id],
+        queryKey: ['transactions', 'detail', variables.id],
       });
     },
   });

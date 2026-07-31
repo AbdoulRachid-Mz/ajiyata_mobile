@@ -118,3 +118,107 @@ export type SettingWithRelations = Setting & {
   user: MiniUser;
 };
 
+// Types pour la pagination, options et contexte/statistiques
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface GetByIdOptions {
+  includeRelations?: boolean;
+  similarLimit?: number; // Nombre d'éléments similaires (par défaut 5)
+}
+
+export interface GetAllTransactionsOptions extends PaginationOptions {
+  search?: string;
+  type?: 'income' | 'expense' | 'transfer';
+  categoryId?: string;
+  startDate?: string;
+  endDate?: string;
+  includeStats?: boolean;
+}
+
+export interface GetAllBudgetsOptions extends PaginationOptions {
+  search?: string;
+  status?: string;
+  period?: string;
+  includeStats?: boolean;
+}
+
+export interface GetAllGoalsOptions extends PaginationOptions {
+  search?: string;
+  status?: string;
+  includeStats?: boolean;
+}
+
+export interface GetAllAccountsOptions extends PaginationOptions {
+  userId?: string;
+  type?: string;
+  includeStats?: boolean;
+}
+
+// Context / Stats Types
+export interface TransactionStats {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  totalCount: number;
+}
+
+export interface BudgetStats {
+  totalLimit: number;
+  totalSpent: number;
+  remaining: number;
+  exceededCount: number;
+}
+
+export interface GoalStats {
+  totalTarget: number;
+  totalCurrent: number;
+  progressPercentage: number;
+  completedCount: number;
+}
+
+export interface AccountStats {
+  totalBalance: number;
+  activeAccountsCount: number;
+}
+
+// Query result types with context/stats
+export type TransactionQueryResult = PaginatedResult<TransactionWithRelations> & {
+  stats?: TransactionStats;
+};
+
+export type BudgetQueryResult = PaginatedResult<BudgetWithRelations> & {
+  stats?: BudgetStats;
+};
+
+export type GoalQueryResult = PaginatedResult<SavingGoalWithRelations> & {
+  stats?: GoalStats;
+};
+
+export type AccountQueryResult = PaginatedResult<Account & { user?: MiniUser }> & {
+  stats?: AccountStats;
+};
+
+// Detail result types with similar items context
+export interface TransactionDetailResult {
+  transaction: TransactionWithRelations;
+  similarTransactions: TransactionWithRelations[];
+}
+
+export interface GoalDetailResult {
+  goal: SavingGoalWithRelations;
+  similarGoals: SavingGoalWithRelations[];
+}
+

@@ -1018,6 +1018,7 @@ export default function SettingsScreen() {
             <Button
               variant="outline"
               size="sm"
+              isFullWidth
               onPress={async () => {
                 const { notificationService, isExpoGo } =
                   await import("@/configs/notifications");
@@ -1239,6 +1240,7 @@ export default function SettingsScreen() {
             style={{ marginTop: theme.spacing.lg }}
             onPress={handleSaveAccountType}
             disabled={updateAccount.isPending}
+            isFullWidth
           >
             {updateAccount.isPending ? t("common.loading") : t("common.save")}
           </Button>

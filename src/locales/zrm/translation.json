@@ -55,7 +55,11 @@
     "amount_placeholder": "0.00",
     "expand": "Feeri-nda",
     "icon": "Biyo-ize",
-    "color": "Kwara-maani"
+    "color": "Kwara-maani",
+    "contact": "Ciyaŋ",
+    "contact_us": "Ciya iri se",
+    "contacts": "Boroey",
+    "contact_support": "Gaza ciyaŋ se"
   },
   "notifications": {
     "title": "Alhabar-izey",
@@ -325,10 +329,19 @@
     "app_description": "Ajiya Ta ni ni nooru ga-kondi-kayno, ka day ka ni gaa-koy da ni nooru duyan, ni fureeyey, ka to ni ndaare anniyey ga. Porogaram wo cina da \"offline-first\" carma ka saawandi ni du alhabarey wakati kul ra.",
     "developer": "Porogaram cina-coy",
     "developer_role": "Web & mobile porogaram cina-coy",
-    "legal": "Asariya-alhabar",
-    "privacy_policy": "Sutura shene",
-    "terms_of_use": "Goy-yan alhabarey",
-    "version": "Dumi"
+    "legal": "Bayani al'ada",
+    "privacy_policy": "Tsari sirri",
+    "terms_of_use": "Sharuddan goy",
+    "version": "Siga",
+    "support_button": "Gaa ir 💖",
+    "support_title": "Gaa aiki wo",
+    "support_desc": "Gaa ir don gaa Ajiya Ta da kondo a fure baalu.",
+    "support_mobile_money": "Mobile Money | Banki | Musanya-ganay",
+    "support_mobile_money_desc": "Airtel, Moov, Nita, AmanaTa, Wave, Zamani, Niger Télécom, etc.",
+    "support_copy_number": "Kwafi lambar",
+    "support_copied": "An kwafi lambar!",
+    "support_share_app": "Raba aiki",
+    "support_thanks": "Foy gaa ni gaa ir! 🙏"
   },
   "dashboard": {
     "title": "Kwaaro-koy",
@@ -376,7 +389,18 @@
     "create_first_description": "Te ni hay-ka-fay jina wo ka ni fureeyey ganay boori ra.",
     "duplicate_success": "Hay-ka-fay kangandi da alheri",
     "suggestions": "Saawa-izey hay-ka-fayeey se",
-    "budget": "hay-ka-fay"
+    "budget": "hay-ka-fay",
+    "edit_success": "Hay-ka-fay tajefandi da alheri",
+    "create_success_multiple": "Hay-ka-fay {{count}} teeyan ban da alheri",
+    "create_count": "Hay-ka-fay adadu kaŋ ga teendi",
+    "create_count_info": "Hay-ka-fay {{count}} kaŋ fayandi zaari {{days}} da cere game ra",
+    "single_budget": "Hay-ka-fay folloŋ",
+    "duplicate_title": "Hay-ka-fay go no panda",
+    "duplicate_message": "Hay-ka-fay goy-ante go da no panda fu wo se wakati wo ra. Ni daaci ni ga baa ka te tana?",
+    "duplicate_edit_message": "Hay-ka-fay goy-ante tana go da no fu wo se wakati wo ra. Ni daaci ni ga baa ka barmay wo?",
+    "create_anyway": "Te d'a mo kul",
+    "update_anyway": "Tajandi d'a mo kul",
+    "period_type": "Wakati dumi"
   },
   "goals": {
     "title": "Ndaare anniyey",
@@ -504,7 +528,15 @@
     "information": "Alhabarey",
     "share_title": "Fay goy-ize wo",
     "same_category": "Goy-ize kokoranciey ({{category}})",
-    "delete_confirm_details": "Ni daaci ni ga baa ka kaa \"{{title}}\"? Goy wo si hin ka yeeti bando."
+    "delete_confirm_details": "Ni daaci ni ga baa ka kaa \"{{title}}\"? Goy wo si hin ka yeeti bando.",
+    "create_success": "Goy-ize teeyan ban da alheri",
+    "edit_success": "Goy-ize barmay-yan ban da alheri",
+    "title_placeholder": "Cee-ko: Ŋa-yan dey-yan",
+    "note_placeholder": "Teda hango-haki...",
+    "client_supplier_placeholder": "Cee-ko: Alhabar XYZ",
+    "paid_by_placeholder": "Cee-ko: Musa",
+    "not_found_description": "Goy-ize kaŋ ni go ga ceeci si no wala an kaandi.",
+    "created_at": "Teeyan zaari-tarihi"
   },
   "receipt_scanner": {
     "title": "Gun rasiti",
@@ -677,7 +709,6 @@
     "add_funds": "Teda nooru",
     "withdraw": "Kaa nooru"
   },
-
   "transaction_item": {
     "validate": "Kalbata",
     "category": "Fu-ize"

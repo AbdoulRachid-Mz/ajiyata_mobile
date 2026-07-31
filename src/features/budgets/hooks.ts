@@ -10,31 +10,35 @@ import {
   isWithinInterval,
 } from "date-fns";
 import { budgetRepository } from "./repositories";
-import type { NewBudget, Budget, BudgetWithRelations, MiniAccount, MiniCategory } from "@/types";
+
 import { useTransactions } from "../transactions/hooks";
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
 import { budgets as budgetsTable } from "@/db/schema";
 
-export const useBudgets = (accountId: string) => {
+import type { GetAllBudgetsOptions, NewBudget, Budget, BudgetWithRelations, MiniAccount, MiniCategory } from "@/types";
+
+export const useBudgets = (accountId: string, options?: GetAllBudgetsOptions) => {
   return useQuery({
-    queryKey: ["budgets", accountId],
-    queryFn: () => budgetRepository.getAllForAccount(accountId),
+    queryKey: ["budgets", accountId, options],
+    queryFn: () => budgetRepository.getPaginatedForAccount(accountId, options),
     enabled: !!accountId,
   });
 };
 
 // Hook pour les budgets avec calcul par période
-export const useBudgetsWithPeriod = (accountId: string) => {
-  const { data: budgets, isLoading, refetch } = useBudgets(accountId);
-  const { data: transactions } = useTransactions(accountId);
+export const useBudgetsWithPeriod = (accountId: string, options?: GetAllBudgetsOptions) => {
+  const { data: budgetResult, isLoading, refetch } = useBudgets(accountId, options);
+  const { data: txResult } = useTransactions(accountId);
+  const transactions = txResult?.data || (Array.isArray(txResult) ? txResult : []);
 
   const budgetsWithPeriod = useMemo(() => {
-    if (!budgets || !transactions) return [];
+    const rawBudgets = budgetResult?.data || (Array.isArray(budgetResult) ? budgetResult : []);
+    if (!rawBudgets || !transactions) return [];
 
     const now = new Date();
 
-    return budgets.map((budget) => {
+    return rawBudgets.map((budget) => {
       // 1. Déterminer la période du budget
       let start: Date;
       let end: Date;
@@ -87,10 +91,18 @@ export const useBudgetsWithPeriod = (accountId: string) => {
         accountId: budget.accountId || accountId,
       };
     });
-  }, [budgets, transactions]);
+  }, [budgetResult, transactions, accountId]);
 
   return {
     data: budgetsWithPeriod,
+    stats: budgetResult?.stats,
+    pagination: budgetResult ? {
+      total: budgetResult.total,
+      page: budgetResult.page,
+      totalPages: budgetResult.totalPages,
+      hasNextPage: budgetResult.hasNextPage,
+      hasPrevPage: budgetResult.hasPrevPage,
+    } : undefined,
     isLoading,
     refetch,
   };
@@ -98,14 +110,15 @@ export const useBudgetsWithPeriod = (accountId: string) => {
 
 export const useExpiredBudgets = (accountId: string) => {
   const queryClient = useQueryClient();
-  const { data: budgets, refetch } = useBudgets(accountId);
+  const { data: budgetResult, refetch } = useBudgets(accountId);
 
   useEffect(() => {
-    if (!budgets) return;
+    if (!budgetResult) return;
 
     const checkExpired = async () => {
       const now = new Date();
-      const expiredBudgets = budgets.filter((b) => {
+      const budgetList = budgetResult.data || (Array.isArray(budgetResult) ? budgetResult : []);
+      const expiredBudgets = budgetList.filter((b: any) => {
         if (b.status !== "active") return false;
         const endDate = new Date(b.endDate);
         return endDate < now;
@@ -138,7 +151,7 @@ export const useExpiredBudgets = (accountId: string) => {
     const interval = setInterval(checkExpired, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [budgets, accountId, queryClient]);
+  }, [budgetResult, accountId, queryClient]);
 };
 
 export const useCreateBudget = () => {

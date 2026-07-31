@@ -42,7 +42,8 @@ export const TransactionFiltersModal = ({
   const { currentAccount } = useAppStore();
   const accountId = currentAccount?.id || '';
   const { data: categories } = useCategories(accountId);
-  const { data: budgets } = useBudgets(accountId);
+  const { data: budgetResult } = useBudgets(accountId);
+  const budgets = React.useMemo(() => budgetResult?.data || (Array.isArray(budgetResult) ? budgetResult : []), [budgetResult]);
   const searchInputRef = useRef<RNTextInput>(null);
 
   const [localFilters, setLocalFilters] = useState<TransactionFilters>({ ...filters });

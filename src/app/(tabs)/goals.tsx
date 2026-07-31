@@ -86,7 +86,7 @@ export default function GoalsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Données
-  const { data: goals, isLoading, refetch } = useSavingGoals(accountId);
+  const { data: goalsResult, isLoading, refetch } = useSavingGoals(accountId);
   const updateGoal = useUpdateSavingGoal();
   const deleteGoal = useDeleteSavingGoal();
   const createGoal = useCreateSavingGoal();
@@ -209,11 +209,12 @@ export default function GoalsScreen() {
 
   // Transform goals with relations et tri
   const goalsWithRelations = useMemo(() => {
-    if (!goals) return [];
+    const rawGoals = goalsResult?.data || (Array.isArray(goalsResult) ? goalsResult : []);
+    if (!rawGoals || rawGoals.length === 0) return [];
 
     const now = new Date();
 
-    return goals
+    return rawGoals
       .map((g) => ({
         ...g,
         account: currentAccount
@@ -239,7 +240,7 @@ export default function GoalsScreen() {
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       }) as SavingGoalWithRelations[];
-  }, [goals, currentAccount]);
+  }, [goalsResult, currentAccount]);
 
   // Filtrage
   const filteredGoals = useMemo(() => {
@@ -364,7 +365,7 @@ export default function GoalsScreen() {
       return;
     }
 
-    const goal = goals?.find((g) => g.id === selectedGoalId);
+    const goal = goalsWithRelations?.find((g: SavingGoalWithRelations) => g.id === selectedGoalId);
     if (!goal) return;
 
     let newAmount = goal.currentAmount;

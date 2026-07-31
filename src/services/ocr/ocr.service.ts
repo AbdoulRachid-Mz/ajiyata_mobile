@@ -7,6 +7,7 @@ import { OCRTextNormalizer } from './providers/ocr-text-normalizer';
 export interface ExtractedReceiptData {
   title?: string;
   amount?: number;
+  suggestedAmounts?: number[]; // <-- NOUVEAU: Pour suggérer d'autres montants dans l'UI
   date?: string;
   category?: string;
   merchant?: string;
@@ -30,12 +31,8 @@ export class OCRService {
     return OCRService.instance;
   }
 
-  /**
-   * Initialise le service OCR
-   */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
-    
     try {
       await this.provider.initialize();
       this.isInitialized = true;
@@ -46,20 +43,15 @@ export class OCRService {
     }
   }
 
-  /**
-   * Extrait les données d'un reçu à partir d'une image
-   */
   async extractReceiptData(
     imageUri: string,
     onProgress?: (progress: OCRProgress) => void
   ): Promise<ExtractedReceiptData> {
     try {
-      // 1. Initialiser si nécessaire
       if (!this.isInitialized) {
         await this.initialize();
       }
 
-      // 2. Reconnaître le texte avec ML Kit
       onProgress?.({ 
         status: 'loading', 
         message: 'Reconnaissance du texte...' 
@@ -67,26 +59,22 @@ export class OCRService {
 
       const result = await this.provider.recognize(imageUri, onProgress);
 
-      // 3. Si le texte est vide, retourner une confiance nulle
       if (!result.text || result.text.trim().length === 0) {
         return {
           confidence: 0,
           rawText: '',
+          suggestedAmounts: [],
         };
       }
 
-      // 4. Normaliser le texte OCR
       const { text: normalizedText, corrections } = OCRTextNormalizer.normalize(result.text);
       
       if (corrections > 0) {
         console.log(`🔧 ${corrections} corrections OCR appliquées`);
       }
 
-      // 5. Extraire les données structurées
       const extractedData = this.parseReceiptText(normalizedText);
 
-      // 6. Calculer la confiance finale (pondérée)
-      // ML Kit confiance + Parser confiance
       const mlKitWeight = 0.7;
       const parserWeight = 0.3;
       
@@ -95,7 +83,6 @@ export class OCRService {
         1
       );
 
-      // 7. Améliorer la confiance si des corrections ont été appliquées
       const confidenceBonus = Math.min(corrections * 0.02, 0.1);
       const finalConfidenceWithBonus = Math.min(finalConfidence + confidenceBonus, 1);
 
@@ -112,46 +99,77 @@ export class OCRService {
       });
       return {
         confidence: 0,
+        suggestedAmounts: [],
       };
     }
   }
 
   /**
-   * Parse le texte extrait pour trouver les informations du reçu
+   * Parse le texte extrait avec une stratégie basée sur les mots-clés et les candidats
    */
   parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
-    // Nettoyer le texte pour l'analyse
     const cleanText = OCRTextNormalizer.cleanForParsing(text);
     const lines = OCRTextNormalizer.getSignificantLines(text);
     
     let title = '';
     let amount = 0;
+    let suggestedAmounts: number[] = [];
     let date = '';
     let merchant = '';
     let confidence = 0;
-    let extractedCount = 0;
     let category = '';
 
-    // 1. Extraire le montant
-    const amountPatterns = [
-      /(\d+[\s,.]?\d*)\s*(?:FCFA|CFA|XOF|francs?)\b/i,
-      /(\d+[\s,.]?\d*)\s*XOF\b/i,
-      /(\d+[\s,.]?\d*)\s*[€$]\b/i,
-      /(?:total|montant|prix|somme)\s*[:.]?\s*(\d+[\s,.]?\d*)/i,
-      /^\s*(\d+[\s,.]?\d*)\s*$/,
-    ];
+    // Mots-clés pour repérer le VRAI total
+    const totalKeywords = ['total', 'net a payer', 'net a payer', 'montant total', 'solde due', 'ttc', 'nap'];
+    // Mots-clés de montants à ignorer
+    const ignoreKeywords = ['tva', 'ht', 'sous-total', 'subtotal', 'rendu', 'espece', 'cash', 'monnaie', 'change'];
 
-    for (const pattern of amountPatterns) {
-      const match = cleanText.match(pattern);
-      if (match) {
-        const rawAmount = match[1].replace(/\s/g, '').replace(',', '.');
-        amount = parseFloat(rawAmount);
-        if (amount > 0) {
-          extractedCount++;
-          confidence += 0.25;
-          break;
-        }
+    // Regex globale pour capturer tous les nombres ayant la forme d'un prix (ex: 15.00, 1500, 15,50)
+    const priceRegex = /\b\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{2})?\b/g;
+
+    let bestTotalMatch = 0;
+    const allFoundAmounts: number[] = [];
+
+    // Analyse ligne par ligne
+    lines.forEach((line) => {
+      const lowerLine = line.toLowerCase();
+      
+      // Si la ligne contient un mot-clé de monnaie rendue ou de sous-total, on saute
+      if (ignoreKeywords.some(kw => lowerLine.includes(kw))) {
+        return;
       }
+
+      // Recherche de prix dans la ligne
+      const matches = line.match(priceRegex);
+      if (matches) {
+        matches.forEach(matchStr => {
+          // Normalisation du nombre
+          const cleaned = matchStr.replace(/\s/g, '').replace(',', '.');
+          const parsed = parseFloat(cleaned);
+
+          if (!isNaN(parsed) && parsed > 0) {
+            allFoundAmounts.push(parsed);
+
+            // Si la ligne contient un mot-clé "TOTAL", ce montant devient le candidat N°1
+            if (totalKeywords.some(kw => lowerLine.includes(kw))) {
+              bestTotalMatch = parsed;
+            }
+          }
+        });
+      }
+    });
+
+    // Éliminer les doublons et trier du plus grand au plus petit
+    suggestedAmounts = Array.from(new Set(allFoundAmounts)).sort((a, b) => b - a);
+
+    // Attribution du montant final
+    if (bestTotalMatch > 0) {
+      amount = bestTotalMatch;
+      confidence += 0.35; // Forte confiance si trouvé via mot-clé TOTAL
+    } else if (suggestedAmounts.length > 0) {
+      // Si aucun mot-clé trouvé, on sélectionne le plus grand montant détecté
+      amount = suggestedAmounts[0];
+      confidence += 0.15;
     }
 
     // 2. Extraire la date
@@ -186,7 +204,6 @@ export class OCRService {
         }
         
         date = `${year}-${month}-${day}`;
-        extractedCount++;
         confidence += 0.2;
         break;
       }
@@ -202,7 +219,6 @@ export class OCRService {
       const match = cleanText.match(pattern);
       if (match) {
         merchant = match[1].trim();
-        extractedCount++;
         confidence += 0.2;
         break;
       }
@@ -228,11 +244,11 @@ export class OCRService {
 
     // 5. Déterminer la catégorie
     const categoryKeywords: Record<string, string[]> = {
-      'Alimentation': ['super', 'marché', 'alimentation', 'épicerie', 'nourriture', 'restaurant', 'fast food', 'pizza', 'burger', 'pain', 'lait', 'fromage'],
-      'Transport': ['essence', 'station', 'service', 'parking', 'taxi', 'bus', 'train', 'péage', 'carburant'],
-      'Shopping': ['magasin', 'boutique', 'habillement', 'vêtement', 'chaussure', 'accessoire', 'électronique'],
+      'Alimentation': ['super', 'marché', 'alimentation', 'épicerie', 'nourriture', 'restaurant', 'fast food', 'pizza', 'burger', 'pain', 'lait', 'fromage', 'auchan', 'carrefour', 'lidl'],
+      'Transport': ['essence', 'station', 'service', 'parking', 'taxi', 'bus', 'train', 'péage', 'carburant', 'total', 'shell', 'uber'],
+      'Shopping': ['magasin', 'boutique', 'habillement', 'vêtement', 'chaussure', 'accessoire', 'électronique', 'zara', 'fnac'],
       'Santé': ['pharmacie', 'médicament', 'clinique', 'hôpital', 'docteur', 'dentiste', 'ordonnance'],
-      'Divertissement': ['cinéma', 'théâtre', 'concert', 'bar', 'restaurant', 'boîte de nuit', 'jeux'],
+      'Divertissement': ['cinéma', 'théâtre', 'concert', 'bar', 'boîte de nuit', 'jeux'],
       'Factures': ['électricité', 'eau', 'internet', 'téléphone', 'gaz', 'assurance', 'abonnement'],
       'Éducation': ['école', 'université', 'formation', 'cours', 'livre', 'scolaire'],
     };
@@ -241,29 +257,24 @@ export class OCRService {
       for (const keyword of keywords) {
         if (text.toLowerCase().includes(keyword)) {
           category = cat;
-          confidence += 0.1;
+          confidence += 0.15;
           break;
         }
       }
       if (category) break;
     }
 
-    // Limiter la confiance à 1
-    confidence = Math.min(confidence, 1);
-
     return {
       title,
       amount,
+      suggestedAmounts: suggestedAmounts.slice(0, 4), // Garde les 4 montants les plus pertinents
       date,
       merchant,
       category,
-      confidence,
+      confidence: Math.min(confidence, 1),
     };
   }
 
-  /**
-   * Vérifie si l'OCR est disponible
-   */
   async isAvailable(): Promise<boolean> {
     try {
       await this.initialize();
@@ -273,14 +284,10 @@ export class OCRService {
     }
   }
 
-  /**
-   * Nettoie les ressources
-   */
   cleanup(): void {
     this.provider.cleanup();
     this.isInitialized = false;
   }
 }
 
-// Export singleton
 export const ocrService = OCRService.getInstance();

@@ -1,3 +1,5 @@
+// src/app/saving-goal-create.tsx
+
 import Button from "@/components/ui/button";
 import KeyboardAvoidingView from "@/components/ui/keyboard-avoiding-view";
 import SafeAreaView from "@/components/ui/safe-area-view";
@@ -19,8 +21,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { ScrollView, TouchableOpacity, View } from "react-native";
-
+import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
+import Toast from "react-native-toast-message";
 import { useTranslation } from "react-i18next";
 
 export default function SavingGoalCreate() {
@@ -36,11 +38,7 @@ export default function SavingGoalCreate() {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<
-    SavingGoalFormInput,
-    any,
-    SavingGoalFormData
-  >({
+  } = useForm<SavingGoalFormInput, any, SavingGoalFormData>({
     resolver: zodResolver(savingGoalFormSchema),
     defaultValues: {
       title: "",
@@ -49,7 +47,10 @@ export default function SavingGoalCreate() {
   });
 
   const onSubmit = async (data: SavingGoalFormData) => {
-    if (!currentAccount) return;
+    if (!currentAccount) {
+      Alert.alert(t("common.error"), t("errors.account_missing"));
+      return;
+    }
 
     try {
       await createGoal.mutateAsync({
@@ -66,9 +67,11 @@ export default function SavingGoalCreate() {
         syncStatus: "pending",
         metadata: {},
       });
+      Toast.show({ type: "success", text1: t("goals.create_success") });
       router.back();
     } catch (error) {
       console.error("Failed to create saving goal:", error);
+      Alert.alert(t("common.error"), t("errors.create_failed"));
     }
   };
 
@@ -105,7 +108,7 @@ export default function SavingGoalCreate() {
               />
             </TouchableOpacity>
             <ThemedText variant="base" weight="bold">
-              Nouveau budget
+              {t("goals.create")}
             </ThemedText>
             <View style={{ width: 44 }} />
           </ThemedView>
@@ -115,8 +118,8 @@ export default function SavingGoalCreate() {
             name="title"
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label="Titre de l'objectif"
-                placeholder="Ex: Nouvelle voiture"
+                label={t("goals.title_label")}
+                placeholder={t("goals.title_placeholder")}
                 onChangeText={onChange}
                 value={value}
                 error={!!errors.title}
@@ -139,8 +142,8 @@ export default function SavingGoalCreate() {
             name="targetAmount"
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label="Montant à épargner"
-                placeholder="0.00"
+                label={t("goals.target_label")}
+                placeholder={t("common.amount_placeholder")}
                 keyboardType="decimal-pad"
                 onChangeText={onChange}
                 value={value}
@@ -171,7 +174,7 @@ export default function SavingGoalCreate() {
             isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? "Création..." : "Créer l'objectif"}
+            {isSubmitting ? t("common.loading") : t("goals.create")}
           </Button>
         </ThemedView>
       </KeyboardAvoidingView>

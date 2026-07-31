@@ -52,7 +52,7 @@ export function AppLock() {
         {t('app_lock.description', { minutes: lockTimeoutMinutes, plural })}
       </ThemedText>
       
-      <Button onPress={handleUnlock} size="lg" style={{ minWidth: 200 }}>
+      <Button isFullWidth onPress={handleUnlock} size="lg" style={{ minWidth: 200 }}>
         <Ionicons name="finger-print-outline" size={24} color={theme.colors.primaryForeground} style={{ marginRight: 8 }} />
         {t('app_lock.unlock')}
       </Button>

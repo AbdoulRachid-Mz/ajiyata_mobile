@@ -1,13 +1,13 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { accountRepository } from './repositories';
-import type { NewAccount, Account } from '@/types';
+import type { GetAllAccountsOptions, NewAccount, Account } from '@/types';
 import { useAppStore } from '@/stores/app-store';
 
-export const useAccounts = (userId: string) => {
+export const useAccounts = (userId: string, options?: GetAllAccountsOptions) => {
   return useQuery({
-    queryKey: ['accounts', userId],
-    queryFn: () => accountRepository.getAllForUser(userId),
+    queryKey: ['accounts', userId, options],
+    queryFn: () => accountRepository.getPaginatedForUser(userId, options),
+    enabled: !!userId,
   });
 };
 
@@ -49,4 +49,3 @@ export const useUpdateAccount = () => {
     },
   });
 };
-

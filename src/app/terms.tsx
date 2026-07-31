@@ -1,3 +1,5 @@
+// src/app/terms.tsx
+
 import React, { useRef } from 'react';
 import {
   ScrollView,
@@ -15,8 +17,10 @@ import ThemedView from '@/components/ui/view';
 import Card from '@/components/ui/card';
 import Spacer from '@/components/ui/spacer';
 import { useUIStore } from '@/stores/ui-store';
+import { useTranslation } from 'react-i18next';
 
 export default function TermsScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { setTabBarVisible } = useUIStore();
@@ -68,93 +72,86 @@ export default function TermsScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
           <ThemedText variant="xl" weight="bold" style={{ marginLeft: theme.spacing.md }}>
-            Conditions d'utilisation
+            {t('terms.title')}
           </ThemedText>
         </ThemedView>
 
         {/* Date de mise à jour */}
         <Card style={{ padding: theme.spacing.md, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="sm" color="mutedForeground">
-            Dernière mise à jour : 1er mars 2026
+            {t('terms.last_updated')} : 1er mars 2026
           </ThemedText>
         </Card>
 
         {/* Objet */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            1. Objet et Acceptation
+            {t('terms.object')}
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation 
-            de l'application mobile **Ajiya Ta**.
+            {t('terms.object_text')}
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText style={{ lineHeight: 22 }}>
-            L'utilisation de l'application implique l'acceptation sans réserve des présentes CGU par l'utilisateur.
+            {t('terms.acceptance')}
           </ThemedText>
         </Card>
 
         {/* Description du Service */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            2. Nature du Service
+            {t('terms.service_nature')}
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Ajiya Ta est un outil de gestion budgétaire et financière personnelle. 
-            L'application permet d'enregistrer des flux financiers, de suivre des budgets et de gérer des comptes.
+            {t('terms.service_desc')}
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText variant="sm" color="mutedForeground">
-            ⚠️ Ajiya Ta n'est pas un établissement de crédit ni un système de paiement électronique bancaire. L'application constitue un outil d'aide au suivi comptable personnel.
+            ⚠️ {t('terms.service_warning')}
           </ThemedText>
         </Card>
 
         {/* Engagements de l'Utilisateur */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            3. Obligations de l'Utilisateur
+            {t('terms.user_obligations')}
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            L'utilisateur s'engage à :
-            {'\n'}• Saisir des données exactes sous sa seule responsabilité.
-            {'\n'}• Ne pas utiliser l'application à des fins frauduleuses ou illégales au regard des lois nigériennes et internationales.
-            {'\n'}• Assurer la confidentialité de ses accès de déverrouillage (code, biométrie).
+            {t('terms.obligations_list')}
           </ThemedText>
         </Card>
 
         {/* Responsabilité */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            4. Limitation de Responsabilité
+            {t('terms.liability')}
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Ajiya Ta fournit des calculs et statistiques à titre strictement indicatif. 
-            Nous ne pourrons être tenus responsables en cas d'erreur de saisie par l'utilisateur, 
-            de perte de données liée à la perte ou à la détérioration de l'appareil mobile, ou d'interruption temporaire du service.
+            {t('terms.liability_text')}
           </ThemedText>
         </Card>
 
         {/* Loi Applicable et Juridiction */}
         <Card style={{ padding: theme.spacing.lg, marginBottom: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            5. Droit Applicable et Règlement des Litiges
+            {t('terms.applicable_law')}
           </ThemedText>
           <ThemedText style={{ lineHeight: 22 }}>
-            Les présentes CGU sont régies et interprétées conformément au **Droit de la République du Niger**.
+            {t('terms.law_text')}
           </ThemedText>
           <Spacer height={theme.spacing.sm} />
           <ThemedText style={{ lineHeight: 22 }}>
-            Tout litige relatif à l'interprétation ou à l'exécution des présentes qui ne pourrait être réglé à l'amiable sera soumis à la compétence exclusive des **Tribunaux compétents de Niamey**.
+            {t('terms.jurisdiction')}
           </ThemedText>
         </Card>
 
         {/* Contact */}
         <Card style={{ padding: theme.spacing.lg }}>
           <ThemedText variant="lg" weight="bold" style={{ marginBottom: theme.spacing.md }}>
-            Contact
+            {t('common.contact')}
           </ThemedText>
           <ThemedText style={{ lineHeight: 22, marginBottom: theme.spacing.sm }}>
-            Pour toute question juridique ou réclamation :
+            {t('terms.contact_desc')}
           </ThemedText>
           <TouchableOpacity onPress={handleEmailPress}>
             <ThemedText color="primary" weight="semibold">

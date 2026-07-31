@@ -65,7 +65,13 @@ export default function ForgotPasswordScreen() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
         <View style={{ flex: 1, padding: theme.spacing.lg }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: theme.spacing.lg }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: theme.spacing.lg, backgroundColor: theme.colors.primary + "20",
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              padding: 8,
+              justifyContent: "center",
+              alignItems: "center", }}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
           </TouchableOpacity>
 

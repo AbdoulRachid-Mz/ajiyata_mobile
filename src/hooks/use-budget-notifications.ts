@@ -8,7 +8,8 @@ import { isExpoGo } from '@/configs/notifications';
 
 export const useBudgetNotifications = () => {
   const { currentAccount } = useAppStore();
-  const { data: budgets } = useBudgets(currentAccount?.id || '');
+  const { data: budgetResult } = useBudgets(currentAccount?.id || '');
+  const budgets = budgetResult?.data || (Array.isArray(budgetResult) ? budgetResult : []);
   const { sendNotification, isExpoGo: isExpoGoContext } = useNotifications();
 
   useEffect(() => {
@@ -50,7 +51,8 @@ export const useBudgetNotifications = () => {
 
 export const useSavingsNotifications = () => {
   const { currentAccount } = useAppStore();
-  const { data: goals } = useSavingGoals(currentAccount?.id || '');
+  const { data: goalsResult } = useSavingGoals(currentAccount?.id || '');
+  const goals = goalsResult?.data || (Array.isArray(goalsResult) ? goalsResult : []);
   const { scheduleNotification, isExpoGo: isExpoGoContext } = useNotifications();
 
   useEffect(() => {

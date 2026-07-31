@@ -25,7 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 import { generateUUID, getCurrentTimestamp } from '@/utils/uuid';
 import { attachmentRepository } from '@/features/attachments/repositories';
-import { ocrService } from '@/services/ocr/ocr.service';
+import { ExtractedReceiptData, ocrService } from '@/services/ocr/ocr.service';
 import { useDevice } from '@/hooks/use-device';
 import { OCRProgress } from '@/services/ocr/providers/ocr-provider.interface';
 import { useTranslation } from 'react-i18next';
@@ -52,14 +52,7 @@ export default function ReceiptScanner() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [extractedData, setExtractedData] = useState<{
-    title?: string;
-    amount?: number;
-    date?: string;
-    category?: string;
-    merchant?: string;
-    confidence: number;
-  } | null>(null);
+ const [extractedData, setExtractedData] = useState<ExtractedReceiptData | null>(null);
 
   // Initialiser l'OCR
   useEffect(() => {
@@ -526,6 +519,42 @@ export default function ReceiptScanner() {
                   keyboardType="numeric"
                   style={{ backgroundColor: theme.colors.muted, fontSize: 18, fontWeight: 'bold' }}
                 />
+
+                {/* Quick amount selection pills */}
+                {extractedData?.suggestedAmounts && extractedData.suggestedAmounts.length > 1 && (
+                  <View style={{ marginTop: theme.spacing.sm }}>
+                    <ThemedText variant="xs" color="mutedForeground" style={{ marginBottom: theme.spacing.xs }}>
+                      Autres montants détectés :
+                    </ThemedText>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {extractedData.suggestedAmounts.map((suggestedAmt, index) => {
+                        const isSelected = parseFloat(amount.replace(',', '.')) === suggestedAmt;
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => setAmount(suggestedAmt.toString())}
+                            style={{
+                              paddingHorizontal: 10,
+                              paddingVertical: 5,
+                              backgroundColor: isSelected ? theme.colors.primary : theme.colors.card,
+                              borderWidth: 1,
+                              borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                              borderRadius: 14,
+                            }}
+                          >
+                            <ThemedText 
+                              variant="xs" 
+                              weight={isSelected ? "bold" : "normal"}
+                              style={{ color: isSelected ? '#fff' : theme.colors.foreground }}
+                            >
+                              {suggestedAmt.toString()}
+                            </ThemedText>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
               </View>
 
               <View>

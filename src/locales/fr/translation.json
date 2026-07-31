@@ -18,7 +18,7 @@
     "update": "Mettre à jour",
     "error": "Erreur",
     "success": "Succès",
-    "warning": "Attention",
+    "warning": "Avertissement",
     "info": "Information",
     "yes": "Oui",
     "no": "Non",
@@ -43,7 +43,7 @@
     "see_all": "Voir tout",
     "duplicate": "Dupliquer",
     "unknown": "Inconnu",
-    "confidence": "confiance",
+    "confidence": "Indice de confiance",
     "refresh": "Actualiser",
     "title": "Titre",
     "filters": "Filtres",
@@ -51,256 +51,199 @@
     "apply": "Appliquer",
     "sort_by": "Trier par",
     "others": "autres",
-    "refresh_success": "Rafraîchi",
-    "expand": "Agrandir",
+    "refresh_success": "Mis à jour avec succès",
+    "amount_placeholder": "0.00",
+    "expand": "Développer",
     "icon": "Icône",
-    "color": "Couleur"
+    "color": "Couleur",
+    "contact": "Contact",
+    "contact_us": "Nous contacter",
+    "contacts": "Contacts",
+    "contact_support": "Contacter le support"
   },
   "notifications": {
     "title": "Notifications",
     "budget_reminder": {
       "title": "💡 Rappel de Budget",
-      "body": "C'est l'heure de vérifier ou de fixer vos budgets pour la période !"
+      "body": "Il est temps de vérifier votre budget ou de le réajuster si nécessaire !"
     },
     "budget_alert": {
       "title": "⚠️ Budget dépassé !",
-      "body": "Vous avez dépassé votre budget de {{percentage}}% pour cette catégorie."
+      "body": "Vous avez dépassé votre budget '{{categoryName}}' de {{percentage}}%."
     },
     "budget_warning": {
       "title": "⚡ Budget presque atteint",
-      "body": "Vous avez utilisé {{percentage}}% de votre budget pour cette catégorie."
+      "body": "Vous avez utilisé {{percentage}}% de votre budget pour {{categoryName}}."
     },
     "savings_reminder": {
-      "title": "💾 Rappel d'épargne",
-      "body": "N'oubliez pas d'épargner pour \"{{goalTitle}}\" ({{currentAmount}}/{{targetAmount}})"
+      "title": "💾 Rappel d'Épargne",
+      "body": "N'oubliez pas d'épargner pour votre objectif : \"{{goalTitle}}\" ({{currentAmount}}/{{targetAmount}})"
     },
     "goal_achieved": {
-      "title": "🎉 Objectif d'épargne atteint !",
-      "body": "Félicitations ! Vous avez atteint votre objectif \"{{goalTitle}}\" avec {{amount}} FCFA."
+      "title": "🎉 Objectif Atteint !",
+      "body": "Félicitations ! Vous avez atteint votre objectif : \"{{goalTitle}}\" avec {{amount}} FCFA."
     },
     "daily_reminder": {
-      "title": "💰 Ajiya Ta - Point Quotidien",
-      "body": "C'est l'heure de faire le point ! Vérifiez vos budgets, objectifs et transactions du jour."
+      "title": "💰 Ajiya Ta - Suivi Quotidien",
+      "body": "C'est l'heure du bilan ! Vérifiez vos budgets, objectifs et dépenses du jour."
     },
     "test": {
-      "title": "🔔 Test de notification",
-      "body": "Cette notification fonctionne correctement !"
+      "title": "🔔 Notification Test",
+      "body": "Les notifications fonctionnent parfaitement !"
     },
     "actions": {
       "create_budget": "➕ Créer un budget",
-      "view_budgets": "📊 Voir les budgets",
-      "view_transactions": "📋 Voir les transactions",
+      "view_budgets": "📊 Voir mes budgets",
+      "view_transactions": "📋 Voir l'historique",
       "edit_budget": "✏️ Modifier le budget",
-      "add_savings": "💰 Ajouter des fonds",
-      "view_goals": "🎯 Voir les objectifs"
+      "add_savings": "💰 Épargner",
+      "view_goals": "🎯 Voir mes objectifs"
     },
     "categories": {
       "budget_reminder": "Rappels de budget",
-      "budget_alert": "Alertes de budget",
+      "budget_alert": "Alertes de dépassement",
       "savings_reminder": "Rappels d'épargne",
       "daily_reminder": "Rappel quotidien"
     },
-    "expo_go_warning": "⚠️ Les notifications ne sont pas disponibles dans Expo Go.\nUtilisez un build de développement pour les tester.",
-    "login_required": "Connectez-vous pour gérer vos notifications",
+    "expo_go_warning": "⚠️ Les notifications ne fonctionnent pas sous Expo Go.\nUtilisez un build de développement.",
+    "login_required": "Connectez-vous pour personnaliser vos notifications",
     "enable_all": "Activer ou désactiver toutes les notifications",
     "budget_alerts_label": "Alertes de budget",
-    "budget_alerts_desc": "Notifications quand un budget est dépassé",
+    "budget_alerts_desc": "Notifié en cas de dépassement ou seuil atteint",
     "savings_reminders_label": "Rappels d'épargne",
-    "savings_reminders_desc": "Rappels quotidiens pour vos objectifs d'épargne",
+    "savings_reminders_desc": "Rappels réguliers pour vos objectifs",
     "sync_label": "Synchronisation",
-    "sync_desc": "Notifications sur l'état de synchronisation",
+    "sync_desc": "Notifications sur l'état de la synchro Cloud",
     "tips_label": "Conseils financiers",
-    "tips_desc": "Conseils pour mieux gérer votre argent",
+    "tips_desc": "Astuces pour mieux gérer votre argent",
     "test_button": "Tester les notifications"
   },
   "onboarding": {
     "welcome": {
       "title": "Bienvenue sur Ajiya Ta",
-      "description": "Gérez vos revenus et dépenses en toute simplicité, où que vous soyez."
+      "description": "Prenez le contrôle de vos finances en toute simplicité, où que vous soyez."
     },
     "track": {
-      "title": "Suivez vos finances en temps réel",
-      "description": "Enregistrez vos transactions en quelques secondes et visualisez instantanément votre solde."
+      "title": "Suivez vos dépenses en temps réel",
+      "description": "Enregistrez vos transactions en quelques secondes et visualisez vos habitudes."
     },
     "categories": {
-      "title": "Catégories intelligentes",
-      "description": "Organisez vos dépenses par catégorie et comprenez où va votre argent."
+      "title": "Catégorisation intelligente",
+      "description": "Classez vos dépenses pour savoir exactement où va votre argent."
     },
     "sync": {
-      "title": "Synchronisation automatique",
-      "description": "Retrouvez vos données sur tous vos appareils. Hors ligne ? Pas de problème."
+      "title": "Synchronisation multi-appareils",
+      "description": "Retrouvez vos données sur tous vos écrans. Pas d'Internet ? Pas de problème."
     },
     "start": {
       "title": "Prêt à commencer ?",
-      "description": "Configurons votre compte en quelques étapes pour démarrer sur les chapeaux de roues."
+      "description": "Configurez votre compte en 1 minute et commencez à économiser dès aujourd'hui."
     }
   },
   "categories": {
-
     "income": {
-
       "salary": "Salaire",
-
       "freelance": "Freelance",
-
       "investments": "Investissements",
-
-      "rent": "Rentes",
-
+      "rent": "Revenus locatifs",
       "allowances": "Allocations",
-
       "sales": "Ventes",
-
       "bonuses": "Primes",
-
       "other": "Autres revenus"
-
     },
-
     "expense": {
-
       "food": "Alimentation",
-
       "transport": "Transport",
-
       "rent": "Loyer",
-
       "health": "Santé",
-
-      "entertainment": "Divertissement",
-
+      "entertainment": "Loisirs",
       "bills": "Factures",
-
-      "shopping": "Courses",
-
+      "shopping": "Shopping",
       "education": "Éducation",
-
       "travel": "Voyage",
-
-      "insurance": "Assurances",
-
+      "insurance": "Assurance",
       "subscriptions": "Abonnements",
-
       "pets": "Animaux",
-
       "gifts": "Cadeaux",
-
-      "beauty": "Beauté",
-
+      "beauty": "Beauté & Soins",
       "sports": "Sport",
-
       "renovations": "Rénovations",
-
-      "taxes": "Impôts",
-
+      "taxes": "Impôts & Taxes",
       "other": "Autres dépenses"
-
     },
-
     "business": {
-
       "income": {
-
         "sales": "Ventes",
-
-        "services": "Prestations de services",
-
-        "other": "Autres revenus"
-
+        "services": "Prestations de service",
+        "other": "Autres recettes"
       },
-
       "expense": {
-
-        "purchases": "Achats marchandises",
-
+        "purchases": "Achats de marchandises",
         "rent": "Loyer commercial",
-
-        "salaries": "Salaires",
-
-        "marketing": "Marketing",
-
-        "taxes": "Impôts",
-
-        "other": "Autres dépenses"
-
+        "salaries": "Salaires employés",
+        "marketing": "Marketing & Pub",
+        "taxes": "Taxes & Impôts",
+        "other": "Autres charges"
       }
-
     },
-
     "family": {
-
       "income": {
-
-        "combined_salaries": "Salaires combinés",
-
-        "allowances": "Allocations",
-
-        "other": "Autres revenus"
-
+        "sales": "Ventes",
+        "combined_salaries": "Salaires cumulés",
+        "allowances": "Aides familiales",
+        "other": "Autres recettes"
       },
-
       "expense": {
-
-        "groceries": "Épicerie",
-
-        "education": "Éducation/École",
-
-        "health": "Santé familiale",
-
-        "rent": "Loyer/Maison",
-
-        "bills": "Factures",
-
+        "groceries": "Courses de la maison",
+        "education": "Frais scolaires",
+        "health": "Santé famille",
+        "rent": "Loyer du foyer",
+        "bills": "Factures de la maison",
         "vacations": "Vacances",
-
-        "pets": "Animaux",
-
-        "other": "Autres dépenses"
-
+        "pets": "Animaux de compagnie",
+        "other": "Autres charges"
       }
-
     }
-
   },
   "onboarding_config": {
     "step_identity": "Votre identité",
     "step_account": "Votre compte",
-    "step_balance": "Balance initiale",
+    "step_balance": "Solde initial",
     "step_currency": "Devise",
-    "whats_your_name": "Comment voulez-vous qu'on vous appelle ?",
+    "whats_your_name": "Comment vous appelez-vous ?",
     "name_placeholder": "Entrez votre nom",
-    "phone_placeholder": "Entrez votre numéro de téléphone",
-    "name_hint": "C'est le nom qui apparaîtra sur votre profil",
-    "choose_account_name": "Choisissez un nom pour votre compte",
-    "account_name_placeholder": "Ex: Mes finances",
+    "phone_placeholder": "Numéro de téléphone",
+    "name_hint": "Ce nom apparaîtra sur votre profil",
+    "choose_account_name": "Donnez un nom à votre compte",
+    "account_name_placeholder": "Ex: Mon Portefeuille",
     "account_name": "Nom du compte",
-    "personal_desc": "Pour vos finances perso",
-    "business_desc": "Pour votre business",
-    "family_desc": "Pour le foyer",
-    "whats_your_balance": "Quelle est votre balance actuelle ?",
+    "personal_desc": "Pour gérer vos finances personnelles",
+    "business_desc": "Pour votre commerce ou activité pro",
+    "family_desc": "Pour suivre le budget familial",
+    "whats_your_balance": "Combien avez-vous actuellement ?",
     "balance_placeholder": "Ex: 50000",
-    "initial_balance": "Balance initiale",
-    "balance_hint": "C'est le montant que vous avez actuellement sur vous",
-    "choose_currency": "Quelle est votre devise préférée ?",
-    "currency_hint": "Vous pourrez changer cette devise plus tard dans les paramètres",
+    "initial_balance": "Solde de départ",
+    "balance_hint": "Le montant disponible dans ce portefeuille",
+    "choose_currency": "Quelle devise utilisez-vous ?",
+    "currency_hint": "Vous pourrez la modifier plus tard dans les réglages",
     "step_prefix": "Étape",
     "step_of": "sur"
   },
   "auth": {
     "login": "Se connecter",
     "register": "S'inscrire",
-    "logout": "Se déconnecter",
-    "email": "Email",
+    "logout": "Déconnexion",
+    "email": "E-mail",
     "password": "Mot de passe",
     "confirm_password": "Confirmer le mot de passe",
     "forgot_password": "Mot de passe oublié ?",
     "reset_password": "Réinitialiser le mot de passe",
     "email_placeholder": "votre@email.com",
     "password_placeholder": "••••••••",
-    "login_title": "Bienvenue !",
+    "login_title": "Bon retour !",
     "login_subtitle": "Connectez-vous pour continuer",
     "register_title": "Créer un compte",
-    "register_subtitle": "Rejoignez Ajiya Ta et gérez vos finances",
+    "register_subtitle": "Rejoignez Ajiya Ta pour gérer vos finances",
     "no_account": "Pas encore de compte ?",
     "has_account": "Déjà un compte ?",
     "create_account": "Créer un compte",
@@ -308,54 +251,54 @@
     "sign_up": "S'inscrire",
     "continue_google": "Continuer avec Google",
     "or": "ou",
-    "biometric_login": "Connexion avec empreinte",
-    "biometric_disabled": "Biométrie désactivée",
+    "biometric_login": "Connexion par empreinte / visage",
+    "biometric_disabled": "Biométrie non disponible",
     "forgot_password_title": "Mot de passe oublié",
-    "forgot_password_subtitle": "Entrez votre email pour recevoir un lien de réinitialisation",
-    "email_sent": "Email envoyé !",
-    "check_email": "Vérifiez votre boîte mail pour réinitialiser votre mot de passe",
+    "forgot_password_subtitle": "Saisissez votre e-mail pour recevoir un lien de réinitialisation",
+    "email_sent": "E-mail envoyé !",
+    "check_email": "Vérifiez votre boîte de réception pour réinitialiser votre mot de passe",
     "back_to_login": "Retour à la connexion",
     "send_reset_link": "Envoyer le lien",
     "full_name": "Nom complet",
     "name_placeholder": "Votre nom",
     "name_too_short": "Nom trop court",
-    "invalid_email": "Email invalide",
+    "invalid_email": "E-mail invalide",
     "password_too_short": "Mot de passe trop court",
     "passwords_mismatch": "Les mots de passe ne correspondent pas",
     "or_continue_with": "ou continuer avec",
     "google": "Google",
-    "secure_account": "🔐 Sécurisez votre compte",
-    "biometric_prompt": "Souhaitez-vous activer l'authentification biométrique pour un accès plus rapide ?",
+    "secure_account": "🔐 Sécuriser votre compte",
+    "biometric_prompt": "Voulez-vous activer l'empreinte pour vous connecter plus vite ?",
     "enable": "Activer",
-    "biometric_canceled": "Authentification biométrique annulée.",
+    "biometric_canceled": "Connexion biométrique annulée.",
     "login_failed": "Échec de la connexion",
     "google_login_failed": "Échec de la connexion Google",
-    "enable_in_settings": "(Activer dans paramètres)",
-    "local_user": "Utilisateur Local",
-    "offline_mode": "Mode Hors-Ligne",
-    "google_not_implemented": "La connexion Google n'est pas encore configurée",
-    "biometric_failed": "L'authentification biométrique a échoué"
+    "enable_in_settings": "(Activer dans les paramètres)",
+    "local_user": "Utilisateur local",
+    "offline_mode": "Mode hors-ligne",
+    "google_not_implemented": "Connexion Google non disponible actuellement",
+    "biometric_failed": "Échec de l'authentification biométrique"
   },
   "app_lock": {
     "title": "Application verrouillée",
-    "description": "Verrouillage automatique après {{minutes}} minute{{plural}} d'inactivité",
+    "description": "Verrouillage automatique après {{minutes}} {{plural}} d'inactivité",
     "unlock": "Déverrouiller"
   },
   "finance": {
     "income": "Revenu",
     "expense": "Dépense",
-    "balance": "Solde total",
+    "balance": "Solde",
     "savings": "Épargne",
     "tontine": "Tontine",
-    "debt": "Dette",
-    "receivable": "Créance",
-    "total_income": "Total des revenus",
-    "total_expense": "Total des dépenses",
+    "debt": "Dette (Dû)",
+    "receivable": "Créance (À recevoir)",
+    "total_income": "Total Revenus",
+    "total_expense": "Total Dépenses",
     "profit": "Bénéfice",
     "loss": "Perte",
     "budget": "Budget",
     "investment": "Investissement",
-    "transfer": "Virement",
+    "transfer": "Transfert",
     "transaction": "Transaction",
     "transactions": "Transactions",
     "amount": "Montant",
@@ -368,13 +311,13 @@
     "monthly": "Mensuel",
     "yearly": "Annuel",
     "select_category": "Sélectionner une catégorie",
-    "add_category": "Ajouter une nouvelle catégorie",
+    "add_category": "Ajouter une catégorie",
     "category_name_placeholder": "Nom de la catégorie",
     "no_categories_found": "Aucune catégorie trouvée"
   },
   "tabs": {
     "home": "Accueil",
-    "transactions": "Opérations",
+    "transactions": "Transactions",
     "budgets": "Budgets",
     "goals": "Objectifs",
     "settings": "Paramètres",
@@ -383,13 +326,22 @@
   "about": {
     "title": "À propos",
     "app_description_title": "À propos de l'application",
-    "app_description": "Ajiya Ta est votre assistant financier personnel, conçu pour vous aider à gérer vos revenus, vos dépenses, et à atteindre vos objectifs d'épargne. L'application est construite avec une philosophie \"offline-first\" pour vous assurer un accès à vos données à tout moment.",
+    "app_description": "Ajiya Ta est votre assistant financier personnel, conçu pour vous aider à suivre vos revenus, vos dépenses et à atteindre vos objectifs d'épargne. L'application est développée selon une approche \"offline-first\" pour garantir un accès permanent à vos données.",
     "developer": "Développeur",
-    "developer_role": "Développeur web & mobile",
-    "legal": "Mentions légales",
+    "developer_role": "Développeur d'applications web & mobiles",
+    "legal": "Informations légales",
     "privacy_policy": "Politique de confidentialité",
     "terms_of_use": "Conditions d'utilisation",
-    "version": "Version"
+    "version": "Version",
+    "support_button": "Nous soutenir 💖",
+    "support_title": "Soutenir le projet",
+    "support_desc": "Aidez-nous à faire évoluer Ajiya Ta et à maintenir l'application gratuite et accessible à tous.",
+    "support_mobile_money": "Mobile Money | Banque | Transfert",
+    "support_mobile_money_desc": "Airtel, Moov, Nita, AmanaTa, Wave, Zamani, Niger Télécom, etc.",
+    "support_copy_number": "Copier le numéro",
+    "support_copied": "Numéro copié dans le presse-papier !",
+    "support_share_app": "Partager l'application",
+    "support_thanks": "Merci pour votre précieux soutien ! 🙏"
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -398,14 +350,14 @@
     "monthly_stats": "Statistiques du mois",
     "avg_daily_expense": "Dépense moy./jour",
     "avg_daily_income": "Revenu moy./jour",
-    "weekly_trend": "Tendance hebdomadaire",
+    "weekly_trend": "Tendance cette semaine",
     "previous_week": "Semaine précédente :",
-    "biggest_expense": "Plus grosse dépense du mois",
+    "biggest_expense": "Plus grosse dépense ce mois",
     "top_categories": "Top catégories (dépenses)",
-    "recent_transactions": "Opérations récentes",
-    "no_transactions": "Aucune opération pour le moment",
-    "add_first_transaction": "Ajouter ma première opération",
-    "welcome": "Bonjour, {{name}}",
+    "recent_transactions": "Transactions récentes",
+    "no_transactions": "Aucune transaction pour le moment",
+    "add_first_transaction": "Ajouter ma première transaction",
+    "welcome": "Bienvenue, {{name}}",
     "quick_actions": "Actions rapides",
     "view_all": "Voir tout"
   },
@@ -415,29 +367,40 @@
     "create_success": "Budget créé avec succès",
     "edit": "Modifier le budget",
     "delete": "Supprimer le budget",
-    "delete_title": "Supprimer le budget",
+    "delete_title": "Supprimer ce budget",
     "delete_confirm": "Êtes-vous sûr de vouloir supprimer ce budget ?",
-    "limit": "Limite de dépenses",
+    "limit": "Plafond",
     "spent": "Dépensé",
-    "remaining": "Restant",
+    "remaining": "Reste",
     "total": "Total",
     "status": "Statut",
-    "active": "Actif",
+    "active": "En cours",
     "exceeded": "Dépassé",
     "completed": "Terminé",
-    "near_limit": "Bientôt atteint",
-    "on_track": "En bonne voie",
+    "near_limit": "Proche de la limite",
+    "on_track": "Dans les temps",
     "daily": "Jour",
     "weekly": "Semaine",
     "monthly": "Mois",
     "all": "Tous",
-    "no_budgets": "Aucun budget",
+    "no_budgets": "Aucun budget défini",
     "no_results": "Aucun budget trouvé",
     "no_results_description": "Aucun budget ne correspond à \"{{query}}\"",
-    "create_first_description": "Créez votre premier budget pour mieux contrôler vos dépenses par catégorie.",
+    "create_first_description": "Créez votre premier budget pour mieux contrôler vos dépenses.",
     "duplicate_success": "Budget dupliqué avec succès",
     "suggestions": "Suggestions de budgets",
-    "budget": "budget"
+    "budget": "budget",
+    "edit_success": "Budget modifié avec succès",
+    "create_success_multiple": "{{count}} budgets créés avec succès",
+    "create_count": "Nombre de budgets à créer",
+    "create_count_info": "{{count}} budgets séparés de {{days}} jours chacun",
+    "single_budget": "Budget unique",
+    "duplicate_title": "Budget existant",
+    "duplicate_message": "Un budget existe déjà pour cette catégorie sur cette période. Voulez-vous en créer un autre ?",
+    "duplicate_edit_message": "Un autre budget existe déjà pour cette catégorie sur cette période. Voulez-vous quand même enregistrer ?",
+    "create_anyway": "Créer quand même",
+    "update_anyway": "Enregistrer quand même",
+    "period_type": "Type de période"
   },
   "goals": {
     "title": "Objectifs d'épargne",
@@ -445,29 +408,29 @@
     "create_success": "Objectif créé avec succès",
     "edit": "Modifier l'objectif",
     "delete": "Supprimer l'objectif",
-    "delete_title": "Supprimer l'objectif",
-    "delete_confirm": "Voulez-vous vraiment supprimer cet objectif d'épargne ?",
-    "target": "Objectif",
+    "delete_title": "Supprimer cet objectif",
+    "delete_confirm": "Êtes-vous sûr de vouloir supprimer cet objectif d'épargne ?",
+    "target": "Cible",
     "current": "Épargné",
     "progress": "Progression",
-    "deadline": "Échéance",
+    "deadline": "Date limite",
     "add_funds": "Ajouter des fonds",
-    "add_funds_title": "Ajouter des fonds",
-    "withdraw": "Retirer",
-    "withdraw_title": "Retirer des fonds",
+    "add_funds_title": "Ajouter des fonds à l'objectif",
+    "withdraw": "Retirer des fonds",
+    "withdraw_title": "Retirer des fonds de l'objectif",
     "achieved": "Atteint !",
     "paused": "En pause",
-    "active": "Actif",
+    "active": "En cours",
     "completed": "Terminé",
     "no_goals": "Aucun objectif d'épargne",
     "no_results": "Aucun objectif trouvé",
     "no_results_description": "Aucun objectif ne correspond à \"{{query}}\"",
-    "create_first_description": "Créez votre premier objectif pour suivre vos économies et atteindre vos buts !",
+    "create_first_description": "Créez votre premier objectif d'épargne pour concrétiser vos projets !",
     "total_saved": "Total épargné",
-    "total_target": "Objectif total",
+    "total_target": "Total des objectifs",
     "suggestions": "Suggestions d'objectifs",
-    "create_from_suggestion": "Créer depuis suggestion",
-    "refresh_success": "Objectifs mis à jour",
+    "create_from_suggestion": "Créer à partir d'une suggestion",
+    "refresh_success": "Objectifs actualisés avec succès",
     "search_placeholder": "Rechercher un objectif...",
     "goal": "objectif"
   },
@@ -475,64 +438,64 @@
     "title": "Paramètres",
     "profile": "Profil",
     "name": "Nom complet",
-    "phone": "Numéro de téléphone",
+    "phone": "Téléphone",
     "country": "Pays",
     "language": "Langue",
     "currency": "Devise",
     "theme": "Thème",
     "dark_mode": "Mode sombre",
     "app_lock": "Verrouillage de l'application",
-    "lock_timeout": "Verrouiller après",
+    "lock_timeout": "Délai de verrouillage",
     "minutes": "minutes",
-    "biometric": "Authentification biométrique",
+    "biometric": "Biométrie / Empreinte",
     "notifications": "Notifications",
     "reminders": "Rappels quotidiens",
     "reminder_time": "Heure du rappel",
-    "sync": "Sauvegarde et synchronisation",
-    "sync_now": "Sauvegarder maintenant",
-    "restore": "Restaurer",
+    "sync": "Synchronisation Cloud",
+    "sync_now": "Synchroniser maintenant",
+    "restore": "Restauration",
     "last_backup": "Dernière sauvegarde",
     "last_restore": "Dernière restauration",
-    "cloud_connected": "Connecté à votre compte",
+    "cloud_connected": "Connecté au compte",
     "offline_mode": "Mode hors-ligne",
     "export": "Exporter les données",
-    "delete_data": "Supprimer les données",
+    "delete_data": "Suppression des données",
     "delete_local": "Données locales",
-    "delete_cloud": "Données cloud",
+    "delete_cloud": "Données Cloud",
     "delete_account": "Compte utilisateur",
     "logout": "Déconnexion",
-    "save_profile": "Enregistrer les modifications",
+    "save_profile": "Enregistrer le profil",
     "account_type": "Type de compte",
     "personal": "Personnel",
-    "business": "Professionnel",
+    "business": "Business",
     "family": "Famille",
     "test_notification": "Tester la notification",
     "not_available": "Non disponible",
     "preferences": "Préférences",
-    "profile_updated": "Vos informations ont été mises à jour !",
+    "profile_updated": "Profil mis à jour !",
     "account_type_updated": "Type de compte mis à jour !",
     "delete_select_one": "Veuillez sélectionner au moins une option.",
-    "delete_confirm_title": "Confirmation de suppression",
+    "delete_confirm_title": "Confirmer la suppression",
     "delete_confirm_message": "Êtes-vous sûr de vouloir continuer ? Cette action est irréversible.",
     "delete_success": "Les données sélectionnées ont été supprimées.",
-    "delete_error": "Une erreur est survenue lors de la suppression.",
-    "backup_title": "Sauvegarder les données",
-    "backup_message": "Êtes-vous sûr de vouloir sauvegarder vos données en ligne ?",
+    "delete_error": "Erreur lors de la suppression.",
+    "backup_title": "Sauvegarde des données",
+    "backup_message": "Voulez-vous sauvegarder vos données locales sur le Cloud ?",
     "backup_confirm": "Sauvegarder",
-    "restore_title": "Restaurer les données",
-    "restore_message": "Attention : Cette action remplacera toutes vos données locales par celles sauvegardées en ligne. Êtes-vous sûr ?",
+    "restore_title": "Restauration des données",
+    "restore_message": "Attention : cette action remplacera toutes vos données locales par celles du Cloud. Continuer ?",
     "restore_confirm": "Restaurer",
-    "offline_description": "Vos données sont stockées localement. Connectez-vous pour les sauvegarder en ligne.",
-    "export_description": "Exporter vos données et votre compte",
-    "delete_description": "Gérer vos données et votre compte",
-    "delete_local_desc": "Supprime les données stockées sur cet appareil",
-    "delete_cloud_desc": "Supprime les données sauvegardées en ligne",
-    "delete_account_desc": "Déconnecte et supprime votre session",
-    "permission_denied": "Veuillez autoriser les notifications dans les paramètres de votre appareil."
+    "offline_description": "Vos données sont enregistrées en local. Connectez-vous pour synchroniser.",
+    "export_description": "Exporter vos données au format JSON ou CSV",
+    "delete_description": "Gérer la suppression de vos données locales et Cloud",
+    "delete_local_desc": "Effacer les données stockées sur cet appareil",
+    "delete_cloud_desc": "Effacer les données sauvegardées sur le serveur Cloud",
+    "delete_account_desc": "Se déconnecter et supprimer ce profil local",
+    "permission_denied": "Permission refusée pour les notifications."
   },
   "transactions": {
     "delete_title": "Supprimer la transaction",
-    "delete_confirm": "Voulez-vous vraiment supprimer \"{{title}}\" ?",
+    "delete_confirm": "Êtes-vous sûr de vouloir supprimer \"{{title}}\" ?",
     "title": "Transactions",
     "create": "Nouvelle transaction",
     "edit": "Modifier la transaction",
@@ -540,153 +503,161 @@
     "type": "Type de transaction",
     "income": "Revenu",
     "expense": "Dépense",
-    "transfer": "Virement",
+    "transfer": "Transfert",
     "client_supplier": "Client / Fournisseur",
     "paid_by": "Payé par",
     "attachments": "Pièces jointes",
     "no_transactions": "Aucune transaction",
     "no_matching": "Aucune transaction ne correspond aux filtres",
-    "details": "Détails",
+    "details": "Détails de la transaction",
     "share": "Partager",
-    "confirm_delete": "Voulez-vous vraiment supprimer cette transaction ?",
+    "confirm_delete": "Êtes-vous sûr de vouloir supprimer cette transaction ?",
     "delete_permanent": "Cette action est irréversible.",
     "uncategorized": "Non catégorisé",
-    "auto_categorize": "Catégoriser automatiquement",
-    "insights": "Insights",
-     "search_placeholder": "Rechercher une transaction...",
+    "auto_categorize": "Catégorisation auto",
+    "insights": "Analyses & Aperçu",
+    "search_placeholder": "Rechercher une transaction...",
     "no_matching_desc": "Aucune transaction ne correspond à vos critères de recherche.",
-    "no_transactions_desc": "Commencez par enregistrer votre première transaction.",
-    "auto_categorized_title": "{{count}} transactions catégorisées",
-    "auto_categorized_failed": "{{count}} échecs",
-    "no_auto_categorize": "Aucune catégorisation automatique",
-    "no_auto_categorize_desc": "Aucune transaction ne peut être catégorisée automatiquement",
-    "refresh_success": "Transactions mises à jour",
+    "no_transactions_desc": "Commencez par ajouter votre première transaction.",
+    "auto_categorized_title": "{{count}} transactions catégorisées automatiquement",
+    "auto_categorized_failed": "Échec de la catégorisation pour {{count}} transactions",
+    "no_auto_categorize": "Aucune transaction à catégoriser",
+    "no_auto_categorize_desc": "Toutes vos transactions sont déjà catégorisées.",
+    "refresh_success": "Transactions actualisées avec succès",
     "all_transactions": "Toutes les transactions",
-     "information": "Informations",
-    "share_title": "Partager la transaction",
-    "same_category": "Opérations récentes ({{category}})",
-    "delete_confirm_details": "Voulez-vous vraiment supprimer \"{{title}}\" ? Cette action est irréversible."
+    "information": "Informations",
+    "share_title": "Partager cette transaction",
+    "same_category": "Transactions similaires ({{category}})",
+    "delete_confirm_details": "Êtes-vous sûr de vouloir supprimer \"{{title}}\" ? Cette action ne peut pas être annulée.",
+    "create_success": "Transaction créée avec succès",
+    "edit_success": "Transaction modifiée avec succès",
+    "title_placeholder": "Ex: Achat de nourriture",
+    "note_placeholder": "Ajouter une note...",
+    "client_supplier_placeholder": "Ex: Entreprise XYZ",
+    "paid_by_placeholder": "Ex: Jean",
+    "not_found_description": "La transaction que vous cherchez n'existe pas ou a été supprimée.",
+    "created_at": "Date de création"
   },
   "receipt_scanner": {
     "title": "Scanner un reçu",
-    "scan": "Numérisez vos reçus",
-    "description": "Prenez en photo ou sélectionnez un reçu. L'application extraira automatiquement les informations.",
+    "scan": "Scanner le reçu",
+    "description": "Prenez une photo de votre reçu ou importez-la. L'application extraira automatiquement les informations.",
     "take_photo": "Prendre une photo",
-    "choose_gallery": "Choisir depuis la galerie",
+    "choose_gallery": "Choisir dans la galerie",
     "complete_info": "Compléter les infos",
     "extracted_data": "Données extraites avec succès",
     "partial_data": "Données partiellement extraites",
-    "confidence_label": "Confiance",
-    "processing": "Analyse du reçu...",
+    "confidence_label": "Indice de confiance",
+    "processing": "Analyse du reçu en cours...",
     "preparing_image": "Préparation de l'image...",
-    "no_data_extracted": "Aucune donnée extraite",
-    "analysis_error": "Erreur d'analyse",
-    "manual_entry_hint": "Veuillez remplir les informations manuellement.",
-    "category_suggested": "Catégorie suggérée: {{category}}",
-    "verify_information": "Vérifiez et complétez les informations ci-dessous.",
+    "no_data_extracted": "Aucune donnée n'a pu être extraite",
+    "analysis_error": "Erreur lors de l'analyse du reçu",
+    "manual_entry_hint": "Vous pouvez saisir les informations manuellement ci-dessous.",
+    "category_suggested": "Catégorie suggérée : {{category}}",
+    "verify_information": "Veuillez vérifier et ajuster les informations ci-dessous.",
     "category_suggested_label": "Catégorie suggérée",
-    "title_placeholder": "Ex: Supermarché, Essence...",
-    "note_placeholder": "Informations additionnelles...",
+    "title_placeholder": "Ex: Supermarché, Restaurant...",
+    "note_placeholder": "Notes additionnelles...",
     "create_transaction": "Créer la transaction",
-    "transaction_created": "Transaction créée avec succès.",
-    "transaction_creation_error": "Impossible de créer la transaction.",
+    "transaction_created": "Transaction créée à partir du reçu.",
+    "transaction_creation_error": "Erreur lors de la création de la transaction.",
     "account_not_found": "Compte non trouvé.",
     "title_amount_required": "Le titre et le montant sont requis.",
     "invalid_amount": "Montant invalide.",
-    "image_selection_error": "Impossible de sélectionner l'image.",
-    "camera_permission_denied": "Autorisez l'accès à la caméra pour scanner.",
-    "gallery_permission_denied": "Autorisez l'accès à la galerie pour scanner.",
+    "image_selection_error": "Erreur lors de la sélection de l'image.",
+    "camera_permission_denied": "Permission caméra requise pour scanner un reçu.",
+    "gallery_permission_denied": "Permission accès à la galerie requise.",
     "data_extracted": "📄 Données extraites"
   },
   "image_viewer": {
     "download": "Télécharger",
     "share": "Partager",
+    "share_message": "📸 Image partagée depuis Ajiya Ta : {{title}}",
     "image": "Image",
-    "share_message": "📸 Image partagée depuis Ajiya Ta{{title}}",
-    "download_not_supported": "La sauvegarde d'images n'est pas supportée dans Expo Go. Utilisez un build de développement.",
-    "permission_denied": "L'application a besoin de votre permission pour sauvegarder des images.",
-    "download_success": "Image sauvegardée dans votre galerie !",
-    "download_error": "Impossible de télécharger l'image.",
-    "zoom_hint": "Pinch pour zoomer • Double tap pour agrandir"
+    "download_not_supported": "Le téléchargement d'images n'est pas supporté sous Expo Go. Utilisez un build de développement.",
+    "permission_denied": "Permission d'accès à la médiathèque requise pour enregistrer l'image.",
+    "download_success": "Image enregistrée dans la galerie !",
+    "download_error": "Erreur lors du téléchargement de l'image.",
+    "zoom_hint": "Pincez pour zoomer • Double-tapez pour agrandir"
   },
   "privacy": {
     "title": "Politique de confidentialité",
     "last_updated": "Dernière mise à jour",
-    "legal_framework": "Cadre Légal & Introduction",
-    "intro": "Ajiya Ta (\"nous\", \"notre\", \"nos\") s'engage à protéger la vie privée de ses utilisateurs. La présente politique est établie conformément à la **Loi n° 2017-28 du 3 mai 2017** relative à la protection des données à caractère personnel en République du Niger ainsi qu'à l'**Acte Additionnel A/SA.1/01/10 de la CEDEAO**.",
-    "consent": "En utilisant Ajiya Ta, vous consentez à la collecte et au traitement de vos informations selon les modalités définies ci-après.",
-    "data_collected": "Données collectées",
-    "identification": "Informations d'identification",
-    "identification_list": "• Nom, prénom et pseudo\n• Adresse email et/ou numéro de téléphone\n• Préférences de compte et devises (XOF, USD, etc.)",
+    "legal_framework": "Cadre Légal & Définitions",
+    "intro": "Ajiya Ta (\"nous\", \"notre\") s'engage à protéger la vie privée de ses utilisateurs. Cette politique est établie conformément à la **Loi N° 2017-28 du 3 mai 2017** relative à la protection des données à caractère personnel en République du Niger et à l'**Acte Additionnel A/SA.1/01/10 de la CEDEAO**.",
+    "consent": "En utilisant Ajiya Ta, vous acceptez la collecte et l'utilisation de vos informations conformément à la présente politique.",
+    "data_collected": "Données Collectées",
+    "identification": "Données d'identification",
+    "identification_list": "• Nom, prénom ou pseudonyme\n• Adresse e-mail et/ou numéro de téléphone\n• Préférences de compte et devise (XOF, USD, etc.)",
     "financial_data": "Données financières et de gestion",
-    "financial_list": "• Relevé des transactions (revenus, dépenses, transferts)\n• Budgets, objectifs d'épargne et catégories\n• Photos/scans de reçus ou factures (si autorisés)",
-    "technical_data": "Informations techniques",
-    "technical_list": "• Modèle de l'appareil et version du système Android/iOS\n• Identifiants uniques d'installation de l'application",
+    "financial_list": "• Transactions (revenus, dépenses, transferts)\n• Budgets, objectifs d'épargne et catégories\n• Reçus / Factures scannés (avec votre autorisation)",
+    "technical_data": "Données techniques",
+    "technical_list": "• Type d'appareil et version Android/iOS\n• Journaux d'erreurs et de performance",
     "storage_security": "Stockage et Sécurité des Données",
-    "storage_desc": "Conformément au principe d'architecture \"Offline-First\", l'ensemble de vos registres financiers est stocké en priorité localement sur votre appareil.",
-    "encryption": "En cas de synchronisation en ligne, vos données sont chiffrées selon les standards de sécurité recommandés par les réglementations en matière de cybersécurité.",
-    "biometric_note": "Vos identifiants biométriques (empreinte digitale, Face ID) sont traités exclusivement par le système sécurisé de votre téléphone et ne nous sont jamais transmis.",
+    "storage_desc": "Conformément à notre architecture \"Offline-First\", vos données financières sont stockées localement sur votre appareil.",
+    "encryption": "En cas de synchronisation Cloud, vos données sont chiffrées en transit et au repos conformément aux normes de sécurité en vigueur.",
+    "biometric_note": "Vos données biométriques (empreintes, visage) restent exclusivement sur le système sécurisé de votre téléphone et ne sont jamais accessibles par Ajiya Ta.",
     "your_rights": "Vos Droits",
-    "rights_intro": "Conformément à la réglementation nigérienne et communautaire, vous bénéficiez des droits suivants :",
-    "rights_list": "• **Droit d'accès :** Obtenir la confirmation que vos données sont traitées.\n• **Droit de rectification :** Exiger la correction d'informations inexactes.\n• **Droit de suppression :** Demander l'effacement définitif de vos données.\n• **Droit d'opposition :** S'opposer au traitement de vos données pour motifs légitimes.",
-    "exercise_rights": "Exercer mes droits : support@ajiyata.com",
-    "regulatory_authority": "Recours et Autorité de Régulation",
-    "regulatory_desc": "En cas de litige relatif à la protection de vos données personnelles non résolu par notre support, vous avez le droit de saisir la **Haute Autorité de Protection des Données à caractère Personnel (HAPDP)** de la République du Niger.",
-    "contact_desc": "Pour toute question concernant cette politique :"
+    "rights_intro": "Conformément aux réglementations nigérienne et de la CEDEAO, vous disposez des droits suivants :",
+    "rights_list": "• **Droit d'accès :** Consulter l'ensemble des données vous concernant.\n• **Droit de rectification :** Corriger ou mettre à jour des informations inexactes.\n• **Droit à l'effacement :** Demander la suppression définitive de vos données.\n• **Droit d'opposition :** Refuser le traitement de vos données pour des motifs légitimes.",
+    "exercise_rights": "Pour exercer vos droits : support@ajiyata.com",
+    "regulatory_authority": "Autorité de Contrôle",
+    "regulatory_desc": "En cas de litige non résolu, vous pouvez saisir la **Haute Autorité de Protection des Données à caractère Personnel (HAPDP)** de la République du Niger.",
+    "contact_desc": "Pour toute question relative à la présente politique :"
   },
   "terms": {
     "title": "Conditions d'utilisation",
     "last_updated": "Dernière mise à jour",
     "object": "1. Objet et Acceptation",
-    "object_text": "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de l'application mobile **Ajiya Ta**.",
-    "acceptance": "L'utilisation de l'application implique l'acceptation sans réserve des présentes CGU par l'utilisateur.",
+    "object_text": "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de l'application **Ajiya Ta**.",
+    "acceptance": "L'utilisation de l'application implique l'acceptation pleine et entière des présentes conditions par l'utilisateur.",
     "service_nature": "2. Nature du Service",
-    "service_desc": "Ajiya Ta est un outil de gestion budgétaire et financière personnelle. L'application permet d'enregistrer des flux financiers, de suivre des budgets et de gérer des comptes.",
-    "service_warning": "Ajiya Ta n'est pas un établissement de crédit ni un système de paiement électronique bancaire. L'application constitue un outil d'aide au suivi comptable personnel.",
+    "service_nature_desc": "Ajiya Ta est un outil de gestion financière personnelle et de budgétisation. L'application permet de suivre des flux financiers, de définir des budgets et de gérer des comptes.",
+    "service_warning": "Ajiya Ta n'est pas un établissement financier, bancaire ni un service de paiement. L'application est un outil d'assistance et de calcul personnel.",
     "user_obligations": "3. Obligations de l'Utilisateur",
-    "obligations_list": "L'utilisateur s'engage à :\n• Saisir des données exactes sous sa seule responsabilité.\n• Ne pas utiliser l'application à des fins frauduleuses ou illégales au regard des lois nigériennes et internationales.\n• Assurer la confidentialité de ses accès de déverrouillage (code, biométrie).",
+    "obligations_list": "L'utilisateur s'engage à :\n• Fournir des informations exactes lors de la création de son profil.\n• Ne pas utiliser l'application à des fins frauduleuses ou illégales au regard des lois du Niger et internationales.\n• Maintenir la sécurité de ses identifiants et méthodes d'accès (code PIN, biométrie).",
     "liability": "4. Limitation de Responsabilité",
-    "liability_text": "Ajiya Ta fournit des calculs et statistiques à titre strictement indicatif. Nous ne pourrons être tenus responsables en cas d'erreur de saisie par l'utilisateur, de perte de données liée à la perte ou à la détérioration de l'appareil mobile, ou d'interruption temporaire du service.",
-    "applicable_law": "5. Droit Applicable et Règlement des Litiges",
-    "law_text": "Les présentes CGU sont régies et interprétées conformément au **Droit de la République du Niger**.",
-    "jurisdiction": "Tout litige relatif à l'interprétation ou à l'exécution des présentes qui ne pourrait être réglé à l'amiable sera soumis à la compétence exclusive des **Tribunaux compétents de Niamey**.",
+    "liability_text": "Ajiya Ta fournit un outil d'aide à la décision. Nous ne sommes pas responsables des erreurs de saisie de l'utilisateur, des pertes financières subies, ou des dysfonctionnements liés à l'appareil de l'utilisateur.",
+    "applicable_law": "5. Droit Applicable et Juridiction",
+    "law_text": "Les présentes CGU sont régies par le **Droit de la République du Niger**.",
+    "jurisdiction": "Tout litige qui ne pourrait être réglé à l'amiable sera soumis à la compétence exclusive des **Tribunaux de Niamey**.",
     "contact_desc": "Pour toute question juridique ou réclamation :"
   },
   "errors": {
     "generic": "Une erreur est survenue",
-    "network": "Erreur réseau. Vérifiez votre connexion.",
-    "not_found": "Élément non trouvé",
-    "unauthorized": "Non autorisé",
+    "network": "Erreur réseau. Vérifiez votre connexion Internet.",
+    "not_found": "Élément introuvable",
+    "unauthorized": "Accès non autorisé",
     "invalid_data": "Données invalides",
     "save_failed": "Échec de l'enregistrement",
     "delete_failed": "Échec de la suppression",
     "update_failed": "Échec de la mise à jour",
     "load_failed": "Échec du chargement",
-    "refresh_failed": "Impossible de rafraîchir",
+    "refresh_failed": "Échec de l'actualisation",
     "create_failed": "Erreur lors de la création",
-    "account_missing": "Compte manquant",
+    "account_missing": "Compte introuvable",
     "duplicate_failed": "Erreur lors de la duplication",
-    "categorize_failed": "Impossible de catégoriser",
+    "categorize_failed": "Échec de la catégorisation",
     "invalid_amount": "Veuillez entrer un montant valide."
   },
   "language": {
-    "select_title": "Choisir une langue",
-    "restart_title": "🔄 Redémarrage nécessaire",
-    "restart_message": "Le changement de cette langue nécessite un redémarrage de l'application pour une expérience optimale.",
+    "select_title": "Choisir la langue",
+    "restart_title": "🔄 Redémarrage requis",
+    "restart_message": "Changer la langue nécessite un redémarrage de l'application pour appliquer les changements.",
     "restart": "Redémarrer",
-    "changed": "Langue changée",
+    "changed": "Langue modifiée",
     "new_language": "Nouvelle langue",
-    "rtl_hint": "💡 Les langues RTL (arabe) nécessitent un redémarrage",
+    "rtl_hint": "💡 Les langues RTL (Arabe) nécessitent un redémarrage complet de l'application",
     "french": "Français",
-    "english": "English",
+    "english": "Anglais",
     "hausa": "Hausa",
     "zarma": "Zarma",
-    "arabic": "العربية"
+    "arabic": "Arabe"
   },
   "periods": {
     "today": "Aujourd'hui",
     "this_week": "Cette semaine",
-    "this_month": "Ce mois",
+    "this_month": "Ce mois-ci",
     "this_year": "Cette année",
     "yesterday": "Hier",
     "custom": "Personnalisé"
@@ -703,7 +674,7 @@
     "budget": "Budget",
     "goal": "Objectif",
     "calculator": "Calculatrice",
-    "convert": "Conversion",
+    "convert": "Convertir",
     "scan": "Scanner",
     "export": "Exporter"
   },
@@ -711,71 +682,70 @@
     "transactions": "Transactions"
   },
   "sync": {
-    "offline": "Hors ligne",
-    "syncing": "Synchronisation...",
-    "pending": "en attente",
+    "offline": "Hors-ligne",
+    "syncing": "Synchronisation... ",
+    "pending": "En attente",
     "synced": "Synchronisé"
   },
   "budget_card": {
-    "daily": "Quotidien",
-    "weekly": "Hebdomadaire",
-    "monthly": "Mensuel",
+    "daily": "Jour",
+    "weekly": "Semaine",
+    "monthly": "Mois",
     "spent": "Dépensé",
-    "remaining": "Restant",
+    "remaining": "Reste",
     "total": "Total",
     "exceeded": "Dépassé",
-    "near_limit": "Bientôt atteint",
-    "on_track": "En bonne voie"
+    "near_limit": "Proche de la limite",
+    "on_track": "Dans les temps"
   },
   "saving_goal_card": {
-    "deadline": "Échéance",
+    "deadline": "Date limite",
     "completed": "Terminé",
     "paused": "En pause",
-    "active": "Actif",
+    "active": "En cours",
     "saved": "Épargné",
-    "goal": "Objectif",
+    "goal": "Cible",
     "progress": "Progression",
-    "add_funds": "Ajouter des fonds",
+    "add_funds": "Ajouter",
     "withdraw": "Retirer"
   },
-
   "transaction_item": {
     "validate": "Valider",
     "category": "Catégorie"
   },
   "export": {
     "title": "Exporter les données",
-    "what_to_export": "Quelles données exporter ?",
+    "what_to_export": "Que souhaitez-vous exporter ?",
     "type_all": "Tout exporter",
-    "type_all_desc": "Export complet de toutes vos données",
+    "type_all_desc": "Exporter l'ensemble de vos données de l'application",
     "type_transactions": "Transactions",
-    "type_transactions_desc": "Export des transactions",
+    "type_transactions_desc": "Exporter l'historique complet de vos transactions",
     "type_budgets": "Budgets",
-    "type_budgets_desc": "Export des budgets",
+    "type_budgets_desc": "Exporter la liste de vos budgets et leur suivi",
     "type_goals": "Objectifs",
-    "type_goals_desc": "Export des objectifs d'épargne",
+    "type_goals_desc": "Exporter vos objectifs d'épargne et leur progression",
     "format": "Format d'export",
     "summary_title": "Résumé de l'export",
     "savings_goals": "Objectifs d'épargne",
-    "exporting": "Exportation...",
+    "exporting": "Exportation en cours...",
     "export_button": "Exporter",
     "item": "élément",
     "items_plural_suffix": "s",
     "share": "Partager",
     "share_title": "Partager l'export",
-    "success": "Export terminé avec succès !",
-    "share_error": "Erreur lors du partage.",
+    "success": "Exportation réussie !",
+    "share_error": "Erreur lors du partage du fichier.",
     "no_data_title": "Aucune donnée",
-    "no_data_message": "Seules les transactions peuvent être exportées en PDF/Excel pour l'instant."
+    "no_data_message": "Seules les transactions peuvent être exportées au format PDF ou Excel pour le moment."
   },
   "calculator": {
     "title": "Calculatrice"
   },
   "currency_converter": {
-    "title": "Conversion",
-    "offline": "Hors ligne",
+    "title": "Convertisseur de devises",
+    "offline": "Mode hors-ligne",
     "updated": "Mis à jour",
-    "popular": "Populaires",
+    "popular": "Devises populaires",
     "choose_currency": "Choisir une devise",
     "search_placeholder": "Rechercher une devise..."
   }

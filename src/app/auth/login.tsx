@@ -23,8 +23,9 @@ import {
   View,
 } from "react-native";
 import { z } from "zod";
-import { ActivityIndicator } from "@/components/ui";
+import { ActivityIndicator, Image } from "@/components/ui";
 import { useTranslation } from "react-i18next";
+import { User } from "@/types";
 
 const loginSchema = z.object({
   email: z.string().email("auth.invalid_email"),
@@ -66,7 +67,7 @@ export default function LoginScreen() {
       await AsyncStorage.setItem("hasCompletedOnboarding", "true");
 
       if (response.data) {
-        setCurrentUser(response.data as any);
+        setCurrentUser(response.data as User);
       }
 
       if (isBiometricAvailable && !isBiometricEnabled) {
@@ -170,11 +171,10 @@ export default function LoginScreen() {
             <View
               style={{ alignItems: "center", marginBottom: theme.spacing.lg }}
             >
-              <Ionicons
-                name="log-in-outline"
-                size={80}
-                color={theme.colors.primary}
-              />
+               <Image
+              source={require("@/assets/primary.png")}
+              style={{ width: "100%", height: 215, borderRadius: 12 }}
+            />
             </View>
             <ThemedText
               variant="3xl"
@@ -392,17 +392,21 @@ export default function LoginScreen() {
               variant="outline"
               onPress={handleGoogleLogin}
               disabled={isLoading}
-              style={{ borderRadius: theme.borderRadius.xl, flex: 1, width: "100%" }}
+              style={{
+                borderRadius: theme.borderRadius.xl,
+                height: 60,
+              }}
+              isFullWidth={true}
             >
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
               >
                 <Ionicons
                   name="logo-google"
-                  size={24}
+                  size={30}
                   color={theme.colors.foreground}
                 />
-                <ThemedText weight="semibold">{t("auth.google")}</ThemedText>
+                <ThemedText style={{ fontSize: theme.typography["xl"] }} weight="semibold">{t("auth.google")}</ThemedText>
               </View>
             </Button>
           </View>

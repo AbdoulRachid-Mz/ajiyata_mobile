@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "web": {
       "output": "static",
-      "favicon": "./assets/images/primary-3.png"
+      "favicon": "./assets/images/primary-128x131.png"
     },
     "plugins": [
       "expo-router",
@@ -51,7 +51,7 @@
     ],
     "ios": {
       "bundleIdentifier": "ajiyata.com",
-      "icon": "./assets/images/primary-3.png",
+      "icon": "./assets/images/primary.png",
       "infoPlist": {
         "NSCameraUsageDescription": "Ajiya Ta utilise la caméra pour scanner vos reçus et factures.",
         "NSPhotoLibraryUsageDescription": "Ajiya Ta accède à votre galerie pour importer des reçus."
@@ -65,7 +65,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FAF7EE",
-        "foregroundImage": "./assets/images/primary-3.png"
+        "foregroundImage": "./assets/images/primary.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "ajiyata.com",
@@ -78,7 +78,7 @@
         "WRITE_EXTERNAL_STORAGE"
       ],
       "splash": {
-        "image": "./assets/images/primary-3.png",
+        "image": "./assets/images/primary.png",
         "resizeMode": "contain",
         "backgroundColor": "#FAF7EE"
       }

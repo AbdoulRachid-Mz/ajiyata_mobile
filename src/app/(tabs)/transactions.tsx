@@ -1,6 +1,12 @@
 // src/app/(tabs)/transactions.tsx
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/contexts/theme-context";
 import SafeAreaView from "@/components/ui/safe-area-view";
@@ -31,7 +37,10 @@ import { filterTransactions, getFilterSummary } from "@/utils/filter-utils";
 import { Transaction } from "@/types";
 import { ScreenSkeleton } from "@/components/ui/screen-skeleton";
 import Card from "@/components/ui/card";
-import { transactionIntelligence, TransactionInsight } from "@/services/transaction-intelligence.service";
+import {
+  transactionIntelligence,
+  TransactionInsight,
+} from "@/services/transaction-intelligence.service";
 import Toast from "react-native-toast-message";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
@@ -42,14 +51,10 @@ export default function TransactionsScreen() {
   const router = useRouter();
   const { currentAccount } = useAppStore();
   const accountId = currentAccount?.id || "";
-  
-  const {
-    data: transactions,
-    isLoading,
-    refetch,
-  } = useTransactions(accountId);
+
+  const { data: transactions, isLoading, refetch } = useTransactions(accountId);
   const deleteTransaction = useDeleteTransaction(accountId);
-  
+
   // États des filtres
   const [filters, setFilters] = useState<TransactionFilters>({
     type: "all",
@@ -61,7 +66,7 @@ export default function TransactionsScreen() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // États pour les insights
   const [insights, setInsights] = useState<TransactionInsight[]>([]);
   const [showInsights, setShowInsights] = useState(true);
@@ -77,7 +82,7 @@ export default function TransactionsScreen() {
       setShowInsights(result.length > 0);
       console.log(`📊 Insights chargés: ${result.length}`);
     } catch (error) {
-      console.error('Error loading insights:', error);
+      console.error("Error loading insights:", error);
     } finally {
       setIsLoadingInsights(false);
     }
@@ -95,17 +100,17 @@ export default function TransactionsScreen() {
       await refetch();
       await loadInsights();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show({ 
-        type: 'success', 
-        text1: t('common.refresh_success'), 
-        text2: t('transactions.refresh_success') 
+      Toast.show({
+        type: "success",
+        text1: t("common.refresh_success"),
+        text2: t("transactions.refresh_success"),
       });
     } catch (error) {
-      console.error('Refresh error:', error);
-      Toast.show({ 
-        type: 'error', 
-        text1: t('common.error'), 
-        text2: t('errors.refresh_failed') 
+      console.error("Refresh error:", error);
+      Toast.show({
+        type: "error",
+        text1: t("common.error"),
+        text2: t("errors.refresh_failed"),
       });
     } finally {
       setRefreshing(false);
@@ -116,28 +121,38 @@ export default function TransactionsScreen() {
   const handleAutoCategorize = useCallback(async () => {
     if (!accountId) return;
     try {
-      const result = await transactionIntelligence.autoApplyCategorySuggestions(accountId, 0.7);
+      const result = await transactionIntelligence.autoApplyCategorySuggestions(
+        accountId,
+        0.7,
+      );
       if (result.applied > 0) {
-        Toast.show({ 
-          type: 'success', 
-          text1: t('transactions.auto_categorized_title', { count: result.applied }),
-          text2: result.failed > 0 ? t('transactions.auto_categorized_failed', { count: result.failed }) : undefined
+        Toast.show({
+          type: "success",
+          text1: t("transactions.auto_categorized_title", {
+            count: result.applied,
+          }),
+          text2:
+            result.failed > 0
+              ? t("transactions.auto_categorized_failed", {
+                  count: result.failed,
+                })
+              : undefined,
         });
         refetch();
         loadInsights();
       } else {
-        Toast.show({ 
-          type: 'info', 
-          text1: t('transactions.no_auto_categorize'),
-          text2: t('transactions.no_auto_categorize_desc')
+        Toast.show({
+          type: "info",
+          text1: t("transactions.no_auto_categorize"),
+          text2: t("transactions.no_auto_categorize_desc"),
         });
       }
     } catch (error) {
-      console.error('Error auto-categorizing:', error);
-      Toast.show({ 
-        type: 'error', 
-        text1: t('common.error'), 
-        text2: t('errors.categorize_failed') 
+      console.error("Error auto-categorizing:", error);
+      Toast.show({
+        type: "error",
+        text1: t("common.error"),
+        text2: t("errors.categorize_failed"),
       });
     }
   }, [accountId, refetch, loadInsights, t]);
@@ -152,10 +167,16 @@ export default function TransactionsScreen() {
   };
 
   // Appliquer les filtres
-  const filteredTransactions = useMemo(() => {
+  const rawTransactions = useMemo(() => {
     if (!transactions) return [];
-    return filterTransactions(transactions, filters);
-  }, [transactions, filters]);
+    return (
+      transactions.data || (Array.isArray(transactions) ? transactions : [])
+    );
+  }, [transactions]);
+
+  const filteredTransactions = useMemo(() => {
+    return filterTransactions(rawTransactions, filters);
+  }, [rawTransactions, filters]);
 
   const hasActiveFilters = useMemo(() => {
     return (
@@ -210,12 +231,18 @@ export default function TransactionsScreen() {
 
   // Statistiques
   const stats = useMemo(() => {
-    const total = transactions?.length || 0;
-    const income = transactions?.filter(tx => tx.type === 'income').length || 0;
-    const expense = transactions?.filter(tx => tx.type === 'expense').length || 0;
-    const transfer = transactions?.filter(tx => tx.type === 'transfer').length || 0;
+    const total = rawTransactions?.length || 0;
+    const income =
+      rawTransactions?.filter((tx: Transaction) => tx.type === "income")
+        .length || 0;
+    const expense =
+      rawTransactions?.filter((tx: Transaction) => tx.type === "expense")
+        .length || 0;
+    const transfer =
+      rawTransactions?.filter((tx: Transaction) => tx.type === "transfer")
+        .length || 0;
     return { total, income, expense, transfer };
-  }, [transactions]);
+  }, [rawTransactions]);
 
   // Gestionnaires d'actions
   const handleDeleteTransaction = (transaction: Transaction) => {
@@ -263,10 +290,16 @@ export default function TransactionsScreen() {
           marginBottom: theme.spacing.sm,
           borderLeftWidth: 4,
           borderLeftColor: colors[insight.severity],
-          backgroundColor: colors[insight.severity] + '10',
+          backgroundColor: colors[insight.severity] + "10",
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <View style={{ flex: 1 }}>
             <ThemedText variant="sm" weight="semibold">
               {insight.title}
@@ -293,7 +326,10 @@ export default function TransactionsScreen() {
                 marginLeft: 8,
               }}
             >
-              <ThemedText variant="xs" style={{ color: '#fff', fontWeight: '600' }}>
+              <ThemedText
+                variant="xs"
+                style={{ color: "#fff", fontWeight: "600" }}
+              >
                 {insight.action.label}
               </ThemedText>
             </TouchableOpacity>
@@ -320,7 +356,7 @@ export default function TransactionsScreen() {
           <ThemedText variant="xl" weight="bold">
             {t("transactions.title")}
           </ThemedText>
-          <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <TouchableOpacity
               onPress={() => setShowFilters(true)}
               style={{ padding: 4 }}
@@ -343,39 +379,74 @@ export default function TransactionsScreen() {
                 />
               )}
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/transaction-create")}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: theme.colors.primary + "20",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="add" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
           </View>
         </ThemedView>
 
         {/* Statistiques rapides */}
-        {transactions && transactions.length > 0 && (
+        {rawTransactions && rawTransactions.length > 0 && (
           <View
             style={{
-              flexDirection: 'row',
+              flexDirection: "row",
               gap: 8,
               paddingHorizontal: theme.spacing.md,
               paddingVertical: theme.spacing.sm,
-              backgroundColor: theme.colors.muted + '30',
+              backgroundColor: theme.colors.muted + "30",
             }}
           >
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">{t('common.total')}</ThemedText>
-              <ThemedText variant="sm" weight="bold">{stats.total}</ThemedText>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <ThemedText variant="xs" color="mutedForeground">
+                {t("common.total")}
+              </ThemedText>
+              <ThemedText variant="sm" weight="bold">
+                {stats.total}
+              </ThemedText>
             </View>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">{t('finance.income')}</ThemedText>
-              <ThemedText variant="sm" weight="bold" style={{ color: theme.financialColors.income }}>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <ThemedText variant="xs" color="mutedForeground">
+                {t("finance.income")}
+              </ThemedText>
+              <ThemedText
+                variant="sm"
+                weight="bold"
+                style={{ color: theme.financialColors.income }}
+              >
                 {stats.income}
               </ThemedText>
             </View>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">{t('finance.expense')}</ThemedText>
-              <ThemedText variant="sm" weight="bold" style={{ color: theme.financialColors.expense }}>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <ThemedText variant="xs" color="mutedForeground">
+                {t("finance.expense")}
+              </ThemedText>
+              <ThemedText
+                variant="sm"
+                weight="bold"
+                style={{ color: theme.financialColors.expense }}
+              >
                 {stats.expense}
               </ThemedText>
             </View>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText variant="xs" color="mutedForeground">{t('finance.transfer')}</ThemedText>
-              <ThemedText variant="sm" weight="bold" style={{ color: theme.financialColors.budget }}>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <ThemedText variant="xs" color="mutedForeground">
+                {t("finance.transfer")}
+              </ThemedText>
+              <ThemedText
+                variant="sm"
+                weight="bold"
+                style={{ color: theme.financialColors.budget }}
+              >
                 {stats.transfer}
               </ThemedText>
             </View>
@@ -405,20 +476,44 @@ export default function TransactionsScreen() {
                 })
               }
             >
-              <Ionicons name="close-circle" size={16} color={theme.colors.mutedForeground} />
+              <Ionicons
+                name="close-circle"
+                size={16}
+                color={theme.colors.mutedForeground}
+              />
             </TouchableOpacity>
           </View>
         )}
 
         {/* Insights */}
         {showInsights && insights.length > 0 && !isLoading && (
-          <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm }}>
-              <ThemedText variant="sm" weight="bold" style={{ color: theme.colors.primary }}>
-                💡 {t('transactions.insights')}
+          <View
+            style={{
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: theme.spacing.sm,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: theme.spacing.sm,
+              }}
+            >
+              <ThemedText
+                variant="sm"
+                weight="bold"
+                style={{ color: theme.colors.primary }}
+              >
+                💡 {t("transactions.insights")}
               </ThemedText>
               <TouchableOpacity onPress={() => setShowInsights(false)}>
-                <Ionicons name="close" size={20} color={theme.colors.mutedForeground} />
+                <Ionicons
+                  name="close"
+                  size={20}
+                  color={theme.colors.mutedForeground}
+                />
               </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -426,8 +521,12 @@ export default function TransactionsScreen() {
             </ScrollView>
             {insights.length > 3 && (
               <TouchableOpacity onPress={() => setShowInsights(false)}>
-                <ThemedText variant="xs" color="mutedForeground" style={{ textAlign: 'center', marginTop: 4 }}>
-                  + {insights.length - 3} {t('common.others')}
+                <ThemedText
+                  variant="xs"
+                  color="mutedForeground"
+                  style={{ textAlign: "center", marginTop: 4 }}
+                >
+                  + {insights.length - 3} {t("common.others")}
                 </ThemedText>
               </TouchableOpacity>
             )}
@@ -435,28 +534,41 @@ export default function TransactionsScreen() {
         )}
 
         {/* Bouton de catégorisation automatique */}
-        {transactions && transactions.some(tx => !tx.categoryId) && (
-          <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs }}>
-            <TouchableOpacity
-              onPress={handleAutoCategorize}
+        {rawTransactions &&
+          rawTransactions.some((tx: Transaction) => !tx.categoryId) && (
+            <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: theme.spacing.sm,
-                backgroundColor: theme.colors.primary + '15',
-                borderRadius: theme.borderRadius.md,
-                borderWidth: 1,
-                borderColor: theme.colors.primary + '30',
+                paddingHorizontal: theme.spacing.md,
+                paddingVertical: theme.spacing.xs,
               }}
             >
-              <Ionicons name="sparkles" size={16} color={theme.colors.primary} />
-              <ThemedText variant="xs" style={{ color: theme.colors.primary, marginLeft: 6 }}>
-                {t('transactions.auto_categorize')}
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
-        )}
+              <TouchableOpacity
+                onPress={handleAutoCategorize}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: theme.spacing.sm,
+                  backgroundColor: theme.colors.primary + "15",
+                  borderRadius: theme.borderRadius.md,
+                  borderWidth: 1,
+                  borderColor: theme.colors.primary + "30",
+                }}
+              >
+                <Ionicons
+                  name="sparkles"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+                <ThemedText
+                  variant="xs"
+                  style={{ color: theme.colors.primary, marginLeft: 6 }}
+                >
+                  {t("transactions.auto_categorize")}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
 
         {/* Contenu */}
         {isLoading ? (
@@ -504,20 +616,35 @@ export default function TransactionsScreen() {
                     width: 80,
                     height: 80,
                     borderRadius: 40,
-                    backgroundColor: theme.colors.primary + '15',
-                    justifyContent: 'center',
-                    alignItems: 'center',
+                    backgroundColor: theme.colors.primary + "15",
+                    justifyContent: "center",
+                    alignItems: "center",
                     marginBottom: theme.spacing.lg,
                   }}
                 >
-                  <Ionicons name="list-outline" size={40} color={theme.colors.primary} />
+                  <Ionicons
+                    name="list-outline"
+                    size={40}
+                    color={theme.colors.primary}
+                  />
                 </View>
-                <ThemedText variant="xl" weight="bold" style={{ marginBottom: 8, textAlign: 'center' }}>
+                <ThemedText
+                  variant="xl"
+                  weight="bold"
+                  style={{ marginBottom: 8, textAlign: "center" }}
+                >
                   {hasActiveFilters
                     ? t("transactions.no_matching")
                     : t("transactions.no_transactions")}
                 </ThemedText>
-                <ThemedText color="mutedForeground" style={{ textAlign: 'center', lineHeight: 22, marginBottom: 24 }}>
+                <ThemedText
+                  color="mutedForeground"
+                  style={{
+                    textAlign: "center",
+                    lineHeight: 22,
+                    marginBottom: 24,
+                  }}
+                >
                   {hasActiveFilters
                     ? t("transactions.no_matching_desc")
                     : t("transactions.no_transactions_desc")}
@@ -526,8 +653,8 @@ export default function TransactionsScreen() {
                   <TouchableOpacity
                     onPress={() => router.push("/transaction-create")}
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
+                      flexDirection: "row",
+                      alignItems: "center",
                       gap: 8,
                       paddingHorizontal: 24,
                       paddingVertical: 12,
@@ -536,7 +663,7 @@ export default function TransactionsScreen() {
                     }}
                   >
                     <Ionicons name="add" size={20} color="#fff" />
-                    <ThemedText weight="semibold" style={{ color: '#fff' }}>
+                    <ThemedText weight="semibold" style={{ color: "#fff" }}>
                       {t("transactions.create")}
                     </ThemedText>
                   </TouchableOpacity>

@@ -11,9 +11,7 @@ import { useTranslation } from 'react-i18next';
 // Hooks et contextes
 import { useTheme } from '@/contexts/theme-context';
 import { useAppStore } from '@/stores/app-store';
-import { useTransactions } from '@/features/transactions/hooks';
-import { useCategories } from '@/features/categories/hooks';
-import { useDeleteTransaction } from '@/features/transactions/hooks';
+
 
 // attachments
 import { attachmentRepository } from '@/features/attachments/repositories';
@@ -33,6 +31,9 @@ import { TransactionItem } from '@/components/finance/transaction-item';
 import { formatCurrency } from '@/lib/formatters/currency';
 import { Attachment, Transaction } from '@/types';
 
+import { useCategories } from '@/features/categories/hooks';
+import { useTransactionDetails, useDeleteTransaction } from '@/features/transactions/hooks';
+
 export default function TransactionDetails() {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -41,34 +42,22 @@ export default function TransactionDetails() {
   const { currentAccount } = useAppStore();
 
   // Données
-  const { data: transactions, isLoading } = useTransactions(currentAccount?.id || '');
+  const { data: detailResult, isLoading } = useTransactionDetails(id || '');
   const { data: categories } = useCategories(currentAccount?.id || '');
   const deleteTransaction = useDeleteTransaction(currentAccount?.id || '');
 
   // Ajouter l'état
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-  // Trouver la transaction
-  const transaction = useMemo(() => {
-    if (!transactions) return null;
-    return transactions.find(tx => tx.id === id);
-  }, [transactions, id]);
+  // Transaction et transactions similaires du context/repo
+  const transaction = detailResult?.transaction || null;
+  const sameCategoryTransactions = detailResult?.similarTransactions || [];
 
   // Trouver la catégorie
   const category = useMemo(() => {
     if (!categories || !transaction?.categoryId) return null;
     return categories.find(cat => cat.id === transaction.categoryId);
   }, [categories, transaction]);
-
-  // Transactions de la même catégorie
-  const sameCategoryTransactions = useMemo(() => {
-    if (!transactions || !transaction?.categoryId) return [];
-    return transactions.filter(tx => 
-      tx.categoryId === transaction.categoryId && tx.id !== transaction.id
-    ).sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [transactions, transaction]);
 
   // États
   const [isDeleting, setIsDeleting] = useState(false);
@@ -415,6 +404,7 @@ export default function TransactionDetails() {
               variant="outline"
               style={{ flex: 1, borderRadius: theme.borderRadius.xl, borderWidth: 1.5 }}
               onPress={handleShare}
+              isFullWidth
             >
               <Ionicons name="share-outline" size={20} color={theme.colors.foreground} />
               <ThemedText style={{ marginLeft: 6, fontWeight: '600' }}>{t('transactions.share')}</ThemedText>
@@ -423,6 +413,7 @@ export default function TransactionDetails() {
               variant="default"
               style={{ flex: 1, borderRadius: theme.borderRadius.xl }}
               onPress={handleEdit}
+              isFullWidth
             >
               <Ionicons name="create-outline" size={20} color={theme.colors.primaryForeground} />
               <ThemedText style={{ marginLeft: 6, fontWeight: '600', color: theme.colors.primaryForeground }}>
@@ -434,6 +425,7 @@ export default function TransactionDetails() {
           <Button
             variant="destructive"
             onPress={handleDelete}
+            isFullWidth
             disabled={isDeleting}
             style={{ borderRadius: theme.borderRadius.xl }}
           >

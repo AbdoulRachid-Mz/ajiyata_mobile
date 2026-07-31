@@ -190,8 +190,8 @@ export default function ImageViewer() {
 
     if (isExpoGo || !MediaLibrary) {
       Alert.alert(
-        'Non supporté',
-        "La sauvegarde d'images n'est pas supportée dans Expo Go. Utilisez un build de développement."
+        t('common.not_available'),
+        t('notifications.expo_go_warning')
       );
       return;
     }
@@ -202,8 +202,8 @@ export default function ImageViewer() {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission refusée',
-          "L'application a besoin de votre permission pour sauvegarder des images."
+          t('common.error'),
+          t('receipt_scanner.gallery_permission_denied')
         );
         setIsSaving(false);
         return;
@@ -223,10 +223,10 @@ export default function ImageViewer() {
 
       await MediaLibrary.saveToLibraryAsync(savedUri);
 
-      Alert.alert('Succès', 'Image sauvegardée dans votre galerie !');
+      Alert.alert(t('common.success'), t('export.success'));
     } catch (error) {
       console.error('Erreur de téléchargement:', error);
-      Alert.alert('Erreur', "Impossible de télécharger l'image.");
+      Alert.alert(t('common.error'), t('export.share_error'));
     } finally {
       setIsSaving(false);
     }

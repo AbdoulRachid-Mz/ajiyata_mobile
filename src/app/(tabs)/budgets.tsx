@@ -56,7 +56,7 @@ import { useCategories } from "@/features/categories/hooks";
 import { useTransactions } from "@/features/transactions/hooks";
 import { BudgetCard } from "@/components/finance/budget-card";
 import { ScreenSkeleton } from "@/components/ui/screen-skeleton";
-import { BudgetWithRelations } from "@/types";
+import { BudgetWithRelations, Transaction } from "@/types";
 import Toast from "react-native-toast-message";
 import { Storage } from "@/lib/storage";
 import {
@@ -333,8 +333,9 @@ export default function BudgetsScreen() {
       const isExpired = isAfter(now, end);
 
       let spent = 0;
-      if (transactions) {
-        for (const tx of transactions) {
+      const txList: Transaction[] = transactions?.data || (Array.isArray(transactions) ? transactions : []);
+      if (txList && txList.length > 0) {
+        for (const tx of txList) {
           if (tx.categoryId === budget.categoryId && tx.type === "expense") {
             const txDate = typeof tx.date === "string" ? parseISO(tx.date) : new Date(tx.date);
             

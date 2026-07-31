@@ -1,3 +1,5 @@
+// src/app/budget-edit.tsx
+
 import Button from "@/components/ui/button";
 import KeyboardAvoidingView from "@/components/ui/keyboard-avoiding-view";
 import SafeAreaView from "@/components/ui/safe-area-view";
@@ -18,12 +20,21 @@ import { getCurrentTimestamp } from "@/utils/uuid";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
-
+import {
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  isWithinInterval,
+} from "date-fns";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
+import { Budget } from "@/types";
 
 export default function BudgetEdit() {
   const { t } = useTranslation();
@@ -32,11 +43,14 @@ export default function BudgetEdit() {
   const params = useLocalSearchParams();
   const budgetId = params.id as string;
   const { currentAccount } = useAppStore();
-  
-  const accountId = currentAccount?.id || '';
-  const { data: budgets } = useBudgets(accountId);
-  const budget = budgets?.find(b => b.id === budgetId);
-  
+
+  const accountId = currentAccount?.id || "";
+  const { data: bgResult } = useBudgets(accountId);
+  const bgList = useMemo(() => bgResult?.data || (Array.isArray(bgResult) ? bgResult : []), [bgResult]);
+  const budget = useMemo(() => {
+    return bgList.find((b: Budget) => b.id === budgetId);
+  }, [bgList, budgetId]);
+
   const updateBudget = useUpdateBudget();
   const {
     control,
@@ -57,31 +71,45 @@ export default function BudgetEdit() {
       reset({
         categoryId: budget.categoryId,
         limit: budget.limit.toString(),
-        period: budget.period as any,
+        period: budget.period as typeof budget.period._.data,
       });
     }
   }, [budget, reset]);
+
+  // Helper pour le libellé de la période
+  const getPeriodLabel = (period: string): string => {
+    switch (period) {
+      case "daily":
+        return t("budgets.daily");
+      case "weekly":
+        return t("budgets.weekly");
+      case "monthly":
+        return t("budgets.monthly");
+      default:
+        return "";
+    }
+  };
 
   /**
    * Vérifier si un budget existe déjà pour la même période (hors celui en cours d'édition)
    */
   const isDuplicateBudget = (categoryId: string, period: string): boolean => {
-    if (!budgets) return false;
+    if (!bgList || bgList.length === 0) return false;
 
     const now = new Date();
     let periodStart: Date;
     let periodEnd: Date;
 
     switch (period) {
-      case 'daily':
+      case "daily":
         periodStart = startOfDay(now);
         periodEnd = endOfDay(now);
         break;
-      case 'weekly':
+      case "weekly":
         periodStart = startOfWeek(now, { weekStartsOn: 1 });
         periodEnd = endOfWeek(now, { weekStartsOn: 1 });
         break;
-      case 'monthly':
+      case "monthly":
         periodStart = startOfMonth(now);
         periodEnd = endOfMonth(now);
         break;
@@ -89,25 +117,27 @@ export default function BudgetEdit() {
         return false;
     }
 
-    return budgets.some(b => {
+    return bgList.some((b: Budget) => {
       // Ignorer le budget en cours d'édition
       if (b.id === budgetId) return false;
-      
+
       // Vérifier si le budget est actif
-      if (b.status !== 'active') return false;
-      
+      if (b.status !== "active") return false;
+
       // Vérifier si c'est la même catégorie
       if (b.categoryId !== categoryId) return false;
-      
+
       // Vérifier si c'est la même période
       if (b.period !== period) return false;
 
       // Vérifier si les dates se chevauchent
       const bStart = new Date(b.startDate);
       const bEnd = new Date(b.endDate);
-      
-      return isWithinInterval(periodStart, { start: bStart, end: bEnd }) ||
-             isWithinInterval(periodEnd, { start: bStart, end: bEnd });
+
+      return (
+        isWithinInterval(periodStart, { start: bStart, end: bEnd }) ||
+        isWithinInterval(periodEnd, { start: bStart, end: bEnd })
+      );
     });
   };
 
@@ -124,15 +154,15 @@ export default function BudgetEdit() {
         let endDate: Date;
 
         switch (data.period) {
-          case 'daily':
+          case "daily":
             startDate = startOfDay(now);
             endDate = endOfDay(now);
             break;
-          case 'weekly':
+          case "weekly":
             startDate = startOfWeek(now, { weekStartsOn: 1 });
             endDate = endOfWeek(now, { weekStartsOn: 1 });
             break;
-          case 'monthly':
+          case "monthly":
             startDate = startOfMonth(now);
             endDate = endOfMonth(now);
             break;
@@ -151,23 +181,24 @@ export default function BudgetEdit() {
             endDate: endDate,
             updatedAt: getCurrentTimestamp(),
             syncStatus: "pending",
-          }
+          },
         });
+        Toast.show({ type: "success", text1: t("budgets.edit_success") });
         router.back();
       } catch (error) {
         console.error("Failed to update budget:", error);
-        Alert.alert("Erreur", "Impossible de mettre à jour le budget.");
+        Alert.alert(t("common.error"), t("errors.update_failed"));
       }
     };
 
     if (hasDuplicate) {
       Alert.alert(
-        "Budget existant",
-        "Un autre budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment modifier celui-ci ?",
+        t("budgets.duplicate_title"),
+        t("budgets.duplicate_edit_message"),
         [
-          { text: "Annuler", style: "cancel" },
-          { text: "Modifier quand même", onPress: performUpdate }
-        ]
+          { text: t("common.cancel"), style: "cancel" },
+          { text: t("budgets.update_anyway"), onPress: performUpdate },
+        ],
       );
     } else {
       await performUpdate();
@@ -207,7 +238,7 @@ export default function BudgetEdit() {
               />
             </TouchableOpacity>
             <ThemedText variant="2xl" weight="bold">
-              Modifier le budget
+              {t("budgets.edit")}
             </ThemedText>
           </ThemedView>
 
@@ -216,7 +247,7 @@ export default function BudgetEdit() {
             weight="medium"
             style={{ marginBottom: theme.spacing.xs }}
           >
-            Catégorie
+            {t("finance.category")}
           </ThemedText>
           <Controller
             control={control}
@@ -249,8 +280,8 @@ export default function BudgetEdit() {
             name="limit"
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label="Limite de dépenses"
-                placeholder="0.00"
+                label={t("budgets.limit")}
+                placeholder={t("common.amount_placeholder")}
                 keyboardType="decimal-pad"
                 onChangeText={onChange}
                 value={value}
@@ -274,7 +305,7 @@ export default function BudgetEdit() {
             weight="medium"
             style={{ marginBottom: theme.spacing.xs }}
           >
-            Période
+            {t("budgets.period_type")}
           </ThemedText>
           <Controller
             control={control}
@@ -289,11 +320,7 @@ export default function BudgetEdit() {
                     size="sm"
                     onPress={() => onChange(p)}
                   >
-                    {p === "daily"
-                      ? "Jour"
-                      : p === "weekly"
-                        ? "Semaine"
-                        : "Mois"}
+                    {getPeriodLabel(p)}
                   </Button>
                 ))}
               </View>
@@ -314,7 +341,7 @@ export default function BudgetEdit() {
             isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+            {isSubmitting ? t("common.loading") : t("common.save")}
           </Button>
         </ThemedView>
       </KeyboardAvoidingView>

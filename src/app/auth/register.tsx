@@ -21,6 +21,7 @@ import {
 } from "react-native";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
+import { Image } from "@/components/ui";
 
 const registerSchema = z
   .object({
@@ -40,7 +41,9 @@ export default function RegisterScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const { t } = useTranslation();
-  const { register, isLoading } = useAuth();
+
+  const { register, isLoading, loginWithGoogle } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -58,6 +61,18 @@ export default function RegisterScreen() {
     },
   });
 
+  const handleGoogleLogin = async () => {
+    const response = await loginWithGoogle();
+    if (response.success) {
+      router.replace("/(tabs)/dashboard");
+    } else {
+      Alert.alert(
+        t("common.error"),
+        response.error || t("auth.google_login_failed"),
+      );
+    }
+  };
+
   const onSubmit = async (data: RegisterFormData) => {
     const response = await register({
       email: data.email,
@@ -68,7 +83,7 @@ export default function RegisterScreen() {
     if (response.success) {
       router.replace("/(tabs)/dashboard");
     } else {
-      Alert.alert(t('common.error'), response.error || t('common.error'));
+      Alert.alert(t("common.error"), response.error || t("common.error"));
     }
   };
 
@@ -85,7 +100,16 @@ export default function RegisterScreen() {
         >
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ marginBottom: theme.spacing.lg }}
+            style={{
+              marginBottom: theme.spacing.lg,
+              backgroundColor: theme.colors.primary + "20",
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              padding: 8,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
             <Ionicons
               name="arrow-back"
@@ -101,12 +125,11 @@ export default function RegisterScreen() {
             }}
           >
             <View
-              style={{ alignItems: "center", marginBottom: theme.spacing.lg }}
+              style={{ alignItems: "center", marginBottom: theme.spacing.md }}
             >
-              <Ionicons
-                name="person-add-outline"
-                size={80}
-                color={theme.colors.primary}
+              <Image
+                source={require("@/assets/primary.png")}
+                style={{ width: "90%", height: 180, borderRadius: 12 }}
               />
             </View>
             <ThemedText
@@ -114,25 +137,78 @@ export default function RegisterScreen() {
               weight="bold"
               style={{ textAlign: "center" }}
             >
-              {t('auth.register_title')}
+              {t("auth.register_title")}
             </ThemedText>
             <ThemedText
               variant="base"
               color="mutedForeground"
               style={{ textAlign: "center", marginTop: 8 }}
             >
-              {t('auth.register_subtitle')}
+              {t("auth.register_subtitle")}
             </ThemedText>
           </View>
 
           <View style={{ paddingHorizontal: theme.spacing.sm }}>
+            <Button
+              variant="outline"
+              onPress={handleGoogleLogin}
+              disabled={isLoading}
+              style={{
+                borderRadius: theme.borderRadius.xl,
+                height: 60,
+              }}
+              isFullWidth={true}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+              >
+                <Ionicons
+                  name="logo-google"
+                  size={30}
+                  color={theme.colors.foreground}
+                />
+                <ThemedText style={{ fontSize: theme.typography["xl"] }} weight="semibold">{t("auth.google")}</ThemedText>
+              </View>
+            </Button>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: theme.spacing.sm,
+                marginTop: theme.spacing.sm,
+              }}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: theme.colors.border,
+                }}
+              />
+              <ThemedText
+                variant="sm"
+                color="mutedForeground"
+                style={{ marginHorizontal: theme.spacing.md }}
+              >
+                {t("auth.or_continue_with")}
+              </ThemedText>
+              <View
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: theme.colors.border,
+                }}
+              />
+            </View>
+
             <Controller
               control={control}
               name="displayName"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label={t('auth.full_name')}
-                  placeholder={t('auth.name_placeholder')}
+                  label={t("auth.full_name")}
+                  placeholder={t("auth.name_placeholder")}
                   value={value}
                   onChangeText={onChange}
                   error={!!errors.displayName}
@@ -164,8 +240,8 @@ export default function RegisterScreen() {
               name="email"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label={t('auth.email')}
-                  placeholder={t('auth.email_placeholder')}
+                  label={t("auth.email")}
+                  placeholder={t("auth.email_placeholder")}
                   value={value}
                   onChangeText={onChange}
                   keyboardType="email-address"
@@ -199,8 +275,8 @@ export default function RegisterScreen() {
               name="password"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label={t('auth.password')}
-                  placeholder={t('auth.password_placeholder')}
+                  label={t("auth.password")}
+                  placeholder={t("auth.password_placeholder")}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showPassword}
@@ -244,8 +320,8 @@ export default function RegisterScreen() {
               name="confirmPassword"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label={t('auth.confirm_password')}
-                  placeholder={t('auth.password_placeholder')}
+                  label={t("auth.confirm_password")}
+                  placeholder={t("auth.password_placeholder")}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry={!showConfirmPassword}
@@ -301,7 +377,7 @@ export default function RegisterScreen() {
               }}
               isFullWidth
             >
-              {isLoading ? t('common.loading') : t('auth.sign_up')}
+              {isLoading ? t("common.loading") : t("auth.sign_up")}
             </Button>
           </View>
 
@@ -312,10 +388,12 @@ export default function RegisterScreen() {
               marginTop: theme.spacing.xl,
             }}
           >
-            <ThemedText color="mutedForeground">{t('auth.has_account')} </ThemedText>
+            <ThemedText color="mutedForeground">
+              {t("auth.has_account")}{" "}
+            </ThemedText>
             <TouchableOpacity onPress={() => router.push("/auth/login")}>
               <ThemedText color="primary" weight="bold">
-                {t('auth.sign_in')}
+                {t("auth.sign_in")}
               </ThemedText>
             </TouchableOpacity>
           </View>

@@ -47,10 +47,14 @@ export default function ExportScreen() {
   const router = useRouter();
   const { currentAccount } = useAppStore();
 
-  const { data: transactions } = useTransactions(currentAccount?.id || "");
-  const { data: budgets } = useBudgets(currentAccount?.id || "");
-  const { data: goals } = useSavingGoals(currentAccount?.id || "");
+  const { data: txResult } = useTransactions(currentAccount?.id || "");
+  const { data: bgResult } = useBudgets(currentAccount?.id || "");
+  const { data: glResult } = useSavingGoals(currentAccount?.id || "");
   const { data: categories } = useCategories(currentAccount?.id || "");
+
+  const transactions = useMemo(() => txResult?.data || (Array.isArray(txResult) ? txResult : []), [txResult]);
+  const budgets = useMemo(() => bgResult?.data || (Array.isArray(bgResult) ? bgResult : []), [bgResult]);
+  const goals = useMemo(() => glResult?.data || (Array.isArray(glResult) ? glResult : []), [glResult]);
 
   const [exportType, setExportType] = useState<ExportType>("all");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("json");

@@ -98,10 +98,14 @@ export function PersonalDashboard() {
 
   // Données
   const {
-    data: allTransactions,
+    data: txResult,
     isLoading: isLoadingAll,
     refetch: refetchAll,
   } = useTransactions(accountId);
+
+  const allTransactions = useMemo(() => {
+    return txResult?.data || (Array.isArray(txResult) ? txResult : []);
+  }, [txResult]);
   const { data: categories } = useCategories(accountId);
   const {
     data: recentTransactions,

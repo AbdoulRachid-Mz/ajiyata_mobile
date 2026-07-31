@@ -1,3 +1,5 @@
+// src/app/transaction-create.tsx
+
 import Button from "@/components/ui/button";
 import KeyboardAvoidingView from "@/components/ui/keyboard-avoiding-view";
 import SafeAreaView from "@/components/ui/safe-area-view";
@@ -19,15 +21,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { ScrollView, View } from "react-native";
-// Ajouter l'import
+import { ScrollView, View, Alert } from "react-native";
 import { AttachmentPicker } from "@/features/attachments/components/AttachmentPicker";
 import { attachmentRepository } from "@/features/attachments/repositories";
-import { AttachmentType } from "@/features/attachments/types";
 import { Attachment } from "@/types";
 import { useState } from "react";
 import { useDevice } from "@/hooks/use-device";
-
+import Toast from "react-native-toast-message";
 import { useTranslation } from "react-i18next";
 
 export default function TransactionCreate() {
@@ -52,7 +52,7 @@ export default function TransactionCreate() {
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       type: initialType || "expense",
-      amount: "0",
+      amount: "",
       title: "",
       date: new Date(),
       note: "",
@@ -75,7 +75,10 @@ export default function TransactionCreate() {
   };
 
   const onSubmit = async (data: TransactionFormData) => {
-    if (!currentAccount) return;
+    if (!currentAccount) {
+      Alert.alert(t("common.error"), t("errors.account_missing"));
+      return;
+    }
 
     try {
       await createTransaction.mutateAsync({
@@ -96,9 +99,11 @@ export default function TransactionCreate() {
         metadata: data.metadata || {},
         isSynced: false,
       });
+      Toast.show({ type: "success", text1: t("transactions.create_success") });
       router.back();
     } catch (error) {
       console.error("Failed to create transaction:", error);
+      Alert.alert(t("common.error"), t("errors.create_failed"));
     }
   };
 
@@ -126,12 +131,11 @@ export default function TransactionCreate() {
               />
             </Button>
             <ThemedText variant="xl" weight="bold">
-              Nouvelle transaction
+              {t("transactions.create")}
             </ThemedText>
             <Button
               variant="ghost"
               size="sm"
-              // @ts-ignore
               onPress={() => router.push("/receipt-scanner")}
             >
               <Ionicons name="scan" size={20} color={theme.colors.primary} />
@@ -144,7 +148,7 @@ export default function TransactionCreate() {
             weight="semibold"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Type de transaction
+            {t("transactions.type")}
           </ThemedText>
           <Controller
             control={control}
@@ -169,7 +173,7 @@ export default function TransactionCreate() {
                   size="sm"
                   onPress={() => onChange("income")}
                 >
-                  Revenu
+                  {t("finance.income")}
                 </Button>
                 <Button
                   variant={value === "expense" ? "default" : "outline"}
@@ -183,7 +187,7 @@ export default function TransactionCreate() {
                   size="sm"
                   onPress={() => onChange("expense")}
                 >
-                  Dépense
+                  {t("finance.expense")}
                 </Button>
                 <Button
                   variant={value === "transfer" ? "default" : "outline"}
@@ -191,7 +195,7 @@ export default function TransactionCreate() {
                   size="sm"
                   onPress={() => onChange("transfer")}
                 >
-                  Virement
+                  {t("finance.transfer")}
                 </Button>
               </View>
             )}
@@ -203,8 +207,8 @@ export default function TransactionCreate() {
             name="amount"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Montant"
-                placeholder="0.00"
+                label={t("finance.amount")}
+                placeholder={t("common.amount_placeholder")}
                 keyboardType="decimal-pad"
                 onBlur={onBlur}
                 onChangeText={onChange}
@@ -232,8 +236,8 @@ export default function TransactionCreate() {
             name="title"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Titre"
-                placeholder="Ex: Achat de nourriture"
+                label={t("common.title")}
+                placeholder={t("transactions.title_placeholder")}
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
@@ -260,7 +264,7 @@ export default function TransactionCreate() {
             weight="medium"
             style={{ marginBottom: theme.spacing.xs }}
           >
-            Catégorie
+            {t("finance.category")}
           </ThemedText>
           <Controller
             control={control}
@@ -295,8 +299,8 @@ export default function TransactionCreate() {
               name="metadata.client"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  label="Client / Fournisseur"
-                  placeholder="Ex: Entreprise XYZ"
+                  label={t("transactions.client_supplier")}
+                  placeholder={t("transactions.client_supplier_placeholder")}
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={String(value || "")}
@@ -312,8 +316,8 @@ export default function TransactionCreate() {
               name="metadata.paidBy"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  label="Payé par"
-                  placeholder="Ex: Jean"
+                  label={t("transactions.paid_by")}
+                  placeholder={t("transactions.paid_by_placeholder")}
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={String(value || "")}
@@ -331,8 +335,8 @@ export default function TransactionCreate() {
             name="note"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Note (optionnel)"
-                placeholder="Ajouter une note..."
+                label={t("finance.note") + " (" + t("common.optional") + ")"}
+                placeholder={t("transactions.note_placeholder")}
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value || ""}
@@ -349,7 +353,7 @@ export default function TransactionCreate() {
             weight="medium"
             style={{ marginBottom: theme.spacing.xs }}
           >
-            Pièces jointes ({attachments.length}/5)
+            {t("transactions.attachments")} ({attachments.length}/5)
           </ThemedText>
           <AttachmentPicker
             onAttachmentAdded={handleAttachmentAdded}
@@ -375,7 +379,7 @@ export default function TransactionCreate() {
             isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+            {isSubmitting ? t("common.loading") : t("common.save")}
           </Button>
         </ThemedView>
       </KeyboardAvoidingView>

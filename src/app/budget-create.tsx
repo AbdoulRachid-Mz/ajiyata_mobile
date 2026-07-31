@@ -1,3 +1,5 @@
+// src/app/budget-create.tsx
+
 import Button from "@/components/ui/button";
 import KeyboardAvoidingView from "@/components/ui/keyboard-avoiding-view";
 import SafeAreaView from "@/components/ui/safe-area-view";
@@ -29,12 +31,10 @@ import {
   endOfMonth,
   isWithinInterval,
 } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Toast from "react-native-toast-message";
 import { budgetRepository } from "@/features/budgets/repositories";
 import { useDevice } from "@/hooks/use-device";
-import Slider from "@react-native-community/slider";
-
 import { useTranslation } from "react-i18next";
 
 export default function BudgetCreate() {
@@ -62,7 +62,8 @@ export default function BudgetCreate() {
   // Ajouter watch pour count
   const count = watch("count");
 
-  const { data: existingBudgets } = useBudgets(currentAccount?.id || "");
+  const { data: bgResult } = useBudgets(currentAccount?.id || "");
+  const existingBudgets = useMemo(() => bgResult?.data || (Array.isArray(bgResult) ? bgResult : []), [bgResult]);
   const { deviceId } = useDevice();
 
   // Fonction de création multiple
@@ -70,8 +71,8 @@ export default function BudgetCreate() {
     if (!currentAccount) {
       Toast.show({
         type: "error",
-        text1: "Erreur",
-        text2: "Compte non trouvé",
+        text1: t("common.error"),
+        text2: t("errors.account_missing"),
       });
       return;
     }
@@ -102,7 +103,7 @@ export default function BudgetCreate() {
 
       budgetsToCreate.push({
         id: generateUUID(),
-        accountId: currentAccount.id, // ⚠️ S'assurer que accountId est présent
+        accountId: currentAccount.id,
         categoryId: data.categoryId,
         limit: data.limit,
         spent: 0,
@@ -124,7 +125,8 @@ export default function BudgetCreate() {
 
     Toast.show({
       type: "success",
-      text1: `${budgetsToCreate.length} budgets créés avec succès`,
+      text1: t("budgets.create_success", { count: budgetsToCreate.length }),
+      text2: t("budgets.create_success_multiple", { count: budgetsToCreate.length }),
     });
     router.back();
   };
@@ -143,9 +145,22 @@ export default function BudgetCreate() {
     }
   };
 
+  // Helper pour le libellé de la période
+  const getPeriodLabel = (period: string): string => {
+    switch (period) {
+      case "daily":
+        return t("budgets.daily");
+      case "weekly":
+        return t("budgets.weekly");
+      case "monthly":
+        return t("budgets.monthly");
+      default:
+        return "";
+    }
+  };
+
   /**
    * Vérifier si un budget existe déjà pour la même période
-   * Retourne true si un budget actif existe dans la même période
    */
   const isDuplicateBudget = (categoryId: string, period: string): boolean => {
     if (!existingBudgets) return false;
@@ -154,7 +169,6 @@ export default function BudgetCreate() {
     let periodStart: Date;
     let periodEnd: Date;
 
-    // Déterminer la période actuelle
     switch (period) {
       case "daily":
         periodStart = startOfDay(now);
@@ -172,22 +186,14 @@ export default function BudgetCreate() {
         return false;
     }
 
-    // Vérifier si un budget actif existe pour cette catégorie et période
     return existingBudgets.some((budget) => {
-      // Vérifier si le budget est actif
       if (budget.status !== "active") return false;
-
-      // Vérifier si c'est la même catégorie
       if (budget.categoryId !== categoryId) return false;
-
-      // Vérifier si c'est la même période
       if (budget.period !== period) return false;
 
-      // Vérifier si les dates se chevauchent
       const budgetStart = new Date(budget.startDate);
       const budgetEnd = new Date(budget.endDate);
 
-      // Vérifier si la période actuelle est dans la période du budget existant
       return (
         isWithinInterval(periodStart, { start: budgetStart, end: budgetEnd }) ||
         isWithinInterval(periodEnd, { start: budgetStart, end: budgetEnd })
@@ -197,7 +203,7 @@ export default function BudgetCreate() {
 
   const onSubmit = async (data: BudgetFormData) => {
     if (!currentAccount) {
-      Alert.alert("Erreur", "Compte non trouvé.");
+      Alert.alert(t("common.error"), t("errors.account_missing"));
       return;
     }
 
@@ -236,7 +242,7 @@ export default function BudgetCreate() {
 
         const newBudget = {
           id: generateUUID(),
-          accountId: currentAccount.id, // ⚠️ S'assurer que accountId est présent
+          accountId: currentAccount.id,
           categoryId: data.categoryId,
           limit: data.limit,
           spent: 0,
@@ -253,20 +259,21 @@ export default function BudgetCreate() {
         };
 
         await createBudget.mutateAsync(newBudget);
+        Toast.show({ type: "success", text1: t("budgets.create_success") });
         router.back();
       } catch (error) {
         console.error("Failed to create budget:", error);
-        Alert.alert("Erreur", "Impossible de créer le budget.");
+        Alert.alert(t("common.error"), t("errors.create_failed"));
       }
     };
 
     if (hasDuplicate) {
       Alert.alert(
-        "Budget existant",
-        "Un budget actif existe déjà pour cette catégorie dans la même période. Voulez-vous vraiment en créer un autre ?",
+        t("budgets.duplicate_title"),
+        t("budgets.duplicate_message"),
         [
-          { text: "Annuler", style: "cancel" },
-          { text: "Créer quand même", onPress: performCreation },
+          { text: t("common.cancel"), style: "cancel" },
+          { text: t("budgets.create_anyway"), onPress: performCreation },
         ],
       );
     } else {
@@ -307,7 +314,7 @@ export default function BudgetCreate() {
               />
             </TouchableOpacity>
             <ThemedText variant="base" weight="bold">
-              Nouveau budget
+              {t("budgets.create")}
             </ThemedText>
           </ThemedView>
 
@@ -316,7 +323,7 @@ export default function BudgetCreate() {
             weight="medium"
             style={{ marginBottom: theme.spacing.xs }}
           >
-            Catégorie
+            {t("finance.category")}
           </ThemedText>
           <Controller
             control={control}
@@ -349,8 +356,8 @@ export default function BudgetCreate() {
             name="limit"
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label="Limite de dépenses"
-                placeholder="0.00"
+                label={t("budgets.limit")}
+                placeholder={t("common.amount_placeholder")}
                 keyboardType="decimal-pad"
                 onChangeText={onChange}
                 value={value}
@@ -374,7 +381,7 @@ export default function BudgetCreate() {
             weight="medium"
             style={{ marginBottom: theme.spacing.xs }}
           >
-            Période
+            {t("budgets.period_type")}
           </ThemedText>
           <Controller
             control={control}
@@ -389,11 +396,7 @@ export default function BudgetCreate() {
                     size="sm"
                     onPress={() => onChange(p)}
                   >
-                    {p === "daily"
-                      ? "Jour"
-                      : p === "weekly"
-                        ? "Semaine"
-                        : "Mois"}
+                    {getPeriodLabel(p)}
                   </Button>
                 ))}
               </View>
@@ -406,7 +409,7 @@ export default function BudgetCreate() {
             weight="medium"
             style={{ marginBottom: theme.spacing.xs, marginTop: 30 }}
           >
-            Nombre de budgets à créer
+            {t("budgets.create_count")}
           </ThemedText>
           <Controller
             control={control}
@@ -474,8 +477,11 @@ export default function BudgetCreate() {
                   style={{ textAlign: "center" }}
                 >
                   {value > 1
-                    ? `${value} budgets espacés de ${getPeriodDays(watch("period"))} jours chacun`
-                    : "Budget unique"}
+                    ? t("budgets.create_count_info", { 
+                        count: value, 
+                        days: getPeriodDays(watch("period")) 
+                      })
+                    : t("budgets.single_budget")}
                 </ThemedText>
               </View>
             )}
@@ -495,7 +501,7 @@ export default function BudgetCreate() {
             isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? "Création..." : "Créer le budget"}
+            {isSubmitting ? t("common.loading") : t("budgets.create")}
           </Button>
         </ThemedView>
       </KeyboardAvoidingView>

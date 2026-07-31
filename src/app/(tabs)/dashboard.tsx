@@ -6,7 +6,6 @@ import { FamilyDashboard } from "@/components/screens/dashboard/FamilyDashboard"
 
 export default function DashboardScreen() {
   const { currentAccount } = useAppStore();
-  console.log('currentAccount:', currentAccount);
 
   if (currentAccount?.type === "business") {
     return <BusinessDashboard />;

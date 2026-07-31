@@ -55,7 +55,11 @@
     "amount_placeholder": "0.00",
     "expand": "توسيع",
     "icon": "أيقونة",
-    "color": "اللون"
+    "color": "اللون",
+    "contact": "جهة اتصال",
+    "contact_us": "اتصل بنا",
+    "contacts": "جهات الاتصال",
+    "contact_support": "التواصل مع الدعم"
   },
   "notifications": {
     "title": "الإشعارات",
@@ -294,10 +298,19 @@
     "app_description": "Ajiya Ta هو مساعدك المالي الشخصي، المصمم لمساعدتك في إدارة دخلك، ونفقاتك، وتحقيق أهداف الادخار الخاصة بك. تم بناء التطبيق وفقًا لفلسفة \"غير متصل أولاً\" لضمان وصولك إلى بياناتك في أي وقت.",
     "developer": "المطور",
     "developer_role": "مطور ويب وتطبيقات",
-    "legal": "إشعارات قانونية",
+    "legal": "المعلومات القانونية",
     "privacy_policy": "سياسة الخصوصية",
     "terms_of_use": "شروط الاستخدام",
-    "version": "الإصدار"
+    "version": "الإصدار",
+    "support_button": "دعمنا 💖",
+    "support_title": "دعم المشروع",
+    "support_desc": "ساعدنا في تطوير Ajiya Ta والحفاظ على التطبيق مجانياً ومتاحاً للجميع.",
+    "support_mobile_money": "Mobile Money | Bank | Transfer",
+    "support_mobile_money_desc": "Airtel, Moov, Nita, AmanaTa, Wave, Zamani, Niger Télécom, etc.",
+    "support_copy_number": "نسخ الرقم",
+    "support_copied": "تم نسخ الرقم إلى الحافظة!",
+    "support_share_app": "مشاركة التطبيق",
+    "support_thanks": "شكراً لدعمك القيم! 🙏"
   },
   "finance": {
     "income": "إيراد",
@@ -376,17 +389,30 @@
     "create_first_description": "أنشئ ميزانيتك الأولى للتحكم بشكل أفضل في مصاريفك حسب الفئة.",
     "duplicate_success": "تم نسخ الميزانية بنجاح",
     "suggestions": "اقتراحات الميزانية",
-    "budget": "ميزانية"
+    "budget": "ميزانية",
+    "edit_success": "تم تعديل الميزانية بنجاح",
+    "create_success_multiple": "تم إنشاء {{count}} ميزانيات بنجاح",
+    "create_count": "عدد الميزانيات المراد إنشاؤها",
+    "create_count_info": "{{count}} ميزانيات تفصل بين كل منها {{days}} يومًا",
+    "single_budget": "ميزانية واحدة",
+    "duplicate_title": "ميزانية موجودة بالفعل",
+    "duplicate_message": "توجد ميزانية نشطة بالفعل لهذه الفئة في نفس الفترة. هل أنت تأكد من أنك تريد إنشاء ميزانية أخرى؟",
+    "duplicate_edit_message": "توجد ميزانية نشطة أخرى بالفعل لهذه الفئة في نفس الفترة. هل أنت تأكد من أنك تريد تعديل هذه الميزانية؟",
+    "create_anyway": "إنشاء على أي حال",
+    "update_anyway": "تعديل على أي حال",
+    "period_type": "نوع الفترة"
   },
   "goals": {
-    "title": "أهداف الادخار",
+   "title": "أهداف الادخار",
     "create": "هدف جديد",
     "create_success": "تم إنشاء الهدف بنجاح",
     "edit": "تعديل الهدف",
+    "edit_success": "تم تعديل الهدف بنجاح",
     "delete": "حذف الهدف",
     "delete_title": "حذف الهدف",
     "delete_confirm": "هل أنت متأكد من أنك تريد حذف هدف الادخار هذا؟",
     "target": "الهدف",
+    "target_label": "المبلغ المراد ادخاره",
     "current": "المدخر",
     "progress": "التقدم",
     "deadline": "الموعد النهائي",
@@ -408,7 +434,9 @@
     "create_from_suggestion": "إنشاء من الاقتراح",
     "refresh_success": "تم تحديث الأهداف",
     "search_placeholder": "البحث عن هدف...",
-    "goal": "هدف"
+    "goal": "هدف",
+    "title_label": "عنوان الهدف",
+    "title_placeholder": "مثال: سيارة جديدة"
   },
   "settings": {
     "title": "الإعدادات",

@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+// src/app/transaction-edit.tsx
+
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScrollView, View, Alert, ActivityIndicator } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
 // Hooks et contextes
 import { useTheme } from '@/contexts/theme-context';
@@ -40,12 +43,15 @@ export default function TransactionEdit() {
   const { currentAccount } = useAppStore();
 
   // Données
-  const { data: transactions, isLoading: isLoadingTx } = useTransactions(currentAccount?.id || '');
+  const { data: txResult, isLoading: isLoadingTx } = useTransactions(currentAccount?.id || '');
   const { data: categories } = useCategories(currentAccount?.id || '');
   const updateTransaction = useUpdateTransaction();
 
   // Trouver la transaction
-  const transaction = transactions?.find(tx => tx.id === id);
+  const transaction = useMemo(() => {
+    const list = txResult?.data || (Array.isArray(txResult) ? txResult : []);
+    return list.find(tx => tx.id === id);
+  }, [txResult, id]);
 
   // États
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +68,7 @@ export default function TransactionEdit() {
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       type: 'expense',
-      amount: '0',
+      amount: '',
       title: '',
       date: new Date(),
       note: '',
@@ -85,11 +91,10 @@ export default function TransactionEdit() {
       });
       setIsLoading(false);
     } else if (!isLoadingTx) {
-      // Transaction non trouvée
-      Alert.alert('Erreur', 'Transaction introuvable');
+      Alert.alert(t('common.error'), t('errors.not_found'));
       router.back();
     }
-  }, [transaction, isLoadingTx]);
+  }, [transaction, isLoadingTx, reset, router, t]);
 
   // Soumission
   const onSubmit = async (data: TransactionFormData) => {
@@ -108,10 +113,11 @@ export default function TransactionEdit() {
         currency: currentAccount.currency,
         updatedAt: getCurrentTimestamp(),
       });
+      Toast.show({ type: 'success', text1: t('transactions.edit_success') });
       router.back();
     } catch (error) {
       console.error('Failed to update transaction:', error);
-      Alert.alert('Erreur', 'Impossible de modifier la transaction.');
+      Alert.alert(t('common.error'), t('errors.update_failed'));
     }
   };
 
@@ -122,7 +128,7 @@ export default function TransactionEdit() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <ThemedText style={{ marginTop: 16 }} color="mutedForeground">
-            Chargement...
+            {t('common.loading')}
           </ThemedText>
         </View>
       </SafeAreaView>
@@ -134,13 +140,13 @@ export default function TransactionEdit() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg }}>
           <ThemedText variant="xl" weight="bold" style={{ marginBottom: 8 }}>
-            Transaction introuvable
+            {t('errors.not_found')}
           </ThemedText>
           <ThemedText color="mutedForeground" style={{ textAlign: 'center' }}>
-            La transaction que vous cherchez n'existe pas ou a été supprimée.
+            {t('transactions.not_found_description')}
           </ThemedText>
           <Spacer height={theme.spacing.lg} />
-          <Button onPress={() => router.back()}>Retour</Button>
+          <Button onPress={() => router.back()}>{t('common.back')}</Button>
         </View>
       </SafeAreaView>
     );
@@ -166,7 +172,7 @@ export default function TransactionEdit() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.foreground} />
           </Button>
           <ThemedText variant="xl" weight="bold">
-            Modifier la transaction
+            {t('transactions.edit')}
           </ThemedText>
           <View style={{ width: 44 }} />
         </ThemedView>
@@ -177,7 +183,7 @@ export default function TransactionEdit() {
           weight="semibold"
           style={{ marginBottom: theme.spacing.md }}
         >
-          Type de transaction
+          {t('transactions.type')}
         </ThemedText>
         <Controller
           control={control}
@@ -202,7 +208,7 @@ export default function TransactionEdit() {
                 size="sm"
                 onPress={() => onChange('income')}
               >
-                Revenu
+                {t('finance.income')}
               </Button>
               <Button
                 variant={value === 'expense' ? 'default' : 'outline'}
@@ -216,7 +222,7 @@ export default function TransactionEdit() {
                 size="sm"
                 onPress={() => onChange('expense')}
               >
-                Dépense
+                {t('finance.expense')}
               </Button>
               <Button
                 variant={value === 'transfer' ? 'default' : 'outline'}
@@ -224,7 +230,7 @@ export default function TransactionEdit() {
                 size="sm"
                 onPress={() => onChange('transfer')}
               >
-                Virement
+                {t('finance.transfer')}
               </Button>
             </View>
           )}
@@ -236,8 +242,8 @@ export default function TransactionEdit() {
           name="amount"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Montant"
-              placeholder="0.00"
+              label={t('finance.amount')}
+              placeholder={t('common.amount_placeholder')}
               keyboardType="decimal-pad"
               onBlur={onBlur}
               onChangeText={onChange}
@@ -265,8 +271,8 @@ export default function TransactionEdit() {
           name="title"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Titre"
-              placeholder="Ex: Achat de nourriture"
+              label={t('common.title')}
+              placeholder={t('transactions.title_placeholder')}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -293,7 +299,7 @@ export default function TransactionEdit() {
           weight="medium"
           style={{ marginBottom: theme.spacing.xs }}
         >
-          Catégorie
+          {t('finance.category')}
         </ThemedText>
         <Controller
           control={control}
@@ -328,8 +334,8 @@ export default function TransactionEdit() {
           name="note"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Note (optionnel)"
-              placeholder="Ajouter une note..."
+              label={t('finance.note') + " (" + t('common.optional') + ")"}
+              placeholder={t('transactions.note_placeholder')}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value || ''}
@@ -341,7 +347,7 @@ export default function TransactionEdit() {
 
         {/* Date (lecture seule) */}
         <ThemedText variant="sm" color="mutedForeground" style={{ marginBottom: 4 }}>
-          Date de création
+          {t('transactions.created_at')}
         </ThemedText>
         <ThemedText style={{ marginBottom: theme.spacing.lg }}>
           {new Date(transaction.date).toLocaleDateString('fr-FR', {
@@ -362,7 +368,7 @@ export default function TransactionEdit() {
             style={{ flex: 1 }}
             onPress={() => router.back()}
           >
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button
             style={{ flex: 2 }}
@@ -370,7 +376,7 @@ export default function TransactionEdit() {
             isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            {isSubmitting ? t('common.loading') : t('common.save')}
           </Button>
         </View>
       </ScrollView>

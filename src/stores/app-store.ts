@@ -1,9 +1,10 @@
+// @/stores/app-store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { User, Account } from '@/types';
 
-interface AppState {
+export interface AppState {
   currentUser: User | null;
   currentAccount: Account | null;
   setCurrentUser: (user: User | null) => void;

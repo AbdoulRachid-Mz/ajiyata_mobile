@@ -1,9 +1,12 @@
+// src/app/saving-goal-edit.tsx
+
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
 import Button from "@/components/ui/button";
 import KeyboardAvoidingView from "@/components/ui/keyboard-avoiding-view";
@@ -20,7 +23,6 @@ import {
   SavingGoalFormInput,
   savingGoalFormSchema,
 } from "@/lib/validation";
-
 import { useTranslation } from "react-i18next";
 
 export default function SavingGoalEdit() {
@@ -36,11 +38,7 @@ export default function SavingGoalEdit() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<
-    SavingGoalFormInput,
-    any,
-    SavingGoalFormData
-  >({
+  } = useForm<SavingGoalFormInput, any, SavingGoalFormData>({
     resolver: zodResolver(savingGoalFormSchema),
     defaultValues: {
       title: "",
@@ -51,24 +49,25 @@ export default function SavingGoalEdit() {
   useEffect(() => {
     const loadGoal = async () => {
       if (!id) {
-        Alert.alert("Erreur", "Objectif non trouvé.");
+        Alert.alert(t("common.error"), t("errors.not_found"));
         router.back();
         return;
       }
-      const goal = await savingGoalRepository.getById(id);
-      if (goal) {
+      const result = await savingGoalRepository.getById(id);
+      if (result?.goal) {
+        const goal = result.goal;
         reset({
           title: goal.title,
           targetAmount: goal.targetAmount.toString(),
         });
       } else {
-        Alert.alert("Erreur", "Objectif non trouvé.");
+        Alert.alert(t("common.error"), t("errors.not_found"));
         router.back();
       }
       setIsLoading(false);
     };
     loadGoal();
-  }, [id, reset, router]);
+  }, [id, reset, router, t]);
 
   const onSubmit = async (data: SavingGoalFormData) => {
     if (!id) return;
@@ -81,17 +80,18 @@ export default function SavingGoalEdit() {
           targetAmount: data.targetAmount,
         },
       });
+      Toast.show({ type: "success", text1: t("goals.edit_success") });
       router.back();
     } catch (error) {
       console.error("Failed to update saving goal:", error);
-      Alert.alert("Erreur", "Impossible de mettre à jour l'objectif.");
+      Alert.alert(t("common.error"), t("errors.update_failed"));
     }
   };
 
   if (isLoading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' }}>
-        <ThemedText>Chargement...</ThemedText>
+        <ThemedText>{t("common.loading")}</ThemedText>
       </SafeAreaView>
     );
   }
@@ -129,7 +129,7 @@ export default function SavingGoalEdit() {
               />
             </TouchableOpacity>
             <ThemedText variant="base" weight="bold">
-              Modifier l'objectif
+              {t("goals.edit")}
             </ThemedText>
             <View style={{ width: 44 }} />
           </ThemedView>
@@ -139,8 +139,8 @@ export default function SavingGoalEdit() {
             name="title"
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label="Titre de l'objectif"
-                placeholder="Ex: Nouvelle voiture"
+                label={t("goals.title_label")}
+                placeholder={t("goals.title_placeholder")}
                 onChangeText={onChange}
                 value={value}
                 error={!!errors.title}
@@ -163,8 +163,8 @@ export default function SavingGoalEdit() {
             name="targetAmount"
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label="Montant à épargner"
-                placeholder="0.00"
+                label={t("goals.target_label")}
+                placeholder={t("common.amount_placeholder")}
                 keyboardType="decimal-pad"
                 onChangeText={onChange}
                 value={value}
@@ -195,7 +195,7 @@ export default function SavingGoalEdit() {
             isFullWidth
             onPress={handleSubmit(onSubmit)}
           >
-            {isSubmitting ? "Mise à jour..." : "Enregistrer les modifications"}
+            {isSubmitting ? t("common.loading") : t("common.save")}
           </Button>
         </ThemedView>
       </KeyboardAvoidingView>
